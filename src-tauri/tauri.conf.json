@@ -30,13 +30,20 @@
       ]
     },
     "security": {
-      "csp": null
+      "csp": null,
+      "dangerousRemoteDomainIpcAccess": [
+        {
+          "domain": "saml.authentification.umontreal.ca",
+          "windows": ["synchro"],
+          "enableTauriAPI": true
+        }
+      ]
     },
     "windows": [
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "synchroschedulesavior",
+        "title": "SynchroScheduleSavior",
         "width": 800,
         "height": 600
       }
