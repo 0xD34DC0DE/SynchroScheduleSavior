@@ -1,40 +1,55 @@
 import {Box, Button} from "@mui/material";
-import {useUserConnectionStore} from "./stores/UserConnectionStore.ts";
-import {useEffect} from "react";
 import {invoke} from "@tauri-apps/api";
 
 function App() {
-    const userConnectionStore = useUserConnectionStore();
 
-    useEffect(() => {
-        if (userConnectionStore.userConnection === null) {
-            console.log("User connection is null");
-        }
-    }, []);
-
-    const openPuppet = () => {
-       invoke("open_puppet", {"url": "https://saml.authentification.umontreal.ca/"}).then().catch((err) => {
-           console.log(err);
-       });
+    const open_puppet = async () => {
+        await invoke("open_puppet", {"url": "https://saml.authentification.umontreal.ca/"})
     }
 
-    const testFunction = () => {
-        document.querySelector("main")?.classList.remove("udem-bg-1");
-        document.querySelector("main")?.classList.remove("udem-bg-2");
-        document.querySelector("main")?.classList.remove("udem-bg-3");
-        document.querySelector("main")?.classList.remove("udem-bg-4");
-        document.querySelector("main")?.classList.remove("udem-bg-5");
-        document.querySelector("main")?.classList.remove("udem-bg-6");
+    const testString = () => {
+        return "test";
     }
 
-    const testInjection = () => {
-        const args = {
-            "javascript": `(${testFunction})()`,
-        }
+    const testNumber = () => {
+        return 1;
+    }
 
-        invoke("synchro_inject", args).then().catch((err) => {
-            console.log(err);
-        });
+    const testBoolean = () => {
+        return true;
+    }
+
+    const testArray = () => {
+        return [1, 2, 3];
+    }
+
+    const testObject = () => {
+        return {
+            a: "a_str",
+            b: 1,
+        };
+    }
+
+    const testInjection = async () => {
+        invoke("synchro_inject", {js: testString.toString(), timeoutMs: 1000})
+            .then((res) => console.log(res, typeof res))
+            .catch((err) => console.error(err));
+
+        invoke("synchro_inject", {js: testNumber.toString(), timeoutMs: 1000})
+            .then((res) => console.log(res, typeof res))
+            .catch((err) => console.error(err));
+
+        invoke("synchro_inject", {js: testBoolean.toString(), timeoutMs: 1000})
+            .then((res) => console.log(res, typeof res))
+            .catch((err) => console.error(err));
+
+        invoke("synchro_inject", {js: testArray.toString(), timeoutMs: 1000})
+            .then((res) => console.log(res, typeof res))
+            .catch((err) => console.error(err));
+
+        invoke("synchro_inject", {js: testObject.toString(), timeoutMs: 1000})
+            .then((res) => console.log(res, typeof res))
+            .catch((err) => console.error(err));
     }
 
     return (
@@ -42,8 +57,8 @@ function App() {
             width: "100%",
             height: "100%",
         }}>
-        <Button onClick={openPuppet} variant={"contained"}>Open synchro</Button>
-        <Button onClick={testInjection} variant={"contained"}>Test Injection</Button>
+            <Button onClick={open_puppet} variant={"contained"}>Open synchro</Button>
+            <Button onClick={testInjection} variant={"contained"}>Test Injection</Button>
         </Box>
     );
 }
