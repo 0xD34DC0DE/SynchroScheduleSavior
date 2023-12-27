@@ -1,6 +1,10 @@
 import {Box, Button} from "@mui/material";
 import {invoke} from "@tauri-apps/api";
 
+const inject = async <T extends () => R, R>(fn: () => R, timeout_ms: number): Promise<R> => {
+    return invoke<ReturnType<T>>("synchro_inject", {js: fn.toString(), timeoutMs: timeout_ms});
+}
+
 function App() {
 
     const open_puppet = async () => {
@@ -31,23 +35,23 @@ function App() {
     }
 
     const testInjection = async () => {
-        invoke("synchro_inject", {js: testString.toString(), timeoutMs: 1000})
+        inject(testString, 1000)
             .then((res) => console.log(res, typeof res))
             .catch((err) => console.error(err));
 
-        invoke("synchro_inject", {js: testNumber.toString(), timeoutMs: 1000})
+        inject(testNumber, 1000)
             .then((res) => console.log(res, typeof res))
             .catch((err) => console.error(err));
 
-        invoke("synchro_inject", {js: testBoolean.toString(), timeoutMs: 1000})
+        inject(testBoolean, 1000)
             .then((res) => console.log(res, typeof res))
             .catch((err) => console.error(err));
 
-        invoke("synchro_inject", {js: testArray.toString(), timeoutMs: 1000})
+        inject(testArray, 1000)
             .then((res) => console.log(res, typeof res))
             .catch((err) => console.error(err));
 
-        invoke("synchro_inject", {js: testObject.toString(), timeoutMs: 1000})
+        inject(testObject, 1000)
             .then((res) => console.log(res, typeof res))
             .catch((err) => console.error(err));
     }
