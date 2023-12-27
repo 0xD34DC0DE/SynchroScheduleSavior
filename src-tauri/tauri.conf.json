@@ -35,7 +35,16 @@
       "dangerousRemoteDomainIpcAccess": [
         {
           "domain": "saml.authentification.umontreal.ca",
-          "windows": ["synchro"],
+          "windows": [
+            "synchro"
+          ],
+          "enableTauriAPI": true
+        },
+        {
+          "domain": "academique-dmz.synchro.umontreal.ca",
+          "windows": [
+            "synchro"
+          ],
           "enableTauriAPI": true
         }
       ]
