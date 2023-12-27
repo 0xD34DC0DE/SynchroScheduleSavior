@@ -1,14 +1,9 @@
 import {Box, Button} from "@mui/material";
-import {invoke} from "@tauri-apps/api";
-
-const inject = async <T extends () => R, R>(fn: () => R, timeout_ms: number): Promise<R> => {
-    return invoke<ReturnType<T>>("synchro_inject", {js: fn.toString(), timeoutMs: timeout_ms});
-}
-
+import Scraper from "./apis/Scraper.ts";
 function App() {
 
     const open_puppet = async () => {
-        await invoke("open_puppet", {"url": "https://saml.authentification.umontreal.ca/"})
+        await Scraper.begin("https://saml.authentification.umontreal.ca/");
     }
 
     const testString = () => {
@@ -35,23 +30,23 @@ function App() {
     }
 
     const testInjection = async () => {
-        inject(testString, 1000)
+        Scraper.inject(testString, 1000)
             .then((res) => console.log(res, typeof res))
             .catch((err) => console.error(err));
 
-        inject(testNumber, 1000)
+        Scraper.inject(testNumber, 1000)
             .then((res) => console.log(res, typeof res))
             .catch((err) => console.error(err));
 
-        inject(testBoolean, 1000)
+        Scraper.inject(testBoolean, 1000)
             .then((res) => console.log(res, typeof res))
             .catch((err) => console.error(err));
 
-        inject(testArray, 1000)
+        Scraper.inject(testArray, 1000)
             .then((res) => console.log(res, typeof res))
             .catch((err) => console.error(err));
 
-        inject(testObject, 1000)
+        Scraper.inject(testObject, 1000)
             .then((res) => console.log(res, typeof res))
             .catch((err) => console.error(err));
     }
