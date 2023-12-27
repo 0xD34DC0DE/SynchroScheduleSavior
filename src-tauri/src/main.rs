@@ -57,9 +57,9 @@ async fn synchro_inject(js: String, timeout_ms: u64, handle: AppHandle) -> Resul
         }
     });
 
-    let extraction_wrapper = format!("window.__TAURI__.event.emit('{}', ({})());", event_id, js);
-
-    window.eval(extraction_wrapper.as_ref()).map_err(|e| e.to_string())?;
+    let wrapped = format!("window.__TAURI__.event.emit('{}', ({})());", event_id, js);
+    println!("Injecting: {}", wrapped);
+    window.eval(wrapped.as_ref()).map_err(|e| e.to_string())?;
 
     let result = match time::timeout(Duration::from_millis(timeout_ms), rx.recv()).await {
         Ok(r) => match r {
