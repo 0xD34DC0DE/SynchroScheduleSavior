@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 
+use indoc::{formatdoc, indoc};
 use rand::Rng;
 use serde_json::Value;
 use tauri::{AppHandle, Manager};
@@ -35,7 +36,7 @@ async fn close_puppet(handle: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn synchro_inject(js: String, timeout_ms: u64, handle: AppHandle) -> Result<Value, String> {
+async fn synchro_inject(js: String, timeout_ms: u64, expect_return_value: bool, handle: AppHandle) -> Result<Value, String> {
     let window = handle.get_window("synchro");
     if window.is_none() {
         return Err("Synchro puppet window not open".to_string());
@@ -49,7 +50,7 @@ async fn synchro_inject(js: String, timeout_ms: u64, handle: AppHandle) -> Resul
     let event_handler = window.listen(event_id.clone(), move |extraction_event| {
         if let Some(payload) = extraction_event.payload() {
             match tx.try_send(payload.to_string()) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) => {
                     eprintln!("Error sending extracted data: {}", e);
                 }
@@ -57,9 +58,19 @@ async fn synchro_inject(js: String, timeout_ms: u64, handle: AppHandle) -> Resul
         }
     });
 
-    let wrapped = format!("window.__TAURI__.event.emit('{}', ({})());", event_id, js);
-    println!("Injecting: {}", wrapped);
-    window.eval(wrapped.as_ref()).map_err(|e| e.to_string())?;
+    // Use event_id as a unique identifier for the error field to avoid potential collisions with return values
+    let error_field = format!("error-{}", event_id);
+    let injected = formatdoc! {r#"
+    window.__TAURI__.event.emit('{}', (() => {{
+        try {{
+            return ({})();
+        }} catch (e) {{
+            return {{ '{}': e.toString() }};
+        }}
+    }})());
+    "#, event_id, js, error_field};
+    println!("Injecting: {}", injected);
+    window.eval(injected.as_ref()).map_err(|e| e.to_string())?;
 
     let result = match time::timeout(Duration::from_millis(timeout_ms), rx.recv()).await {
         Ok(r) => match r {
@@ -73,9 +84,26 @@ async fn synchro_inject(js: String, timeout_ms: u64, handle: AppHandle) -> Resul
 
     let result = serde_json::to_value(result).map_err(|e| e.to_string())?;
     match result.get("Ok") {
-        Some(Value::String(s)) => Ok(serde_json::from_str(s.as_str()).map_err(|e| e.to_string())?),
+        Some(Value::String(s)) => {
+            println!("Extracted: {}", s);
+            match serde_json::from_str(s.as_str()).map_err(|e| e.to_string())? {
+                Value::Object(mut o) => {
+                    if let Some(e) = o.remove(error_field.as_str()) {
+                        Err(e.to_string())
+                    } else {
+                        Ok(Value::Object(o))
+                    }
+                }
+                v => Ok(v),
+            }
+        }
         Some(v) => Err(format!("Extraction error, result is not a string: {}", v)),
-        None => Err("Extraction did not send any data".to_string()),
+        None => if expect_return_value {
+            Err("Extraction error, was expecting a return value but got nothing".to_string())
+        } else {
+            println!("Injection done, no return value expected");
+            Ok(Value::Null)
+        }
     }
 }
 
