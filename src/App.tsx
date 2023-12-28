@@ -16,13 +16,15 @@ function App() {
     }
 
     return (
-        <Box sx={{
-            width: "100%",
-            height: "100%",
-        }}>
-            <Button onClick={beginScraping} variant={"contained"}>Open synchro</Button>
-            <Button onClick={testInjection} variant={"contained"}>Test Injection</Button>
-        </Box>
+        <FlexBox sx={{width: "100%", height: "100%", backgroundColor: "rgb(255,247,240)"}}
+                 horizontalAlignment={"center"} verticalAlignment={"center"}>
+            <Paper sx={{p: 2}} elevation={2}>
+                <FlexBox gap={"2rem"}>
+                    <Button onClick={startScraper}>Begin scraping</Button>
+                    <Button onClick={testInjection}>Test injection</Button>
+                </FlexBox>
+            </Paper>
+        </FlexBox>
     );
 }
 
