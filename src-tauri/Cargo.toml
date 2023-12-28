@@ -20,6 +20,8 @@ url = "2.5.0"
 rand = "0.8.5"
 tokio = { version = "1", features = ["time"] }
 indoc = "2"
+anyhow = "1.0.77"
+thiserror = "1.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
