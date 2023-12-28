@@ -24,7 +24,7 @@ pub struct WebviewInjection {
     pub js_function: String,
     pub execution_timeout: Duration,
     pub expected_return_type: WebviewInjectionResultType,
-    pub args: Option<Vec<(String, Value)>>,
+    pub args: Option<Vec<Value>>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -45,28 +45,31 @@ impl TryFrom<&str> for WebviewInjectionResultType {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "null" => Ok(WebviewInjectionResultType::Null),
-            "bool" => Ok(WebviewInjectionResultType::Bool),
+            "boolean" => Ok(WebviewInjectionResultType::Bool),
             "number" => Ok(WebviewInjectionResultType::Number),
             "string" => Ok(WebviewInjectionResultType::String),
             "array" => Ok(WebviewInjectionResultType::Array),
             "object" => Ok(WebviewInjectionResultType::Object),
-            "none" => Ok(WebviewInjectionResultType::None),
+            "undefined" => Ok(WebviewInjectionResultType::None),
             _ => Err(WebviewScraperError::InvalidResultType(value.to_string())),
         }
     }
 }
 
 pub async fn webview_inject(injection: WebviewInjection) -> Result<Value> {
-    let result_listener = ResultListener::new(&injection.window);
-
-
-    todo!("Implement webview_inject")
+    Injector::new(&injection.window)
+        .inject(
+            injection.js_function.as_ref(),
+            injection.args,
+            injection.expected_return_type,
+            injection.execution_timeout,
+        ).await
 }
 
 struct ResultListener<'a> {
     event_identifier: String,
     event_handler: EventHandler,
-    receiver: mpsc::Receiver<Result<String>>,
+    receiver: mpsc::Receiver<Option<String>>,
     window: &'a Window,
 }
 
@@ -74,7 +77,7 @@ impl<'a> ResultListener<'a> {
     const EVENT_IDENTIFIER_PREFIX: &'static str = "injection-listener-";
 
     pub fn new(window: &'a Window) -> Self {
-        let (sender, receiver) = mpsc::channel::<Result<String>>(1);
+        let (sender, receiver) = mpsc::channel::<Option<String>>(1);
 
         let random_postfix = rand::thread_rng().gen::<u16>();
         let event_identifier = format!("{}{}", Self::EVENT_IDENTIFIER_PREFIX, random_postfix);
@@ -82,12 +85,8 @@ impl<'a> ResultListener<'a> {
         let event_handler = window.listen(
             event_identifier.clone(),
             move |event| {
-                sender.try_send(match event.payload() {
-                    Some(payload) => anyhow::Ok(payload.to_string()),
-                    None => Err(WebviewScraperError::InjectionFailed(
-                        "Received event without payload".to_string()
-                    ).into()),
-                }).unwrap_or_else(|e| {
+                sender.try_send(event.payload().map(|p| p.to_string()))
+                .unwrap_or_else(|e| {
                     eprintln!("Error sending injection result: {}", e);
                 });
             },
@@ -101,14 +100,14 @@ impl<'a> ResultListener<'a> {
         }
     }
 
-    pub async fn wait_for_result(&mut self, timeout: Duration) -> Result<String> {
+    pub async fn wait_for_result(&mut self, timeout: Duration) -> Result<Option<String>> {
         match time::timeout(timeout.clone(), self.receiver.recv()).await {
-            Ok(r) => match r {
-                Some(r) => r,
-                None => Err(WebviewScraperError::InjectionFailed(
-                    "Received nothing".to_string()
+            Ok(r) => r.map_or_else(
+                || Err(WebviewScraperError::InjectionFailed(
+                    "Result listener channel closed unexpectedly".to_string()
                 ).into()),
-            }
+                |r| Ok(r),
+            ),
             Err(_) => Err(WebviewScraperError::InjectionTimeout(
                 format!("{:?}", timeout)
             ).into()),
@@ -158,13 +157,8 @@ impl<'a> Injector<'a> {
     }
 
     fn parse_result(&self,
-                    result: String,
+                    result: Option<String>,
                     expected_return_type: WebviewInjectionResultType) -> Result<Value> {
-        let result = serde_json::to_value(result)
-            .map_err(|e| WebviewScraperError::InjectionFailed(e.to_string()))?;
-
-        let result = result.get("Ok");
-
         if expected_return_type == WebviewInjectionResultType::None {
             if result.is_some() {
                 return Err(WebviewScraperError::InjectionFailed(
@@ -180,7 +174,11 @@ impl<'a> Injector<'a> {
             ).into());
         }
 
-        let result = result.unwrap();
+        let result = serde_json::to_value(result)
+            .map_err(|e| WebviewScraperError::InjectionFailed(e.to_string()))?;
+
+        println!("{}", result.to_string());
+
         if !result.is_string() {
             return Err(WebviewScraperError::InjectionFailed(
                 "'Ok' field is not a string".to_string()
