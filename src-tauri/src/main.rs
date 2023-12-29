@@ -43,7 +43,7 @@ async fn webview_inject(
     window_label: String,
     js: String,
     args: Option<Vec<Value>>,
-    expected_return_type: String,
+    expect_return_value: bool,
     timeout_ms: u64,
     handle: AppHandle) -> Result<Value, String> {
     let window = handle.get_window(window_label.as_str());
@@ -52,14 +52,11 @@ async fn webview_inject(
     }
     let window = window.unwrap();
 
-    let expected_return_type = expected_return_type.as_str()
-        .try_into().map_err(|e: WebviewScraperError| e.to_string())?;
-
     let injection = WebviewInjection {
         window,
         js_function: js,
         execution_timeout: Duration::from_millis(timeout_ms),
-        expected_return_type,
+        expect_return_value,
         args,
     };
 

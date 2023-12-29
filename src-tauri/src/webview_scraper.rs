@@ -23,37 +23,8 @@ pub struct WebviewInjection {
     pub window: Window,
     pub js_function: String,
     pub execution_timeout: Duration,
-    pub expected_return_type: WebviewInjectionResultType,
+    pub expect_return_value: bool,
     pub args: Option<Vec<Value>>,
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum WebviewInjectionResultType {
-    Null,
-    Bool,
-    Number,
-    String,
-    Array,
-    Object,
-    Function,
-    None,
-}
-
-impl TryFrom<&str> for WebviewInjectionResultType {
-    type Error = WebviewScraperError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
-            "null" => Ok(WebviewInjectionResultType::Null),
-            "boolean" => Ok(WebviewInjectionResultType::Bool),
-            "number" => Ok(WebviewInjectionResultType::Number),
-            "string" => Ok(WebviewInjectionResultType::String),
-            "array" => Ok(WebviewInjectionResultType::Array),
-            "object" => Ok(WebviewInjectionResultType::Object),
-            "undefined" => Ok(WebviewInjectionResultType::None),
-            _ => Err(WebviewScraperError::InvalidResultType(value.to_string())),
-        }
-    }
 }
 
 pub async fn webview_inject(injection: WebviewInjection) -> Result<Value> {
@@ -61,7 +32,7 @@ pub async fn webview_inject(injection: WebviewInjection) -> Result<Value> {
         .inject(
             injection.js_function.as_ref(),
             injection.args,
-            injection.expected_return_type,
+            injection.expect_return_value,
             injection.execution_timeout,
         ).await
 }
@@ -142,7 +113,7 @@ impl<'a> Injector<'a> {
     pub async fn inject(&mut self,
                         js: &str,
                         args: Option<Vec<Value>>,
-                        expected_return_type: WebviewInjectionResultType,
+                        expect_return_value: bool,
                         timeout: Duration) -> Result<Value> {
         let js = Self::bind_args(js, args);
         let js = self.wrap_with_handler(&js);
@@ -153,13 +124,13 @@ impl<'a> Injector<'a> {
 
         let result = self.result_listener.wait_for_result(timeout).await?;
 
-        self.parse_result(result, expected_return_type)
+        self.parse_result(result, expect_return_value)
     }
 
     fn parse_result(&self,
                     result: Option<String>,
-                    expected_return_type: WebviewInjectionResultType) -> Result<Value> {
-        if expected_return_type == WebviewInjectionResultType::None {
+                    expect_return_value: bool) -> Result<Value> {
+        if expect_return_value {
             if result.is_some() {
                 return Err(WebviewScraperError::InjectionFailed(
                     "Expected no return value, but got one".to_string()

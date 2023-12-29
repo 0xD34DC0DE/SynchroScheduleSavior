@@ -14,7 +14,7 @@ class Scraper {
             js: fn.toString(),
             args: args,
             timeoutMs: timeout_ms,
-            expectedReturnType: (typeof fn()).toString(),
+            expectReturnValue: typeof fn() !== "undefined",
         });
     }
 
@@ -23,7 +23,7 @@ class Scraper {
             windowLabel: this.window_label,
             js: `() => { window.location.pathname = '${path}'; }`,
             timeoutMs: timeout_ms,
-            expectReturnValue: "none",
+            expectReturnValue: false,
         });
     }
 
