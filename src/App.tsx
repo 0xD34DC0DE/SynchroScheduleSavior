@@ -22,16 +22,22 @@ function App() {
             setupTimeout2();
             // @ts-ignore
             closeLastModal();
-        }, 1000).catch(e => console.error(e));
+        }, "undefined", 1000).catch(e => console.error(e));
+    }
+
+    const stopScraper = async () => {
+        if (!scraper) return;
+        await scraper.close();
     }
 
     const testInjection = async () => {
         try {
+            const f = (): number => {
+                console.log("shouldn't see this in main window");
+                return [1, 2][1];
+            };
             //await Scraper.navigateToPath("/psp/acprpr9/EMPLOYEE/SA/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL", 1000);
-            await scraper?.inject(
-                (): number => {
-                    return [1,2][3];
-                }, 100).then((result) => console.log(result));
+            await scraper?.inject(f, "number", 1000).then((result) => console.log("got ", result));
         } catch (e) {
             console.error(e);
         }
@@ -54,6 +60,7 @@ function App() {
                 <FlexBox gap={"2rem"}>
                     <Button onClick={startScraper}>Begin scraping</Button>
                     <Button onClick={testInjection}>Test injection</Button>
+                    <Button onClick={stopScraper}>Stop scraping</Button>
                 </FlexBox>
             </Paper>
         </FlexBox>

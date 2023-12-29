@@ -1,11 +1,12 @@
 import {invoke} from "@tauri-apps/api";
 
-type SpecialResult = {"special": "undefined" | "null" | "NaN" | "Infinity" | "-Infinity"};
+type SpecialResult = { "special": "undefined" | "null" | "NaN" | "Infinity" | "-Infinity" };
 type InjectionResult<T> = T | SpecialResult;
+type ExpectedReturnType = "undefined" | "null" | "boolean" | "number" | "string" | "object";
 
 const toConcreteResult = (result: any) => {
-    if(typeof result === "object" && result.special !== undefined) {
-        switch(result.special) {
+    if (typeof result === "object" && result.special !== undefined) {
+        switch (result.special) {
             case "undefined":
                 return undefined;
             case "null":
@@ -28,14 +29,13 @@ class Scraper {
         this.window_label = window_label;
     }
 
-    async inject<T extends () => R, R>(fn: () => R, timeout_ms: number, args?: [any]): Promise<R> {
-        console.log(typeof fn());
+    async inject<T extends () => R, R>(fn: () => R, expectedReturnType: ExpectedReturnType, timeout_ms: number, args?: [any], ): Promise<R> {
         return invoke<InjectionResult<ReturnType<T>>>("webview_inject", {
             windowLabel: this.window_label,
             js: fn.toString(),
             args: args,
             timeoutMs: timeout_ms,
-            expectedReturnType: typeof fn(),
+            expectedReturnType: expectedReturnType,
         }).then(result => toConcreteResult(result) as R);
     }
 

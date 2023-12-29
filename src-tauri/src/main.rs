@@ -52,6 +52,8 @@ async fn webview_inject(
     }
     let window = window.unwrap();
 
+    println!("Expected return type: {}", expected_return_type);
+
     let expected_return_type = expected_return_type.as_str()
         .try_into().map_err(|e: WebviewScraperError| e.to_string())?;
 

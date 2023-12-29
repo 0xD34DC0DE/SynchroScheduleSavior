@@ -23,34 +23,31 @@ pub struct WebviewInjection {
     pub window: Window,
     pub js_function: String,
     pub execution_timeout: Duration,
-    pub expected_return_type: WebviewInjectionResultType,
+    pub expected_return_type: ExpectedType,
     pub args: Option<Vec<Value>>,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum WebviewInjectionResultType {
+pub enum ExpectedType {
     Null,
     Bool,
     Number,
     String,
-    Array,
     Object,
-    Function,
     None,
 }
 
-impl TryFrom<&str> for WebviewInjectionResultType {
+impl TryFrom<&str> for ExpectedType {
     type Error = WebviewScraperError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
-            "null" => Ok(WebviewInjectionResultType::Null),
-            "boolean" => Ok(WebviewInjectionResultType::Bool),
-            "number" => Ok(WebviewInjectionResultType::Number),
-            "string" => Ok(WebviewInjectionResultType::String),
-            "array" => Ok(WebviewInjectionResultType::Array),
-            "object" => Ok(WebviewInjectionResultType::Object),
-            "undefined" => Ok(WebviewInjectionResultType::None),
+            "string" => Ok(ExpectedType::String),
+            "number" => Ok(ExpectedType::Number),
+            "boolean" => Ok(ExpectedType::Bool),
+            "null" => Ok(ExpectedType::Null),
+            "object" => Ok(ExpectedType::Object),
+            "undefined" => Ok(ExpectedType::None),
             _ => Err(WebviewScraperError::InvalidResultType(value.to_string())),
         }
     }
@@ -125,6 +122,7 @@ struct Injector<'a> {
     window: &'a Window,
     result_listener: ResultListener<'a>,
     error_field_name: String,
+    special_field_name: String,
 }
 
 impl<'a> Injector<'a> {
@@ -132,20 +130,21 @@ impl<'a> Injector<'a> {
         let result_listener = ResultListener::new(window);
         let random_postfix = rand::thread_rng().gen::<u16>();
         let error_field_name = format!("error-{}", random_postfix);
+        let special_field_name = format!("special-{}", random_postfix);
         Self {
             window,
             result_listener,
             error_field_name,
+            special_field_name,
         }
     }
 
     pub async fn inject(&mut self,
                         js: &str,
                         args: Option<Vec<Value>>,
-                        expected_return_type: WebviewInjectionResultType,
+                        expected_return_type: ExpectedType,
                         timeout: Duration) -> Result<Value> {
-        let js = Self::bind_args(js, args);
-        let js = self.wrap_with_handler(&js);
+        let js = self.prepare_js(&js, expected_return_type, args);
         println!("Injecting: {}", js);
 
         self.window.eval(js.as_ref())
@@ -153,21 +152,10 @@ impl<'a> Injector<'a> {
 
         let result = self.result_listener.wait_for_result(timeout).await?;
 
-        self.parse_result(result, expected_return_type)
+        self.parse_result(result)
     }
 
-    fn parse_result(&self,
-                    result: Option<String>,
-                    expected_return_type: WebviewInjectionResultType) -> Result<Value> {
-        if expected_return_type == WebviewInjectionResultType::None {
-            if result.is_some() {
-                return Err(WebviewScraperError::InjectionFailed(
-                    "Expected no return value, but got one".to_string()
-                ).into());
-            }
-            return Ok(Value::Null);
-        }
-
+    fn parse_result(&self, result: Option<String>) -> Result<Value> {
         if result.is_none() {
             return Err(WebviewScraperError::InjectionFailed(
                 "Expected a return value, but got none".to_string()
@@ -181,7 +169,7 @@ impl<'a> Injector<'a> {
 
         if !result.is_string() {
             return Err(WebviewScraperError::InjectionFailed(
-                "'Ok' field is not a string".to_string()
+                "payload is not a string".to_string()
             ).into());
         }
 
@@ -196,25 +184,39 @@ impl<'a> Injector<'a> {
                     e.to_string()
                 ).into());
             }
+            if let Some(v) = o.remove(self.special_field_name.as_str()) {
+                return Ok(v);
+            }
             Ok(Value::Object(o))
         } else {
             Ok(result)
         }
     }
 
-    fn wrap_with_handler(&self, js: &str) -> String {
+    fn prepare_js(&self, js: &str, expected_return_type: ExpectedType, args: Option<Vec<Value>>) -> String {
+        let js = Self::bind_args(js, args);
+        let type_check = Self::generate_return_type_check(expected_return_type);
+        let serializer = self.generate_serializer(expected_return_type);
+
         formatdoc! {r#"
-        window.__TAURI__.event.emit('{}', (() => {{
+        window.__TAURI__.event.emit('{0}', (() => {{
             try {{
-                return {};
+                console.log('Evaluating: {0}');
+                const result = {1};
+                if (!({2})) {{
+                    return {{ '{3}': 'Returned value does not match expected type' }};
+                }}
+                {4}
             }} catch (e) {{
-                return {{ '{}': e.toString() }};
+                return {{ '{3}': e.toString() }};
             }}
         }})());
         "#,
             self.result_listener.event_identifier,
             js,
-            self.error_field_name
+            type_check,
+            self.error_field_name,
+            serializer,
         }
     }
 
@@ -227,5 +229,33 @@ impl<'a> Injector<'a> {
                     .collect::<Vec<String>>()
                     .join(", ")
         )
+    }
+
+    fn generate_return_type_check(expected_return_type: ExpectedType) -> String {
+        match expected_return_type {
+            ExpectedType::Null => "typeof result === 'object' && result === null",
+            ExpectedType::Bool => "typeof result === 'boolean'",
+            ExpectedType::Number => "typeof result === 'number'",
+            ExpectedType::String => "typeof result === 'string'",
+            ExpectedType::Object => "typeof result === 'object'",
+            ExpectedType::None => "result === undefined",
+        }.to_string()
+    }
+
+    fn generate_serializer(&self, expected_return_type: ExpectedType) -> String {
+        match expected_return_type {
+            ExpectedType::Null |
+            ExpectedType::Bool |
+            ExpectedType::Object |
+            ExpectedType::String => "return result;".to_string(),
+            ExpectedType::Number => formatdoc! {
+            r#"
+                if (Number.isNaN(result)) {{ return {{ '{0}': 'NaN' }}; }}
+                if (result === Infinity) {{ return {{ '{0}': 'Infinity' }}; }}
+                if (result === -Infinity) {{ return {{ '{0}': '-Infinity' }};
+                return result;
+            "#, self.special_field_name},
+            ExpectedType::None => format!("return {{ '{}': 'undefined' }};", self.special_field_name),
+        }
     }
 }
