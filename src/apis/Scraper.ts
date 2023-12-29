@@ -1,5 +1,26 @@
 import {invoke} from "@tauri-apps/api";
 
+type SpecialResult = {"special": "undefined" | "null" | "NaN" | "Infinity" | "-Infinity"};
+type InjectionResult<T> = T | SpecialResult;
+
+const toConcreteResult = (result: any) => {
+    if(typeof result === "object" && result.special !== undefined) {
+        switch(result.special) {
+            case "undefined":
+                return undefined;
+            case "null":
+                return null;
+            case "NaN":
+                return NaN;
+            case "Infinity":
+                return Infinity;
+            case "-Infinity":
+                return -Infinity;
+        }
+    }
+    return result;
+}
+
 class Scraper {
     private readonly window_label: string;
 
@@ -9,13 +30,13 @@ class Scraper {
 
     async inject<T extends () => R, R>(fn: () => R, timeout_ms: number, args?: [any]): Promise<R> {
         console.log(typeof fn());
-        return invoke<ReturnType<T>>("webview_inject", {
+        return invoke<InjectionResult<ReturnType<T>>>("webview_inject", {
             windowLabel: this.window_label,
             js: fn.toString(),
             args: args,
             timeoutMs: timeout_ms,
-            expectReturnValue: typeof fn() !== "undefined",
-        });
+            expectedReturnType: typeof fn(),
+        }).then(result => toConcreteResult(result) as R);
     }
 
     async navigateToPath(path: string, timeout_ms: number) {
@@ -23,7 +44,7 @@ class Scraper {
             windowLabel: this.window_label,
             js: `() => { window.location.pathname = '${path}'; }`,
             timeoutMs: timeout_ms,
-            expectReturnValue: false,
+            expectReturnType: "undefined",
         });
     }
 
