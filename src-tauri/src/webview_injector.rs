@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use indoc::formatdoc;
 use rand::Rng;
 use serde_json::Value;
 use tauri::{EventHandler, Window};
