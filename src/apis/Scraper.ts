@@ -38,14 +38,28 @@ class Scraper {
         this.window_label = window_label;
     }
 
-    async inject<T extends () => R, R>(fn: () => R, expectedReturnType: ExpectedReturnType, timeout_ms: number, args?: [any], ): Promise<R> {
-        return invoke<InjectionResult<ReturnType<T>>>("webview_inject", {
+    async injectWithArgs<F extends (...args: Parameters<F>) => R, R>(
+        fn: F,
+        expectedReturnType: ExpectedReturnType,
+        timeout_ms: number,
+        args: Parameters<F>
+    ): Promise<R>
+    {
+        return invoke<InjectionResult<ReturnType<F>>>("webview_inject", {
             windowLabel: this.window_label,
             js: fn.toString(),
             args: args,
             timeoutMs: timeout_ms,
             expectedReturnType: expectedReturnType,
         }).then(result => toConcreteResult(result) as R);
+    }
+
+    async inject<R>(
+        fn: () => R,
+        expectedReturnType: ExpectedReturnType,
+        timeout_ms: number): Promise<R>
+    {
+       return this.injectWithArgs(fn, expectedReturnType, timeout_ms, []);
     }
 
     async navigateToPath(path: string, timeout_ms: number) {
