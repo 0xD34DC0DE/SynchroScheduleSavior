@@ -6,9 +6,6 @@
 - [ ] Provide a way to automatically log in to the website (just for development purposes)
 
 # Base functionality
-- [ ] javascript library injection like jquery
-- [ ] Injection state object on "window" object to prevent multiple injections of the same library
-
 
 # Features ideas
 - [ ] Cache scraped data
