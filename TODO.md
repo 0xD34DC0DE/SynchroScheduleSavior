@@ -1,7 +1,4 @@
 # Bugs
-- [ ] Injection is broken.
-Fix idea: Instead of generating the wrapper dynamically based on the expected return value, just make a monolithic
-wrapper that handles all cases and put it on the window object. Ex: `window.__injector__(...)`
 
 # Improvements
 - [ ] Better error handling in the scraper for cases where the return
