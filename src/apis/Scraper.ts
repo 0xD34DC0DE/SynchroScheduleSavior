@@ -1,12 +1,18 @@
 import {invoke} from "@tauri-apps/api";
 
-type SpecialResult = { "special": "undefined" | "null" | "NaN" | "Infinity" | "-Infinity" };
-type InjectionResult<T> = T | SpecialResult;
+type SpecialResult = { ok: "undefined" | "null" | "NaN" | "Infinity" | "-Infinity", special: true };
+type OkResult<T> = { ok: T };
+type ErrResult = { err: string };
+type InjectionResult<T> = SpecialResult | OkResult<T> | ErrResult;
 type ExpectedReturnType = "undefined" | "null" | "boolean" | "number" | "string" | "object";
 
 const toConcreteResult = (result: any) => {
+    if (typeof result === "object" && result.err !== undefined) {
+        throw new Error(result.err);
+    }
+
     if (typeof result === "object" && result.special !== undefined) {
-        switch (result.special) {
+        switch (result.ok) {
             case "undefined":
                 return undefined;
             case "null":
@@ -17,9 +23,12 @@ const toConcreteResult = (result: any) => {
                 return Infinity;
             case "-Infinity":
                 return -Infinity;
+            default:
+                throw new Error(`Unknown special value: ${result.ok}`);
         }
     }
-    return result;
+
+    return result.ok
 }
 
 class Scraper {

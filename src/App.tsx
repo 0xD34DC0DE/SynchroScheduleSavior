@@ -30,19 +30,6 @@ function App() {
         await scraper.close();
     }
 
-    const testInjection = async () => {
-        try {
-            const f = (): number => {
-                console.log("shouldn't see this in main window");
-                return [1, 2][1];
-            };
-            //await Scraper.navigateToPath("/psp/acprpr9/EMPLOYEE/SA/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL", 1000);
-            await scraper?.inject(f, "number", 1000).then((result) => console.log("got ", result));
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
     useEffect(() => {
         if (loggedIn && scraper) {
             const sessionKeepAliveInterval = setInterval(async () => {
@@ -59,7 +46,6 @@ function App() {
             <Paper sx={{p: 2}} elevation={2}>
                 <FlexBox gap={"2rem"}>
                     <Button onClick={startScraper}>Begin scraping</Button>
-                    <Button onClick={testInjection}>Test injection</Button>
                     <Button onClick={stopScraper}>Stop scraping</Button>
                 </FlexBox>
             </Paper>

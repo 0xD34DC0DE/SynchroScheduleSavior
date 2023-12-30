@@ -25,6 +25,7 @@ async fn open_webview(window_label: String, title: String, url: String, handle: 
         tauri::WindowUrl::External(url),
     )
         .title(title.as_str())
+        .initialization_script(include_str!("injector.js"))
         .build().map_err(|e| e.to_string())?;
 
     Ok(())
