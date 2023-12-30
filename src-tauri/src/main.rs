@@ -7,9 +7,9 @@ use tauri::{AppHandle, Manager};
 use tokio::time::Duration;
 use url::Url;
 
-use crate::webview_scraper::{WebviewInjection, WebviewScraperError};
+use crate::webview_injector::{WebviewInjection, WebviewScraperError};
 
-mod webview_scraper;
+mod webview_injector;
 
 #[tauri::command]
 async fn open_webview(window_label: String, title: String, url: String, handle: AppHandle) -> Result<(), String> {
@@ -66,7 +66,7 @@ async fn webview_inject(
         args,
     };
 
-    webview_scraper::webview_inject(injection).await.map_err(|e| e.to_string())
+    webview_injector::webview_inject(injection).await.map_err(|e| e.to_string())
 }
 
 fn main() {
