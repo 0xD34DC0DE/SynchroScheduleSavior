@@ -1,5 +1,5 @@
 import {invoke} from "@tauri-apps/api";
-import {EventCallback, listen, once as listen_once} from "@tauri-apps/api/event";
+import {EventCallback, listen, once} from "@tauri-apps/api/helpers/event";
 
 type SpecialResult = { ok: "undefined" | "null" | "NaN" | "Infinity" | "-Infinity", special: true };
 type OkResult<T> = { ok: T };
@@ -86,32 +86,18 @@ class Scraper {
         });
     }
 
-    async onNavigateToUrlOnce(url: string, callback: EventCallback<string>) {
-        return invoke<string>("webview_listen_navigation", {
-            listenTo: this.window_label,
-            url: url,
-            once: true,
-        }).then((event_name) => {
-            const unlisten_fn = listen_once<string>(event_name, callback);
-            return async () => {
-                await unlisten_fn;
-                await invoke<void>("webview_unlisten_navigation", {eventName: event_name})
-            };
-        });
+    private async getNavigationEventName(url: string): Promise<string> {
+        return invoke<string>("webview_navigation_event_name", {url});
     }
 
-    async onNavigateToUrl(url: string, callback: EventCallback<string>) {
-        return invoke<string>("webview_listen_navigation", {
-            listenTo: this.window_label,
-            url: url,
-            once: false,
-        }).then((event_name) => {
-            const unlisten_fn = listen<string>(event_name, callback);
-            return async () => {
-                await unlisten_fn;
-                await invoke<void>("webview_unlisten_navigation", {eventName: event_name})
-            };
-        });
+    async onNavigationEventOnce(url: string, callback: EventCallback<string>) {
+        const event_name = await this.getNavigationEventName(url);
+        return once<string>(event_name, this.window_label, callback);
+    }
+
+    async onNavigationEvent(url: string, callback: EventCallback<string>) {
+        const event_name = await this.getNavigationEventName(url);
+        return listen<string>(event_name, this.window_label, callback);
     }
 
 }

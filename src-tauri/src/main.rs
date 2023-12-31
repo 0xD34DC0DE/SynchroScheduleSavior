@@ -2,13 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 
-use std::sync::Mutex;
 use serde_json::Value;
-use tauri::{AppHandle, Manager, Runtime, Window};
+use tauri::{AppHandle, Manager, Runtime};
 use tokio::time::Duration;
 use url::Url;
 
-use crate::webview_injector::{NavigationHandlerPluginState, WebviewInjection, WebviewScraperError};
+use crate::webview_injector::{WebviewInjection, WebviewScraperError, NavigationEventName};
 
 mod webview_injector;
 
@@ -71,29 +70,8 @@ async fn webview_inject(
 }
 
 #[tauri::command]
-async fn webview_listen_navigation<R: Runtime>(listen_to: String,
-                                               url: String,
-                                               once: bool,
-                                               window: Window<R>,
-                                               handle: AppHandle) -> Result<String, String> {
-    Ok(handle
-        .state::<Mutex<NavigationHandlerPluginState<R>>>()
-        .lock()
-        .unwrap()
-        .register(window.label(), listen_to, url.as_ref(), once)
-    )
-}
-
-#[tauri::command]
-async fn webview_unlisten_navigation<R: Runtime>(event_name: String,
-                                                 window: Window<R>,
-                                                 handle: AppHandle) -> Result<(), String> {
-    Ok(handle
-        .state::<Mutex<NavigationHandlerPluginState<R>>>()
-        .lock()
-        .unwrap()
-        .unregister(window.label().to_string(), event_name)
-    )
+fn webview_navigation_event_name<R: Runtime>(url: String) -> String {
+    NavigationEventName::from(url.as_str()).value()
 }
 
 fn main() {
@@ -102,8 +80,7 @@ fn main() {
             open_webview,
             close_webview,
             webview_inject,
-            webview_listen_navigation,
-            webview_unlisten_navigation
+            webview_navigation_event_name
         ])
         .plugin(webview_injector::init())
         .run(tauri::generate_context!())
