@@ -69,18 +69,12 @@ async fn webview_inject(
     webview_injector::webview_inject(injection).await.map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-fn webview_navigation_event_name<R: Runtime>(url: String) -> String {
-    NavigationEventName::from(url.as_str()).value()
-}
-
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             open_webview,
             close_webview,
-            webview_inject,
-            webview_navigation_event_name
+            webview_inject
         ])
         .plugin(webview_injector::init())
         .run(tauri::generate_context!())
