@@ -9,6 +9,7 @@
 - [ ] Use `app.ipc_scope().configure_remote_access` instead of `tauri.conf.json` to configure allowed domains
 - [ ] Add a mouse jiggle to prevent website from logging out
 - [ ] Provide a way to automatically log in to the website (just for development purposes)
+- [ ] Refactor the error handling of the scraper to make it more readable and less repetitive.
 
 # Features ideas
 - [ ] Cache scraped data
