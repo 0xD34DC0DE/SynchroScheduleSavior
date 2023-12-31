@@ -3,11 +3,11 @@
 
 
 use serde_json::Value;
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Manager};
 use tokio::time::Duration;
 use url::Url;
 
-use crate::webview_injector::{WebviewInjection, WebviewScraperError, NavigationEventName};
+use crate::webview_injector::{WebviewInjection, WebviewScraperError};
 
 mod webview_injector;
 
