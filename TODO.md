@@ -1,4 +1,5 @@
 # Bugs
+- [ ] Scraped window doesn't close when the main window is closed
 
 # Tasks
 - [ ] Add a way to listen to navigation events to certain pages
