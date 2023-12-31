@@ -48,6 +48,12 @@ class Scraper {
         })
     }
 
+    async close() {
+        return invoke<void>("close_webview", {
+            windowLabel: this.window_label,
+        });
+    }
+
     async injectWithArgs<F extends (...args: Parameters<F>) => R, R>(
         fn: F,
         expectedReturnType: ExpectedReturnType,
@@ -81,11 +87,6 @@ class Scraper {
         });
     }
 
-    async close() {
-        return invoke<void>("close_webview", {
-            windowLabel: this.window_label,
-        });
-    }
 }
 
 export default Scraper;
