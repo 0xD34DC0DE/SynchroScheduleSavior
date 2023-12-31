@@ -1,5 +1,8 @@
 import {invoke} from "@tauri-apps/api";
-import {EventCallback, listen, once} from "@tauri-apps/api/helpers/event";
+import {EventCallback, Event, listen, once, UnlistenFn} from "@tauri-apps/api/event";
+import UrlPattern from "url-pattern";
+
+const NAVIGATION_EVENT_NAME = "webview-inject-navigation"
 
 type SpecialResult = { ok: "undefined" | "null" | "NaN" | "Infinity" | "-Infinity", special: true };
 type OkResult<T> = { ok: T };
@@ -86,20 +89,29 @@ class Scraper {
         });
     }
 
-    private async getNavigationEventName(url: string): Promise<string> {
-        return invoke<string>("webview_navigation_event_name", {url});
+    private filterNavigationEvent(url_pattern: UrlPattern, callback: EventCallback<string>): EventCallback<string> {
+        return (event: Event<string>) => {
+            if (event.windowLabel !== this.window_label) return;
+            if (!url_pattern.match(event.payload)) return;
+            callback(event);
+        }
     }
 
-    async onNavigationEventOnce(url: string, callback: EventCallback<string>) {
-        const event_name = await this.getNavigationEventName(url);
-        return once<string>(event_name, this.window_label, callback);
+    onNavigationEventOnce(url_pattern: UrlPattern, callback: EventCallback<string>): Promise<UnlistenFn> {
+        return once<string>(
+            NAVIGATION_EVENT_NAME,
+            this.filterNavigationEvent(url_pattern, callback)
+        );
     }
 
-    async onNavigationEvent(url: string, callback: EventCallback<string>) {
-        const event_name = await this.getNavigationEventName(url);
-        return listen<string>(event_name, this.window_label, callback);
+    onNavigationEvent(url_pattern: UrlPattern, callback: EventCallback<string>): Promise<UnlistenFn> {
+        return listen<string>(
+            NAVIGATION_EVENT_NAME,
+            this.filterNavigationEvent(url_pattern, callback)
+        );
     }
 
 }
 
 export default Scraper;
+export {UrlPattern};

@@ -1,17 +1,17 @@
-use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Result;
 use rand::Rng;
 use serde_json::Value;
-use tauri::{PageLoadPayload, plugin::{Builder, TauriPlugin}, Runtime};
-use tauri::{AppHandle, EventHandler, Manager, Window};
+use tauri::{plugin::{Builder, TauriPlugin}, Runtime};
+use tauri::{EventHandler, Window};
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio::time;
-use url::Url;
+
+const INJECTION_EVENT_NAME_PREFIX: &'static str = "webview-inject-";
+const NAVIGATION_EVENT_NAME: &'static str = "webview-inject-navigation";
 
 #[derive(Error, Debug)]
 pub enum WebviewScraperError {
@@ -88,13 +88,12 @@ struct ResultListener<'a> {
 }
 
 impl<'a> ResultListener<'a> {
-    const EVENT_NAME_PREFIX: &'static str = "webview-inject-";
 
     pub fn new(window: &'a Window) -> Self {
         let (sender, receiver) = mpsc::channel::<Option<String>>(1);
 
         let random_postfix = rand::thread_rng().gen::<u16>();
-        let event_name = format!("{}{}", Self::EVENT_NAME_PREFIX, random_postfix);
+        let event_name = format!("{}{}", INJECTION_EVENT_NAME_PREFIX, random_postfix);
 
         let event_handler = window.listen(
             event_name.clone(),
@@ -202,35 +201,14 @@ impl<'a> Injector<'a> {
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("webview_injector")
         .on_page_load(|window, payload| {
-            let url = payload.url();
-            window.emit(NavigationEventName::from(url).as_str(), url)
+            println!("Emitting navigation event to window: '{}', url: '{}'",
+                     window.label(),
+                     payload.url()
+            );
+            window.emit(NAVIGATION_EVENT_NAME, payload.url())
                 .unwrap_or_else(|e| {
                     eprintln!("Error emitting navigation event: {}", e);
                 });
         })
         .build()
-}
-
-pub struct NavigationEventName {
-    event_name: String,
-}
-
-impl NavigationEventName {
-    pub fn as_str(&self) -> &str {
-        self.event_name.as_str()
-    }
-
-    pub fn value(self) -> String {
-        self.event_name
-    }
-}
-
-impl From<&str> for NavigationEventName {
-    fn from(url: &str) -> Self {
-        let mut hasher = DefaultHasher::new();
-        url.hash(&mut hasher);
-        Self {
-            event_name: format!("navigation-{:x}", hasher.finish()),
-        }
-    }
 }

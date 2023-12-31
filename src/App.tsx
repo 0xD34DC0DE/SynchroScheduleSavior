@@ -3,14 +3,17 @@ import FlexBox from "./components/FlexBox.tsx";
 import {useEffect, useState} from "react";
 import {useUserConnectionStore} from "./stores/UserSessionStore.ts";
 import {useScraperStore} from "./stores/ScraperStore.ts";
+import {UrlPattern} from "./apis/Scraper";
+import Box from "@mui/material/Box";
 
-//await Scraper.navigateToPath("/psp/acprpr9/EMPLOYEE/SA/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL", 1000);
+//"https://academique-dmz.synchro.umontreal.ca"
 
 function App() {
     const loggedIn = useUserConnectionStore(state => state.loggedIn);
+    const setLoggedIn = useUserConnectionStore(state => state.setLoggedIn);
     const openScraper = useScraperStore(state => state.open);
     const scraper = useScraperStore(state => state.scraper);
-    const [unlistenNavigation, setUnlistenNavigation] = useState<(() => Promise<void>) | null>();
+    const [navigationPattern, setNavigationPattern] = useState<UrlPattern | null>(null);
 
     const startScraper = async () => {
         if (scraper) return;
@@ -45,22 +48,16 @@ function App() {
 
     const listenNavigation = async () => {
         if (!scraper) return;
-        setUnlistenNavigation(
-            await scraper.onNavigateToUrlOnce(
-                "https://academique-dmz.synchro.umontreal.ca/psc/acprpr9/EMPLOYEE/SA/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL",
-                (event) => {
-                    console.log("Navigated to url", event);
-                })
-        );
+        setNavigationPattern(new UrlPattern("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?"));
     }
 
     useEffect(() => {
-        if (unlistenNavigation) {
-            return () => unlistenNavigation().then(() => console.log("Unlisten navigation"));
-        } else {
-            return () => {};
-        }
-    }, [unlistenNavigation]);
+        if (!scraper || !navigationPattern) return;
+        const unlisten =
+            scraper.onNavigationEvent(navigationPattern, () => setLoggedIn(true));
+
+        return () => {unlisten.then(f => f())};
+    }, [navigationPattern]);
 
     return (
         <FlexBox sx={{width: "100%", height: "100%", backgroundColor: "rgb(255,247,240)"}}
@@ -70,6 +67,7 @@ function App() {
                     <Button onClick={startScraper}>Begin scraping</Button>
                     <Button onClick={stopScraper}>Stop scraping</Button>
                     <Button onClick={listenNavigation}>Listen navigation</Button>
+                    <Box sx={{width: "2rem", height: "2rem", backgroundColor: loggedIn ? "rgb(132,224,92)" : "rgb(220,88,88)"}}/>
                 </FlexBox>
             </Paper>
         </FlexBox>
