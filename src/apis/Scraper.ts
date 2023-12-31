@@ -38,6 +38,16 @@ class Scraper {
         this.window_label = window_label;
     }
 
+    static async open(window_label: string, title: string, url: string): Promise<Scraper> {
+        return invoke<void>("open_webview", {
+            windowLabel: window_label,
+            title: title,
+            url: url,
+        }).then(() => {
+            return new Scraper(window_label);
+        })
+    }
+
     async injectWithArgs<F extends (...args: Parameters<F>) => R, R>(
         fn: F,
         expectedReturnType: ExpectedReturnType,
@@ -75,16 +85,6 @@ class Scraper {
         return invoke<void>("close_webview", {
             windowLabel: this.window_label,
         });
-    }
-
-    static async open(window_label: string, title: string, url: string): Promise<Scraper> {
-        return invoke<void>("open_webview", {
-            windowLabel: window_label,
-            title: title,
-            url: url,
-        }).then(() => {
-            return new Scraper(window_label);
-        })
     }
 }
 
