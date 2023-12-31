@@ -1,12 +1,16 @@
+use std::collections::HashMap;
+use std::sync::Mutex;
 use std::time::Duration;
 
 use anyhow::Result;
 use rand::Rng;
 use serde_json::Value;
-use tauri::{EventHandler, Window};
+use tauri::{plugin::{Builder, TauriPlugin}, Runtime};
+use tauri::{AppHandle, EventHandler, Manager, Window};
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio::time;
+use url::Url;
 
 #[derive(Error, Debug)]
 pub enum WebviewScraperError {
@@ -191,5 +195,97 @@ impl<'a> Injector<'a> {
                     .collect::<Vec<String>>()
                     .join(", ")
         )
+    }
+}
+
+pub fn init<R: Runtime>() -> TauriPlugin<R> {
+    Builder::new("webview_injector")
+        .setup(move |app_handle| {
+            app_handle.manage(Mutex::new(NavigationHandlerPluginState::new(app_handle)));
+            Ok(())
+        })
+        .on_page_load(|window, payload| {
+            println!("Page loaded: {}", payload.url());
+            let mut state = window.state::<Mutex<NavigationHandlerPluginState<R>>>();
+            state.lock().unwrap().handle(window.clone(), payload.url());
+        })
+        .build()
+}
+
+type WindowLabel = String;
+type EventName = String;
+
+#[derive(Debug, Default)]
+pub struct NavigationHandlerPluginState<R: Runtime> {
+    handlers: Mutex<HashMap<WindowLabel, Vec<NavigationCallback>>>,
+    app_handle: Option<AppHandle<R>>,
+}
+
+#[derive(Debug)]
+struct NavigationCallback {
+    emit_to: WindowLabel,
+    event_name: String,
+    url: String,
+    once: bool,
+}
+
+impl<R: Runtime> NavigationHandlerPluginState<R> {
+    pub fn new(app_handle: &AppHandle<R>) -> Self {
+        Self {
+            handlers: Mutex::new(HashMap::new()),
+            app_handle: Some(app_handle.clone()),
+        }
+    }
+
+    pub fn handle(&mut self, emitter: Window<R>, url: &str) -> bool {
+        let mut handlers = self.handlers.lock().unwrap();
+        let handle = self.app_handle.as_ref().unwrap();
+
+        println!("Handling navigation to {}", url);
+
+        if let Some(handlers) = handlers.get_mut(emitter.label()) {
+            println!("Found {} handlers for {}", handlers.len(), emitter.label());
+            handlers.retain(|h| {
+                if h.url == url {
+                    if let Some(listener) = handle.get_window(h.emit_to.as_str()) {
+                        println!("Emitting navigation event {} to {}", h.event_name, h.emit_to);
+                        listener.emit(&h.event_name, emitter.label()).expect("Failed to emit navigation event");
+                    }
+                    !h.once
+                } else {
+                    true
+                }
+            });
+        }
+
+        true
+    }
+
+    pub fn register(&mut self, listener: &str, emitter: WindowLabel, url: &str, once: bool) -> EventName {
+        let mut handlers = self.handlers.lock().unwrap();
+
+        println!("Registering navigation handler for {} to {} (once: {})", url, listener, once);
+        let event_name = format!("webview-navigation-{}", rand::thread_rng().gen::<u16>());
+
+        handlers.entry(emitter)
+            .or_insert_with(Vec::new)
+            .push(NavigationCallback {
+                emit_to: listener.to_string(),
+                event_name: event_name.clone(),
+                url: url.to_string(),
+                once,
+            });
+
+        event_name
+    }
+
+    pub fn unregister(&mut self, emitter: WindowLabel, event_name: EventName) {
+        let mut handlers = self.handlers.lock().unwrap();
+
+        println!("Unregistering navigation handler for {} (event: {})", emitter, event_name);
+
+        if let Some(handlers) = handlers.get_mut(emitter.as_str()) {
+            handlers.retain(|h| h.event_name != event_name);
+        }
     }
 }

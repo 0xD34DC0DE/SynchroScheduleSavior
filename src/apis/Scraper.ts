@@ -1,4 +1,5 @@
 import {invoke} from "@tauri-apps/api";
+import {EventCallback, listen, once as listen_once} from "@tauri-apps/api/event";
 
 type SpecialResult = { ok: "undefined" | "null" | "NaN" | "Infinity" | "-Infinity", special: true };
 type OkResult<T> = { ok: T };
@@ -59,8 +60,7 @@ class Scraper {
         expectedReturnType: ExpectedReturnType,
         timeout_ms: number,
         args: Parameters<F>
-    ): Promise<R>
-    {
+    ): Promise<R> {
         return invoke<InjectionResult<ReturnType<F>>>("webview_inject", {
             windowLabel: this.window_label,
             js: fn.toString(),
@@ -73,9 +73,8 @@ class Scraper {
     async inject<R>(
         fn: () => R,
         expectedReturnType: ExpectedReturnType,
-        timeout_ms: number): Promise<R>
-    {
-       return this.injectWithArgs(fn, expectedReturnType, timeout_ms, []);
+        timeout_ms: number): Promise<R> {
+        return this.injectWithArgs(fn, expectedReturnType, timeout_ms, []);
     }
 
     async navigateToPath(path: string, timeout_ms: number) {
@@ -84,6 +83,34 @@ class Scraper {
             js: `() => { window.location.pathname = '${path}'; }`,
             timeoutMs: timeout_ms,
             expectReturnType: "undefined",
+        });
+    }
+
+    async onNavigateToUrlOnce(url: string, callback: EventCallback<string>) {
+        return invoke<string>("webview_listen_navigation", {
+            listenTo: this.window_label,
+            url: url,
+            once: true,
+        }).then((event_name) => {
+            const unlisten_fn = listen_once<string>(event_name, callback);
+            return async () => {
+                await unlisten_fn;
+                await invoke<void>("webview_unlisten_navigation", {eventName: event_name})
+            };
+        });
+    }
+
+    async onNavigateToUrl(url: string, callback: EventCallback<string>) {
+        return invoke<string>("webview_listen_navigation", {
+            listenTo: this.window_label,
+            url: url,
+            once: false,
+        }).then((event_name) => {
+            const unlisten_fn = listen<string>(event_name, callback);
+            return async () => {
+                await unlisten_fn;
+                await invoke<void>("webview_unlisten_navigation", {eventName: event_name})
+            };
         });
     }
 
