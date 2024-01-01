@@ -12,6 +12,7 @@ export interface RootProps {
 
 const Root = ({}: RootProps) => {
     const loggedIn = useUserConnectionStore(state => state.loggedIn);
+    const setLoggedIn = useUserConnectionStore(state => state.setLoggedIn);
     const scraper = useScraperStore(state => state.scraper);
     const dataHasHydrated = useDataStore(state => state._hasHydrated);
     const navigate = useNavigate();
@@ -19,6 +20,7 @@ const Root = ({}: RootProps) => {
     useEffect(() => {
         if (dataHasHydrated) navigate("/landing");
     }, [dataHasHydrated]);
+
     useEffect(() => {
         if (loggedIn && scraper) {
             const millisecondsPerMinute = 1000 * 60;
@@ -29,6 +31,10 @@ const Root = ({}: RootProps) => {
             return () => clearInterval(sessionKeepAliveInterval);
         }
     }, [loggedIn,]);
+
+    useEffect(() => {
+        if (!scraper) setLoggedIn(false);
+    }, [scraper]);
 
     return (
         <CssBaseline>
