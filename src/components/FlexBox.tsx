@@ -10,7 +10,7 @@ export interface FlexBoxProps {
     grow?: number;
     shrink?: number;
     basis?: string;
-    gap?: string;
+    gap?: string | number;
     sx?: SxProps;
     children?: ReactNode | ReactNode[];
 }
