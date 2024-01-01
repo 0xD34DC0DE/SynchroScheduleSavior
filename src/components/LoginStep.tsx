@@ -1,13 +1,14 @@
 import {useScraperStore} from "../stores/ScraperStore.ts";
 import {useUserConnectionStore} from "../stores/UserSessionStore.ts";
-import {alpha, Button, Typography, useTheme} from "@mui/material";
+import {Typography} from "@mui/material";
 import {useEffect} from "react";
 import {UrlPattern} from "../apis/Scraper.ts";
 import {showLoggedInModal} from "../utils/syncho_utils.ts";
 import {Link} from "react-router-dom";
-import CheckIcon from "@mui/icons-material/Check";
+
 import FlexBox from "./FlexBox.tsx";
 import {OnboardingStepContentProps} from "./OnboardingStep.tsx";
+import CompletableButton from "./CompletableButton.tsx";
 
 export interface LoginStepProps extends OnboardingStepContentProps {
 }
@@ -17,7 +18,6 @@ const LoginStep = ({setCompleted}: LoginStepProps) => {
     const scraper = useScraperStore(state => state.scraper);
     const setLoggedIn = useUserConnectionStore(state => state.setLoggedIn);
     const loggedIn = useUserConnectionStore(state => state.loggedIn);
-    const theme = useTheme();
 
     const openScraper = async () => {
         if (scraper) return;
@@ -61,20 +61,15 @@ const LoginStep = ({setCompleted}: LoginStepProps) => {
                 If you'd like to know how this app uses your Synchro account to gather semester data,
                 please read the <Link to={"/about"}>about page</Link>.
             </Typography>
-            <Button
+            <CompletableButton
+                completed={loggedIn}
                 onClick={startLogin}
                 variant={"contained"}
-                color={loggedIn ? "success" : "primary"}
-                endIcon={loggedIn && <CheckIcon/>}
-                sx={{
-                    alignSelf: "center",
-                    mt: 2,
-                    pointerEvents: loggedIn ? "none" : "auto",
-                    ...loggedIn ? {backgroundColor: alpha(theme.palette.success.main, 0.6)} : {},
-                }}
+                sx={{alignSelf: "center", mt: 2}}
+                successElement={"Login successful"}
             >
-                {loggedIn ? "Login successful" : "Open Synchro Login"}
-            </Button>
+                Open Synchro Login
+            </CompletableButton>
         </FlexBox>
     );
 }
