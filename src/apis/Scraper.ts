@@ -12,7 +12,7 @@ type ExpectedReturnType = "undefined" | "null" | "boolean" | "number" | "string"
 
 const toConcreteResult = (result: any) => {
     if (typeof result === "object" && result.err !== undefined) {
-        throw new Error(result.err);
+        throw new Error("injector: " + result.err);
     }
 
     if (typeof result === "object" && result.special !== undefined) {
