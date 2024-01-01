@@ -19,8 +19,3 @@
 # Features ideas
 - [ ] Cache scraped data
 - [ ] Export schedule to Google Calendar
-
-### 1*:
-In `@tauri-apps/api/helpers/event` there is a version of `listen` and `once` where the window to listen to can 
-be specified. It would be much simpler to just emit the navigation events from the window that is being monitored.
-The event name could just be `navigation-<hash>` where `<hash>` is a small hash of the url.
