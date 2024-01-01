@@ -12,9 +12,7 @@ const Root = ({}: RootProps) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (dataHasHydrated) {
-            navigate("/landing");
-        }
+        if (dataHasHydrated) navigate("/landing");
     }, [dataHasHydrated]);
 
     return (
