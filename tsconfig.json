@@ -20,6 +20,9 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": [
+    "src",
+    "node_modules/.pnpm/@types+jquery@3.5.29/node_modules/@types/jquery/JQuery.d.ts",
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
