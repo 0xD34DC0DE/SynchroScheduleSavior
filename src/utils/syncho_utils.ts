@@ -4,7 +4,7 @@ import Scraper from "../apis/Scraper.ts";
 declare function pingServer(url: string): void;
 declare function setupTimeout2(): void;
 declare function closeLastModal(): void;
-
+declare const ghmob: JQueryStatic;
 
 export const sessionKeepAlive = async (scraper: Scraper) => {
     await scraper.inject(() => {
@@ -16,8 +16,8 @@ export const sessionKeepAlive = async (scraper: Scraper) => {
 
 export const showLoggedInModal = async (scraper: Scraper, message: string) => {
     const fn = (message: string) => {
-        $("body").append(
-            $("<div>")
+        ghmob("body").append(
+            ghmob("<div>")
                 .attr("id", "synchro-logged-in-modal")
                 .html(message)
                 .css({
@@ -31,7 +31,8 @@ export const showLoggedInModal = async (scraper: Scraper, message: string) => {
                     "left": "0",
                     "right": "0",
                     "bottom": "0",
-                    "background-color": "rgba(0,0,0,0.5)",
+                    "background-color": "rgba(0,0,0,0.7)",
+                    "color": "white",
                     "backdrop-filter": "blur(5px)",
                     "z-index": "9999",
                 })
