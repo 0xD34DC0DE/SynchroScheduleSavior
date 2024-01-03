@@ -58,19 +58,19 @@ class Scraper {
         });
     }
 
-    async injectWithArgs<F extends (...args: Parameters<F>) => R, R>(
+    async injectWithArgs<F extends (...args: Parameters<F>) => ReturnType<F>>(
         fn: F,
         expectedReturnType: ExpectedReturnType,
         timeout_ms: number,
         args: Parameters<F>
-    ): Promise<R> {
+    ): Promise<ReturnType<F>> {
         return invoke<InjectionResult<ReturnType<F>>>("webview_inject", {
             windowLabel: this.window_label,
             js: fn.toString(),
             args: args,
             timeoutMs: timeout_ms,
             expectedReturnType: expectedReturnType,
-        }).then(result => toConcreteResult(result) as R);
+        }).then(result => toConcreteResult(result) as ReturnType<F>);
     }
 
     async inject<R>(
