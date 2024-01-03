@@ -10,6 +10,7 @@ use url::Url;
 use crate::webview_injector::{WebviewInjection, WebviewScraperError};
 
 mod webview_injector;
+mod web_view_injector;
 
 #[tauri::command]
 async fn open_webview(window_label: String, title: String, url: String, handle: AppHandle) -> Result<(), String> {
