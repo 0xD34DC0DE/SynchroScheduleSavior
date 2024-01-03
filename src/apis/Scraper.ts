@@ -85,7 +85,7 @@ class Scraper {
             windowLabel: this.window_label,
             js: `() => { window.location.pathname = '${path}'; }`,
             timeoutMs: timeout_ms,
-            expectReturnType: "undefined",
+            expectedReturnType: "undefined",
         });
     }
 
