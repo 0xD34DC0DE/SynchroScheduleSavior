@@ -6,7 +6,7 @@ import OnboardingStep, {OnboardingStepProps} from "./OnboardingStep.tsx";
 export interface OnboardingStepperProps {
     onFinalStepComplete: () => void;
     paperProps?: PaperProps;
-    children: ReactElement<OnboardingStepProps>;
+    children: ReactElement<OnboardingStepProps> | ReactElement<OnboardingStepProps>[];
 }
 
 export interface OnboardingStepperContext {
@@ -20,16 +20,16 @@ export const OnboardingStepperContext = createContext<OnboardingStepperContext>(
 const OnboardingStepper = ({onFinalStepComplete, paperProps, children}: OnboardingStepperProps) => {
     const [activeStep, setActiveStep] = useState(0);
     const [currentStepCompleted, setCurrentStepCompleted] = useState(false);
-    const setStepCompleted = useCallback((key: string, completed: boolean) => {
-        if (key !== children.props.step_key) return false;
-        setCurrentStepCompleted(completed);
-    }, [children]);
-
     const steps = React.Children.map(children, child => {
         if (!React.isValidElement(child)) return null;
         if (child.type !== OnboardingStep) return null;
         return child;
     }).filter(child => child !== null);
+
+    const setStepCompleted = useCallback((key: string, completed: boolean) => {
+        if (key !== steps[activeStep].props.step_key) return;
+        setCurrentStepCompleted(completed);
+    }, [activeStep, steps]);
 
     steps.forEach(step => {
         React.Children.forEach(step.props.children, child => {
