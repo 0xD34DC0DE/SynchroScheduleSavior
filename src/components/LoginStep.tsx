@@ -3,7 +3,7 @@ import {useUserConnectionStore} from "../stores/UserSessionStore.ts";
 import {Typography} from "@mui/material";
 import {useEffect} from "react";
 import {UrlPattern} from "../apis/Scraper.ts";
-import {showLoggedInModal} from "../utils/syncho_utils.ts";
+import {showLoggedInModal, waitForNavigation} from "../utils/syncho_utils.ts";
 import {Link} from "react-router-dom";
 
 import FlexBox from "./FlexBox.tsx";
@@ -26,21 +26,20 @@ const LoginStep = ({setCompleted}: LoginStepProps) => {
 
     useEffect(() => {
         if (!scraper) return;
-        const unlisten =
-            scraper.onNavigationEvent(
-                new UrlPattern("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?"),
-                async () => {
-                    setLoggedIn(true);
-                    unlisten.then(f => f());
-                    await showLoggedInModal(scraper,
-                        "You have successfully logged in to Synchro! " +
-                        "Leave this window open and return to the app.",
-                    );
-                }
-            );
-        return () => {
-            unlisten.then(f => f());
-        };
+        let urlPattern = new UrlPattern("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?");
+        let nav = waitForNavigation(scraper, urlPattern, async () =>
+            async () => {
+                setLoggedIn(true);
+                await showLoggedInModal(scraper,
+                    "You have successfully logged in to Synchro! " +
+                    "Leave this window open and return to the app.",
+                );
+            }
+        );
+        nav.promise.catch(e => {
+            if (e !== "cancelled") console.error(e)
+        });
+        return nav.cancel;
     }, [scraper]);
 
     useEffect(() => setCompleted?.(loggedIn), [loggedIn, setCompleted]);
