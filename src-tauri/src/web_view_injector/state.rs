@@ -1,6 +1,7 @@
 use std::collections::{HashMap};
 use std::sync::Mutex;
 use tauri::{Manager, Runtime, Window};
+use anyhow::{Result, anyhow};
 
 pub type WebviewInjectorStateType<R: Runtime> = Mutex<WebviewInjectorState<R>>;
 
@@ -19,8 +20,14 @@ pub struct WebviewInjectorState<R: Runtime> {
 }
 
 impl<R: Runtime> WebviewInjectorState<R> {
-    pub fn register_window(&mut self, label: String) {
-        self.injectable_windows.insert(label.clone(), label.into());
+    pub fn register_window(&mut self, label: String) -> Result<()> {
+        match self.injectable_windows.get_mut(&label) {
+            Some(_) => Err(anyhow!("Window with label '{}' already registered", label)),
+            None => {
+                self.injectable_windows.insert(label.clone(), label.into());
+                Ok(())
+            }
+        }
     }
 
     pub fn unregister_window(&mut self, label: &str) {
