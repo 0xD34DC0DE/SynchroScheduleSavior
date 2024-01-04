@@ -6,16 +6,11 @@ pub type WebviewInjectorStateType<R: Runtime> = Mutex<WebviewInjectorState<R>>;
 
 pub trait StateManagerExtInternal<T: Manager<R>, R: Runtime> {
     fn get_state(&self) -> &WebviewInjectorState<R>;
-    fn get_state_mut(&self) -> &mut WebviewInjectorState<R>;
 }
 
 impl<T: Manager<R>, R: Runtime> StateManagerExtInternal<T, R> for T {
     fn get_state(&self) -> &WebviewInjectorState<R> {
         &self.state::<WebviewInjectorStateType<R>>().lock().unwrap()
-    }
-
-    fn get_state_mut(&self) -> &mut WebviewInjectorState<R> {
-        &mut self.state::<WebviewInjectorStateType<R>>().lock().unwrap()
     }
 }
 

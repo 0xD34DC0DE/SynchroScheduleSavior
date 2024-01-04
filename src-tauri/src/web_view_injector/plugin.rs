@@ -35,7 +35,7 @@ impl<R: Runtime> AppHandleExtInternal for AppHandle<R> {
     }
 
     fn unregister_window(&self, label: &str) {
-        let state = self.get_state_mut();
+        let mut state = self.get_state();
         if state.is_window_registered(label) {
             state.unregister_window(label);
         }
@@ -56,7 +56,7 @@ impl<R: Runtime> WindowExtInternal for Window<R> {
     }
 
     fn on_webview_ready(self) {
-        let state = self.get_state_mut();
+        let mut state = self.get_state();
         if state.is_window_registered(self.label()) {
             state.set_window_ready(self);
         }
