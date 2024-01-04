@@ -17,12 +17,12 @@ impl EventMediator {
     }
 }
 
-struct ListenerEventsName {
+struct UniqueEventsName {
     pub result: String,
     pub cancel: String,
 }
 
-impl ListenerEventsName {
+impl UniqueEventsName {
     pub fn new(prefix: &'static str) -> Self {
         let rng = rand::thread_rng().gen::<u16>();
         Self {
