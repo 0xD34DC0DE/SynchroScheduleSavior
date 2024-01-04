@@ -2,5 +2,5 @@ mod result;
 mod plugin;
 mod window_builder;
 mod state;
-mod result_listener;
+mod event_mediator;
 mod injector;

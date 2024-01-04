@@ -3,7 +3,7 @@ use tokio::sync::oneshot::Receiver;
 use anyhow::Result;
 use rand::Rng;
 
-pub struct ResultListener {
+pub struct EventMediator {
     rx: Receiver<Result<String>>,
     timeout: Duration,
     // Need another Receiver to hold the result until the front-end requests it
@@ -11,7 +11,7 @@ pub struct ResultListener {
     // something to hold onto that error (or success) until the front-end requests it
 }
 
-impl ResultListener {
+impl EventMediator {
     pub fn new(event_name_prefix: &'static str) {
 
     }
