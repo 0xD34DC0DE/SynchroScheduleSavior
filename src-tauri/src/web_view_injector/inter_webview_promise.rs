@@ -3,17 +3,18 @@ use tokio::sync::oneshot::Receiver;
 use anyhow::Result;
 use rand::Rng;
 
-pub struct EventMediator {
-    rx: Receiver<Result<String>>,
+pub struct InterWebviewPromise {
+    webview_receiver: Receiver<Result<String>>,
+    result_receiver: Receiver<Result<String>>,
     timeout: Duration,
     // Need another Receiver to hold the result until the front-end requests it
     // Need another since the first one might receive nothing (timeout) and we still need
     // something to hold onto that error (or success) until the front-end requests it
 }
 
-impl EventMediator {
-    pub fn new(event_name_prefix: &'static str) {
-
+impl InterWebviewPromise {
+    pub fn new(event_name_prefix: &'static str) -> Self {
+        todo!()
     }
 }
 
