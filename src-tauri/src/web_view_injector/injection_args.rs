@@ -4,11 +4,11 @@ use serde_json::Value;
 
 #[derive(Debug, Deserialize)]
 pub struct InjectionArgs {
-    injection_target: String,
-    js_function: String,
-    js_args: Option<Vec<Value>>,
+    pub injection_target: String,
+    pub js_function: String,
+    pub js_args: Option<Vec<Value>>,
     #[serde(deserialize_with = "from_duration_str")]
-    execution_timeout: Duration,
+    pub execution_timeout: Duration,
 }
 
 fn from_duration_str<'de, D>(deserializer: D) -> Result<Duration, D::Error>
