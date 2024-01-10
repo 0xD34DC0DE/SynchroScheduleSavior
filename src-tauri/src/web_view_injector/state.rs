@@ -2,6 +2,7 @@ use std::collections::{HashMap};
 use std::sync::Mutex;
 use tauri::{Manager, Runtime, Window};
 use anyhow::{Result, anyhow};
+use crate::web_view_injector::inter_webview_promise::{InterWebviewPromise, InterWebviewPromiseHandles};
 
 pub type WebviewInjectorStateType<R: Runtime> = Mutex<WebviewInjectorState<R>>;
 
@@ -43,6 +44,23 @@ impl<R: Runtime> WebviewInjectorState<R> {
             window_state.handle_state = HandleState::Ready(window);
         }
     }
+
+    pub fn make_promise(&self, target: &Window<R>, events_name_prefix: &str) -> Result<&InterWebviewPromiseHandles> {
+        if let Some(window_state) = self.injectable_windows.get(target.label()) {
+            match &window_state.handle_state {
+                // TODO pick up here
+                HandleState::Ready(window) => {
+                    let promise = InterWebviewPromise::new(window, events_name_prefix);
+                    // TODO add promise to state and handle the different window states
+                    Ok(promise.handles())
+                },
+                HandleState::NotReady => Err(anyhow!("Window '{}' is not ready", target.label())),
+                HandleState::Destroyed => Err(anyhow!("Window '{}' is destroyed", target.label())),
+            }
+        } else {
+            Err(anyhow!("Window '{}' is not registered as injectable", target.label()))
+        }
+    }
 }
 
 impl<R: Runtime> Default for WebviewInjectorState<R> {
@@ -72,4 +90,5 @@ impl<R: Runtime> From<String> for InjectableWindowState<R> {
 pub enum HandleState<R: Runtime> {
     NotReady,
     Ready(Window<R>),
+    Destroyed,
 }
