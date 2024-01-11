@@ -8,15 +8,15 @@ use tokio::sync::oneshot::{self, Receiver};
 pub struct InterWebviewPromise {
     target_receiver: Receiver<Result<String>>,
     target_listener: EventHandler,
-    handles: InterWebviewPromiseHandles,
+    handle: PromiseHandle,
 }
 
 impl InterWebviewPromise {
     pub fn new<R: Runtime>(target: &Window<R>, event_name_prefix: &'static str) -> Self {
-        let handles = InterWebviewPromiseHandles::new(event_name_prefix);
+        let handle = PromiseHandle::new(event_name_prefix);
 
         let (target_sender, target_receiver) = oneshot::channel();
-        let target_listener = target.once(handles.result.as_ref(), move |event| {
+        let target_listener = target.once(handle.as_ref(), move |event| {
             if target_sender.is_closed() { return; }
             target_sender.send(
                 event
@@ -29,48 +29,35 @@ impl InterWebviewPromise {
         Self {
             target_receiver,
             target_listener,
-            handles,
+            handle,
         }
     }
 
-    pub fn handles(&self) -> &InterWebviewPromiseHandles {
-        &self.handles
+    pub fn handle(&self) -> &PromiseHandle {
+        &self.handle
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PromiseEventHandle(String);
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+pub struct PromiseHandle(String);
 
-impl PromiseEventHandle {
-    pub fn new(event_name: String) -> Self {
-        Self(event_name)
+impl PromiseHandle {
+    pub fn new(event_name_prefix: &'static str) -> Self {
+        let rng = rand::thread_rng().gen::<u16>();
+        Self (
+            format!("{}-{:x}", event_name_prefix, rng)
+        )
     }
 }
 
-impl AsRef<str> for PromiseEventHandle {
+impl AsRef<str> for PromiseHandle {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
 }
 
-impl Display for PromiseEventHandle {
+impl Display for PromiseHandle {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0.as_ref())
-    }
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct InterWebviewPromiseHandles {
-    pub result: PromiseEventHandle,
-    pub cancel: PromiseEventHandle,
-}
-
-impl InterWebviewPromiseHandles {
-    pub fn new(prefix: &'static str) -> Self {
-        let rng = rand::thread_rng().gen::<u16>();
-        Self {
-            result: PromiseEventHandle::new(format!("{}-{:x}", prefix, rng)),
-            cancel: PromiseEventHandle::new(format!("{}-cancel-{:x}", prefix, rng)),
-        }
     }
 }

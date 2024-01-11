@@ -1,8 +1,8 @@
-use std::collections::{HashMap};
+use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 use tauri::{Manager, Runtime, Window};
 use anyhow::{Result, anyhow};
-use crate::web_view_injector::inter_webview_promise::{InterWebviewPromise, InterWebviewPromiseHandles};
+use crate::web_view_injector::inter_webview_promise::{InterWebviewPromise, PromiseHandle};
 
 pub type WebviewInjectorStateType<R: Runtime> = Mutex<WebviewInjectorState<R>>;
 
@@ -45,14 +45,14 @@ impl<R: Runtime> WebviewInjectorState<R> {
         }
     }
 
-    pub fn make_promise(&mut self, target: &Window<R>, events_name_prefix: &str) -> Result<&InterWebviewPromiseHandles> {
+    pub fn make_promise(&mut self, target: &Window<R>, events_name_prefix: &str) -> Result<&PromiseHandle> {
         if let Some(mut window_state) = self.injectable_windows.get_mut(target.label()) {
             match &window_state.handle_state {
                 _ => {
                     let promise = InterWebviewPromise::new(target, events_name_prefix);
-                    let handles = promise.handles();
-                    window_state.promises.insert(handles.result.as_ref().into(), promise);
-                    Ok(handles)
+                    let handle = promise.handle();
+                    window_state.promises.insert(promise);
+                    Ok(handle)
                 },
                 HandleState::Destroyed => Err(anyhow!("Window '{}' is destroyed", target.label())),
             }
@@ -74,7 +74,7 @@ impl<R: Runtime> Default for WebviewInjectorState<R> {
 pub struct InjectableWindowState<R: Runtime> {
     label: String,
     handle_state: HandleState<R>,
-    promises: HashMap<String, InterWebviewPromise>,
+    promises: HashSet<InterWebviewPromise>,
 }
 
 impl<R: Runtime> From<String> for InjectableWindowState<R> {
@@ -82,7 +82,7 @@ impl<R: Runtime> From<String> for InjectableWindowState<R> {
         Self {
             label,
             handle_state: HandleState::NotReady,
-            promises: HashMap::new(),
+            promises: HashSet::new(),
         }
     }
 }
