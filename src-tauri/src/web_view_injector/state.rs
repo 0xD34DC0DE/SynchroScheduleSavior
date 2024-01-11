@@ -45,16 +45,15 @@ impl<R: Runtime> WebviewInjectorState<R> {
         }
     }
 
-    pub fn make_promise(&self, target: &Window<R>, events_name_prefix: &str) -> Result<&InterWebviewPromiseHandles> {
-        if let Some(window_state) = self.injectable_windows.get(target.label()) {
+    pub fn make_promise(&mut self, target: &Window<R>, events_name_prefix: &str) -> Result<&InterWebviewPromiseHandles> {
+        if let Some(mut window_state) = self.injectable_windows.get_mut(target.label()) {
             match &window_state.handle_state {
-                // TODO pick up here
-                HandleState::Ready(window) => {
-                    let promise = InterWebviewPromise::new(window, events_name_prefix);
-                    // TODO add promise to state and handle the different window states
-                    Ok(promise.handles())
+                _ => {
+                    let promise = InterWebviewPromise::new(target, events_name_prefix);
+                    let handles = promise.handles();
+                    window_state.promises.insert(handles.result.as_ref().into(), promise);
+                    Ok(handles)
                 },
-                HandleState::NotReady => Err(anyhow!("Window '{}' is not ready", target.label())),
                 HandleState::Destroyed => Err(anyhow!("Window '{}' is destroyed", target.label())),
             }
         } else {
@@ -75,6 +74,7 @@ impl<R: Runtime> Default for WebviewInjectorState<R> {
 pub struct InjectableWindowState<R: Runtime> {
     label: String,
     handle_state: HandleState<R>,
+    promises: HashMap<String, InterWebviewPromise>,
 }
 
 impl<R: Runtime> From<String> for InjectableWindowState<R> {
@@ -82,6 +82,7 @@ impl<R: Runtime> From<String> for InjectableWindowState<R> {
         Self {
             label,
             handle_state: HandleState::NotReady,
+            promises: HashMap::new(),
         }
     }
 }

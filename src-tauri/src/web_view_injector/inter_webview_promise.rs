@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use anyhow::{anyhow, Result};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -49,6 +50,12 @@ impl PromiseEventHandle {
 impl AsRef<str> for PromiseEventHandle {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
+    }
+}
+
+impl Display for PromiseEventHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.as_ref())
     }
 }
 
