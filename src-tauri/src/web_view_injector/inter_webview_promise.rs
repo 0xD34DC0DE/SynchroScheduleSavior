@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{EventHandler, Runtime, Window};
 use tokio::sync::oneshot::{self, Receiver};
 
+#[derive(Debug)]
 pub struct InterWebviewPromise {
     target_receiver: Receiver<Result<String>>,
     target_listener: EventHandler,
