@@ -51,7 +51,7 @@ impl<R: Runtime> WebviewInjectorState<R> {
                 _ => {
                     let promise = InterWebviewPromise::new(target, events_name_prefix);
                     let handle = promise.handle();
-                    window_state.promises.insert(promise);
+                    window_state.promises.insert(handle.clone(), promise);
                     Ok(handle)
                 },
                 HandleState::Destroyed => Err(anyhow!("Window '{}' is destroyed", target.label())),
@@ -74,7 +74,13 @@ impl<R: Runtime> Default for WebviewInjectorState<R> {
 pub struct InjectableWindowState<R: Runtime> {
     label: String,
     handle_state: HandleState<R>,
-    promises: HashSet<InterWebviewPromise>,
+    promises: HashMap<PromiseHandle, InterWebviewPromise>,
+}
+
+impl<R: Runtime> InjectableWindowState<R> {
+    pub fn owns_promise(&self, handle: &PromiseHandle) -> bool {
+        self.promises.contains_key(handle)
+    }
 }
 
 impl<R: Runtime> From<String> for InjectableWindowState<R> {
@@ -82,7 +88,7 @@ impl<R: Runtime> From<String> for InjectableWindowState<R> {
         Self {
             label,
             handle_state: HandleState::NotReady,
-            promises: HashSet::new(),
+            promises: HashMap::new(),
         }
     }
 }
