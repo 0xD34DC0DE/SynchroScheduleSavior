@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::{Manager, Runtime, Window};
 use anyhow::{Result, anyhow};
