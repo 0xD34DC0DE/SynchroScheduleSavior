@@ -22,6 +22,8 @@ impl<R: Runtime> WindowInjectorExtInternal<R> for Window<R> {
 
 pub trait WindowInjectorExt<R: Runtime> {
     fn inject_into(&self, window: &Window<R>, injection_args: InjectionArgs) -> Result<&PromiseHandle>;
+    async fn await_injection(&self, handle: &PromiseHandle) -> Result<String>;
+    async fn cancel_injection(&self, handle: &PromiseHandle) -> Result<()>;
 }
 
 impl<R: Runtime> WindowInjectorExt<R> for Window<R> {
@@ -29,6 +31,14 @@ impl<R: Runtime> WindowInjectorExt<R> for Window<R> {
         let handle = self.get_state().make_promise(target, INJECTION_EVENT_NAME_PREFIX)?;
         target.inject(handle, injection_args)?;
         Ok(handle)
+    }
+
+    async fn await_injection(&self, handle: &PromiseHandle) -> Result<String> {
+        todo!()
+    }
+
+    async fn cancel_injection(&self, handle: &PromiseHandle) -> Result<()> {
+        todo!()
     }
 }
 
