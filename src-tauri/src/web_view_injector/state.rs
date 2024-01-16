@@ -60,6 +60,13 @@ impl<R: Runtime> WebviewInjectorState<R> {
             Err(anyhow!("Window '{}' is not registered as injectable", target.label()))
         }
     }
+
+    pub fn find_promise(&self, handle: &PromiseHandle) -> Option<&InterWebviewPromise> {
+        self.injectable_windows.values()
+            .find(|window_state| window_state.owns_promise(handle))
+            .map(|window_state| window_state.promises.get(handle))
+            .flatten()
+    }
 }
 
 impl<R: Runtime> Default for WebviewInjectorState<R> {
