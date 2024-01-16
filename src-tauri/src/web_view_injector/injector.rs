@@ -28,8 +28,7 @@ impl<R: Runtime> WindowInjectorExtInternal<R> for Window<R> {
 
 pub trait WindowInjectorExt<R: Runtime> {
     fn inject_into(&self, window: &Window<R>, injection_args: InjectionArgs) -> Result<&PromiseHandle>;
-    async fn await_injection(&self, handle: &PromiseHandle) -> Result<String>;
-    async fn cancel_injection(&self, handle: &PromiseHandle) -> Result<()>;
+    fn find_promise(&self, handle: &PromiseHandle) -> Option<&InterWebviewPromise>;
 }
 
 impl<R: Runtime> WindowInjectorExt<R> for Window<R> {
@@ -39,13 +38,8 @@ impl<R: Runtime> WindowInjectorExt<R> for Window<R> {
         Ok(handle)
     }
 
-    async fn await_injection(&self, handle: &PromiseHandle) -> Result<String> {
-        let promise = self.get_promise(handle).context("Failed to find promise")?;
-        promise.await_result().await
-    }
-
-    async fn cancel_injection(&self, handle: &PromiseHandle) -> Result<()> {
-        todo!()
+    fn find_promise(&self, handle: &PromiseHandle) -> Option<&InterWebviewPromise> {
+        self.get_state().find_promise(handle)
     }
 }
 

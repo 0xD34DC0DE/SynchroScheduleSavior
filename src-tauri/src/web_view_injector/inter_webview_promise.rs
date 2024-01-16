@@ -1,10 +1,12 @@
 use std::fmt::{Display, Formatter};
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
+
 use anyhow::{anyhow, Context, Result};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use tauri::{EventHandler, Runtime, Window};
+use serde_json::{json, Value};
+use tauri::{AppHandle, EventHandler, Manager, Runtime, Window};
 use tokio::sync::oneshot::{self, Receiver};
 use tokio::time::timeout;
 
@@ -12,8 +14,10 @@ use tokio::time::timeout;
 pub struct InterWebviewPromise {
     target_receiver: Receiver<Result<String>>,
     target_listener: EventHandler,
+    target_label: String,
     timeout: Duration,
     handle: PromiseHandle,
+    awaiting: AtomicBool,
 }
 
 impl InterWebviewPromise {
@@ -34,8 +38,10 @@ impl InterWebviewPromise {
         Self {
             target_receiver,
             target_listener,
+            target_label: target.label().to_string(),
             timeout,
             handle,
+            awaiting: AtomicBool::new(false),
         }
     }
 
@@ -43,18 +49,26 @@ impl InterWebviewPromise {
         &self.handle
     }
 
-    pub async fn await_result(self) -> Result<Value> {
+    pub async fn await_result(self) -> Result<PromiseResult> {
+        self.awaiting.store(true, std::sync::atomic::Ordering::SeqCst);
         let result = match timeout(self.timeout, self.target_receiver).await {
             Ok(r) => r.context("Result channel closed unexpectedly")?,
             Err(_) => Err(anyhow!("Promise timeout")),
         }.context("Failed to get result from promise")?;
         serde_json::from_str::<Value>(&result).context("Failed to deserialize result")
+            .map(|value| value.into())
     }
 
-    pub async fn cancel(self, target: &Window) {
-        let cancel_event_name = format!("cancel-{}", self.handle);
-        target.emit(&cancel_event_name, Value::Null).expect("Failed to emit cancel event");
-        self.await_result().await.expect("Failed to await result");
+    pub async fn cancel(self, app_handle: &AppHandle) -> Result<()> {
+        let target = app_handle.get_window(self.target_label.as_str())
+            .context("Target window not found")?;
+
+        if self.awaiting.load(std::sync::atomic::Ordering::SeqCst) {
+            let cancel_event_name = format!("cancel-{}", self.handle);
+            target.emit(&cancel_event_name, Value::Null).expect("Failed to emit cancel event");
+            self.await_result().await.expect("Failed to await result");
+        }
+        Ok(())
     }
 }
 
@@ -79,5 +93,36 @@ impl AsRef<str> for PromiseHandle {
 impl Display for PromiseHandle {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.0)
+    }
+}
+
+pub enum PromiseResult {
+    Resolved(Value),
+    Cancelled,
+}
+
+impl Into<PromiseResult> for Value {
+    fn into(self) -> PromiseResult {
+        if self.is_object() {
+            if let Some(_) = self.get("cancelled") {
+                return PromiseResult::Cancelled;
+            }
+        }
+
+        PromiseResult::Resolved(self)
+    }
+}
+
+impl Serialize for PromiseResult {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        Ok(match self {
+            PromiseResult::Resolved(value) => json!({
+                "type": "resolved",
+                "value": value,
+            }),
+            PromiseResult::Cancelled => json!({
+                "type": "cancelled",
+            }),
+        })
     }
 }

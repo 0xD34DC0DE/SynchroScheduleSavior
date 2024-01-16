@@ -1,10 +1,10 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use tauri::{AppHandle, Manager, Window, WindowUrl};
 use url::Url;
 
 use crate::web_view_injector::injection_args::InjectionArgs;
 use crate::web_view_injector::injector::WindowInjectorExt;
-use crate::web_view_injector::inter_webview_promise::PromiseHandle;
+use crate::web_view_injector::inter_webview_promise::{PromiseHandle, PromiseResult};
 use crate::web_view_injector::window_builder::InjectableWindowBuilder;
 
 #[tauri::command]
@@ -41,11 +41,11 @@ async fn inject(args: InjectionArgs, window: Window, app_handle: AppHandle) -> R
 }
 
 #[tauri::command]
-async fn await_injection(handle: PromiseHandle, window: Window) -> Result<String> {
-    window.await_promise(handle)
+async fn await_injection(handle: PromiseHandle, window: Window) -> Result<PromiseResult> {
+    window.find_promise(&handle).context("Promise not found")?.await_result().await
 }
 
 #[tauri::command]
-async fn cancel_injection(handle: PromiseHandle, window: Window) -> Result<()> {
-    window.cancel_promise(handle)
+async fn cancel_injection(handle: PromiseHandle, window: Window, app_handle: AppHandle) -> Result<()> {
+    window.find_promise(&handle).context("Promise not found")?.cancel(&app_handle).await
 }
