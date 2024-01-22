@@ -8,7 +8,7 @@ use crate::web_view_injector::inter_webview_promise::{PromiseHandle, PromiseResu
 use crate::web_view_injector::window_builder::InjectableWindowBuilder;
 
 #[tauri::command]
-async fn create_window(label: String, title: String, url: String, app_handle: AppHandle) -> Result<()> {
+pub async fn create_window(label: String, title: String, url: String, app_handle: AppHandle) -> Result<()> {
     if app_handle.get_window(label.as_str()).is_some() {
         return Err(anyhow::anyhow!("Window '{}' already exists", label));
     }
@@ -24,7 +24,7 @@ async fn create_window(label: String, title: String, url: String, app_handle: Ap
 }
 
 #[tauri::command]
-async fn close_window(label: String, app_handle: AppHandle) -> Result<()> {
+pub async fn close_window(label: String, app_handle: AppHandle) -> Result<()> {
     if let Some(window) = app_handle.get_window(label.as_str()) {
         window.close()?;
     }
@@ -32,7 +32,7 @@ async fn close_window(label: String, app_handle: AppHandle) -> Result<()> {
 }
 
 #[tauri::command]
-async fn inject(args: InjectionArgs, window: Window, app_handle: AppHandle) -> Result<PromiseHandle> {
+pub async fn inject(args: InjectionArgs, window: Window, app_handle: AppHandle) -> Result<PromiseHandle> {
     if let Some(target) = app_handle.get_window(&args.injection_target) {
         Ok(window.inject_into(&target, args)?.clone())
     } else {
@@ -41,11 +41,11 @@ async fn inject(args: InjectionArgs, window: Window, app_handle: AppHandle) -> R
 }
 
 #[tauri::command]
-async fn await_injection(handle: PromiseHandle, window: Window) -> Result<PromiseResult> {
+pub async fn await_injection(handle: PromiseHandle, window: Window) -> Result<PromiseResult> {
     window.find_promise(&handle).context("Promise not found")?.await_result().await
 }
 
 #[tauri::command]
-async fn cancel_injection(handle: PromiseHandle, window: Window, app_handle: AppHandle) -> Result<()> {
+pub async fn cancel_injection(handle: PromiseHandle, window: Window, app_handle: AppHandle) -> Result<()> {
     window.find_promise(&handle).context("Promise not found")?.cancel(&app_handle).await
 }

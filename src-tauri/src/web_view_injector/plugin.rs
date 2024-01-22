@@ -1,11 +1,18 @@
 use tauri::{AppHandle, generate_handler, Manager, PageLoadPayload, RunEvent, Runtime, Window, WindowEvent};
 use tauri::plugin::{Builder as PluginBuilder, TauriPlugin};
+use crate::web_view_injector::cmd;
 
 use crate::web_view_injector::state::{StateManagerExtInternal, WebviewInjectorStateType};
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     PluginBuilder::new("webview_injector")
-        .invoke_handler(generate_handler![])
+        .invoke_handler(generate_handler![
+            cmd::create_window,
+            cmd::close_window,
+            cmd::inject,
+            cmd::await_injection,
+            cmd::cancel_injection
+        ])
         .on_event(|app_handle, run_event| app_handle.on_event(run_event))
         .on_page_load(|window, payload| window.on_page_load(payload))
         .on_webview_ready(|window| window.on_webview_ready())
@@ -51,7 +58,7 @@ impl<R: Runtime> WindowExtInternal for Window<R> {
     fn on_page_load(&self, payload: PageLoadPayload) {
         let state = self.get_state();
         if state.is_window_registered(self.label()) {
-           todo!();
+            println!("on_page_load: {:?}", payload);
         }
     }
 
