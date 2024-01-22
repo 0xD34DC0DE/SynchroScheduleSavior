@@ -1,4 +1,5 @@
-mod result;
+pub use plugin::init;
+
 mod plugin;
 mod window_builder;
 mod state;
