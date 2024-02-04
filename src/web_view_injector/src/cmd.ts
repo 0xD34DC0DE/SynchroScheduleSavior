@@ -12,14 +12,14 @@ export const close_window = async (label: string) =>
         label: label,
     });
 
-type InjectionArgs = {
+export type InjectionArgs = {
     injectionTarget: string,
     jsFunction: string,
     jsArgs?: any[],
     executionTimeout?: `${number}ms` | `${number}s`,
 }
 
-type PromiseHandle = string;
+export type PromiseHandle = string;
 
 export const inject = async (args: InjectionArgs): Promise<PromiseHandle> =>
     invoke<PromiseHandle>("plugin:webview_injector|inject", {
