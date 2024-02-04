@@ -2,6 +2,9 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use tauri::{Manager, Runtime, Window};
 use anyhow::{Result, anyhow};
+use tauri::async_runtime::JoinHandle;
+use tokio::sync::mpsc;
+use url::Url;
 use crate::web_view_injector::inter_webview_promise::{InterWebviewPromise, PromiseHandle};
 
 pub type WebviewInjectorStateType<R: Runtime> = Mutex<WebviewInjectorState<R>>;
@@ -28,6 +31,14 @@ impl<R: Runtime> WebviewInjectorState<R> {
                 self.injectable_windows.insert(label.clone(), label.into());
                 Ok(())
             }
+        }
+    }
+
+    pub fn get_navigation_channel(&mut self, label: &str) -> Result<mpsc::Sender<Url>> {
+        if let Some(mut window_state) = self.injectable_windows.get_mut(label) {
+            Ok(window_state.navigation_channel().clone())
+        } else {
+            Err(anyhow!("Window '{}' is not registered as injectable", label))
         }
     }
 
@@ -82,20 +93,38 @@ pub struct InjectableWindowState<R: Runtime> {
     label: String,
     handle_state: HandleState<R>,
     promises: HashMap<PromiseHandle, InterWebviewPromise>,
+    navigation_rx: mpsc::Receiver<Url>,
+    rx_handle: JoinHandle<()>,
+    navigation_tx: mpsc::Sender<Url>,
 }
 
 impl<R: Runtime> InjectableWindowState<R> {
     pub fn owns_promise(&self, handle: &PromiseHandle) -> bool {
         self.promises.contains_key(handle)
     }
+
+    pub fn navigation_channel(&self) -> &mpsc::Sender<Url> {
+        &self.navigation_tx
+    }
 }
 
 impl<R: Runtime> From<String> for InjectableWindowState<R> {
     fn from(label: String) -> Self {
+        let (tx, mut rx) = mpsc::channel(1);
+
+        let rx_handle = tauri::async_runtime::spawn(async move {
+            while let Some(url) = rx.recv().await {
+                println!("Received navigation event: {:?}", url);
+            }
+        });
+
         Self {
             label,
             handle_state: HandleState::NotReady,
             promises: HashMap::new(),
+            navigation_rx: rx,
+            rx_handle,
+            navigation_tx: tx,
         }
     }
 }
