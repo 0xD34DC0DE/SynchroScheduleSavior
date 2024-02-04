@@ -7,7 +7,8 @@ const NAVIGATION_EVENT_NAME = "webview-inject-navigation"
 type SpecialResult = { ok: "undefined" | "null" | "NaN" | "Infinity" | "-Infinity", special: true };
 type OkResult<T> = { ok: T };
 type ErrResult = { err: string };
-type InjectionResult<T> = SpecialResult | OkResult<T> | ErrResult;
+type CancelledResult = { cancelled: true };
+type InjectionResult<T> = SpecialResult | OkResult<T> | ErrResult | CancelledResult;
 type ExpectedReturnType = "undefined" | "null" | "boolean" | "number" | "string" | "object";
 
 const toConcreteResult = (result: any) => {
