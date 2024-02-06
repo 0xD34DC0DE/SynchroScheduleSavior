@@ -33,7 +33,7 @@ class Context {
 //
 // const info_page =
 //      await start_page
-//          .findAll(<selector>)
+//          .findAll(<selector>) // Will return a special context that can be used to interact with multiple elements
 //          .forEach(elem => {
 //              const text = await elem.getText();
 //           }, eager: true); // eager: true, will perform any context switch operations immediately
