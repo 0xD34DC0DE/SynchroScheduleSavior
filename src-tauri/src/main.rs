@@ -4,12 +4,15 @@
 
 use anyhow::{anyhow, Result};
 use serde_json::Value;
-use tauri::{AppHandle, Manager, Window};
+use tauri::{AppHandle, Manager, State, Window};
+use tokio::sync::{Mutex, MutexGuard};
 use url::Url;
 
 use crate::webview_inject as wv_inject;
 
 mod webview_inject;
+
+struct InjectorState(Mutex<()>);
 
 #[tauri::command]
 async fn open_webview(window_label: String, title: String, url: String, handle: AppHandle) -> Result<(), String> {
@@ -45,8 +48,21 @@ async fn webview_inject(
     injection_id: String,
     js_function: String,
     args: Option<Vec<Value>>,
+    allow_parallel: bool,
     initiator_window: Window,
-    handle: AppHandle) -> Result<(), String> {
+    handle: AppHandle,
+    injector_state: State<InjectorState>,
+) -> Result<(), String> {
+    let _guard = injector_state.0
+        // Try to get the lock. If we get it, keep it regardless of the value of allow_parallel
+        // This way, other injections that don't allow parallel injections will be blocked
+        .try_lock()
+        .map(|g| Some(g))
+        // If we can't get the lock, and parallel injections are not allowed, wait for the lock
+        .unwrap_or_else(|g|
+            if allow_parallel { None } else { Some(injector_state.0.lock()) }
+        );
+
     let target_window = handle.get_window(target_window_label.as_str());
     if target_window.is_none() {
         return Err(anyhow!("Window '{}' not found", target_window_label).to_string());
@@ -70,6 +86,7 @@ fn main() {
             close_webview,
             webview_inject
         ])
+        .manage(InjectorState(Mutex::default()))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
