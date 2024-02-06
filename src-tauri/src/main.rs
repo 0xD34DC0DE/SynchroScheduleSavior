@@ -5,7 +5,7 @@
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 use tauri::{AppHandle, Manager, State, Window};
-use tokio::sync::{Mutex, MutexGuard};
+use tokio::sync::Mutex;
 use url::Url;
 
 use crate::webview_inject as wv_inject;
