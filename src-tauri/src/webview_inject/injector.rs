@@ -1,6 +1,9 @@
-use anyhow::Result;
+use std::time::Duration;
+use anyhow::{anyhow, Result};
 use serde_json::Value;
 use tauri::Window;
+use tokio::sync::oneshot;
+use tokio::time::timeout;
 
 pub async fn inject(target: Window,
                     initiator: Window,
@@ -41,11 +44,22 @@ impl<'a> Injector<'a> {
                     js_fn,
                     Self::make_args_array(args)
             );
-        println!("Injecting: {}", js);
 
+        let (rx, tx) = oneshot::channel::<Option<()>>();
+
+        let _event_handler = self.window.once(injection_id, move |event| {
+            tx.send(event.payload().map(|_| ())).expect("Couldn't send injection done signal");
+        });
+
+        println!("Injecting: {}", js);
         self.window.eval(js.as_ref())?;
 
-        Ok(())
+        match timeout(Duration::from_secs(5), rx).await {
+            Err(_) => Err(anyhow!("Injection timed out")),
+            Ok(Err(e)) => e.context("Injection failed: receiver error")?,
+            Ok(Ok(None)) => Err(anyhow!("Injection failed: empty response")),
+            Ok(Ok(Some(_))) => Ok(()),
+        }
     }
 
     fn make_args_array(args: Option<Vec<Value>>) -> String {
