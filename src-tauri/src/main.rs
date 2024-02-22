@@ -45,7 +45,7 @@ async fn close_webview(window_label: String, handle: AppHandle) -> Result<(), St
 #[tauri::command]
 async fn webview_inject(
     target_window_label: String,
-    injection_id: String,
+    injection_id: u64,
     js_function: String,
     allow_parallel: bool,
     args: Option<Vec<Value>>,
@@ -72,7 +72,7 @@ async fn webview_inject(
     wv_inject::inject(
         target_window,
         initiator_window,
-        injection_id,
+        injection_id.to_string(),
         js_function,
         args,
     ).await
