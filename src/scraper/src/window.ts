@@ -1,4 +1,5 @@
 import {open_webview, close_webview, webview_inject, Serializable} from "./commands.ts";
+import {close_webview, open_webview} from "./commands.ts";
 
 //TODO:
 // Reflect on the least complicated method for handling the interval injections
@@ -32,6 +33,8 @@ class InjectableWindow {
 
     static async create(label: string, url: string): Promise<InjectableWindow> {
         await open_webview(label, url);
+    static async create(label: string, title: string, url: string): Promise<InjectableWindow> {
+        await open_webview(label, title, url);
         return new InjectableWindow(label);
     }
 

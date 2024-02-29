@@ -1,7 +1,7 @@
 import {invoke} from '@tauri-apps/api/tauri';
 
-const open_webview = async (windowLabel: string, url: string): Promise<void> => {
-    await invoke<void>('open_webview', {windowLabel, url});
+const open_webview = async (windowLabel: string, title: string, url: string): Promise<void> => {
+    await invoke<void>('open_webview', {windowLabel, title, url});
 }
 
 const close_webview = async (windowLabel: string): Promise<void> => {
