@@ -48,15 +48,15 @@ impl<'a> Injector<'a> {
         let (rx, tx) = oneshot::channel::<Option<()>>();
 
         let _event_handler = self.window.once(injection_id, move |event| {
-            tx.send(event.payload().map(|_| ())).expect("Couldn't send injection done signal");
+            rx.send(event.payload().map(|_| ())).expect("Couldn't send injection done signal");
         });
 
         println!("Injecting: {}", js);
         self.window.eval(js.as_ref())?;
 
-        match timeout(Duration::from_secs(5), rx).await {
+        match timeout(Duration::from_secs(5), tx).await {
             Err(_) => Err(anyhow!("Injection timed out")),
-            Ok(Err(e)) => e.context("Injection failed: receiver error")?,
+            Ok(Err(e)) => Err(anyhow!("Injection failed: {}", e)),
             Ok(Ok(None)) => Err(anyhow!("Injection failed: empty response")),
             Ok(Ok(Some(_))) => Ok(()),
         }
