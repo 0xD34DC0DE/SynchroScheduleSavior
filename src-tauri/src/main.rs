@@ -2,17 +2,21 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 
+use std::sync::Arc;
+
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 use tauri::{AppHandle, Manager, State, Window};
-use tokio::sync::Mutex;
+use tokio::sync::Semaphore;
 use url::Url;
 
 use crate::webview_inject as wv_inject;
 
 mod webview_inject;
 
-struct InjectorState(Mutex<()>);
+const MAX_PARALLEL_INJECTIONS: u32 = 8;
+
+struct InjectorState(Arc<Semaphore>);
 
 #[tauri::command]
 async fn open_webview(window_label: String, title: String, url: String, handle: AppHandle) -> Result<(), String> {
@@ -43,7 +47,7 @@ async fn close_webview(window_label: String, handle: AppHandle) -> Result<(), St
 }
 
 #[tauri::command]
-async fn webview_inject(
+async fn webview_inject<'r>(
     target_window_label: String,
     injection_id: u64,
     js_function: String,
@@ -51,17 +55,18 @@ async fn webview_inject(
     args: Option<Vec<Value>>,
     initiator_window: Window,
     handle: AppHandle,
-    injector_state: State<InjectorState>,
+    injector_state: State<'r, InjectorState>,
 ) -> Result<(), String> {
-    let _guard = injector_state.0
-        // Try to get the lock. If we get it, keep it regardless of the value of allow_parallel
-        // This way, other injections that don't allow parallel injections will be blocked
-        .try_lock()
-        .map(|g| Some(g))
-        // If we can't get the lock, and parallel injections are not allowed, wait for the lock
-        .unwrap_or_else(|g|
-            if allow_parallel { None } else { Some(injector_state.0.lock()) }
-        );
+    let semaphore = injector_state.0.clone();
+    let _permit = if allow_parallel {
+        // If parallel injections are allowed, acquire a single permit to stay within the limit
+        // of MAX_PARALLEL_INJECTIONS
+        Some(semaphore.acquire().await)
+    } else {
+        // If this injection is not allowed to run in parallel, acquire all permits
+        // to block until all previous injections are done
+        Some(semaphore.acquire_many(MAX_PARALLEL_INJECTIONS).await)
+    };
 
     let target_window = handle.get_window(target_window_label.as_str());
     if target_window.is_none() {
@@ -86,7 +91,7 @@ fn main() {
             close_webview,
             webview_inject
         ])
-        .manage(InjectorState(Mutex::default()))
+        .manage(InjectorState(Arc::new(Semaphore::new(MAX_PARALLEL_INJECTIONS as usize))))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
