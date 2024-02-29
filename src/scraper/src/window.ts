@@ -1,57 +1,39 @@
-import {open_webview, close_webview, webview_inject, Serializable} from "./commands.ts";
 import {close_webview, open_webview} from "./commands.ts";
-
-//TODO:
-// Reflect on the least complicated method for handling the interval injections
-// Method 1:
-//  The intervals run on the initiator window and the true interval id is returned to the user
-//  - Pros:
-//      - The user can stop the interval from any context
-//      - Managing the intervals is easier
-//  - Cons:
-//      - Need to listen for navigation events to re-inject the intervals or stop them
-// Looks like this might be simpler to implement.
-// The "global" vs "local" interval injection might be a feature creep since only the global injection
-// is needed for the current use case.
+import {WebviewWindow} from "@tauri-apps/api/window";
+import {UnlistenFn} from "@tauri-apps/api/event";
 
 
-type IntervalId = number;
-type InjectionId = number;
-
-type IntervalInjectionData = {
-    current_id: IntervalId; // The id might change if the function is re-injected
-    fn: string;
-    args: Serializable[];
-    interval: number;
-    isOneShot: false;
-};
-
-class InjectableWindow {
-    private static next_injection_id = 0;
+export class InjectableWindow {
     private readonly window_label: string;
-    private readonly running_intervals: Map<InjectionId, IntervalInjectionData> = new Map();
+    private readonly navigation_listener: Promise<UnlistenFn>;
+    private readonly close_listener: Promise<UnlistenFn>;
 
-    static async create(label: string, url: string): Promise<InjectableWindow> {
-        await open_webview(label, url);
     static async create(label: string, title: string, url: string): Promise<InjectableWindow> {
         await open_webview(label, title, url);
         return new InjectableWindow(label);
     }
 
     public async close(): Promise<void> {
-        for await (const interval_id of this.running_intervals.keys()) {
-            await this.stopIntervalInjection(interval_id);
-        }
-
         await close_webview(this.window_label);
     }
 
     private constructor(label: string) {
         this.window_label = label;
+        this.navigation_listener = this.on_navigation(this.handle_navigation);
+        this.close_listener = this.on_close(this.handle_close);
     }
 
-    private static nextInjectionId(): InjectionId {
-        return InjectableWindow.next_injection_id++;
+    private get underlying_window(): WebviewWindow {
+        const window = WebviewWindow.getByLabel(this.window_label);
+        if (!window) throw new Error(`Window '${this.window_label}' not found`);
+        return window;
+    }
+
+    public async on_navigation(callback: (url: string) => void): Promise<UnlistenFn> {
+        return await this.underlying_window.listen<{ url: string }>(
+            "navigation",
+            (event) => callback(event.payload.url)
+        );
     }
 
     /**
@@ -82,21 +64,17 @@ class InjectableWindow {
         return injection_id;
     }
 
-    public async stopIntervalInjection(interval_id: InjectionId): Promise<void> {
-        const interval = this.running_intervals.get(interval_id);
-        if (!interval) throw new Error(`No interval with id ${interval_id} is running`);
+    private handle_navigation(url: string) {
+        console.log("URL:", url);
+    }
 
-        const clearIntervalFn = (id: number): void => clearInterval(id);
+    public async on_close(callback: () => void): Promise<UnlistenFn> {
+        return await this.underlying_window.listen("tauri://close-requested", callback);
+    }
 
-        await webview_inject(
-            this.window_label,
-            InjectableWindow.nextInjectionId(),
-            clearIntervalFn,
-            [interval_id],
-            true
-        );
-
-        this.running_intervals.delete(interval_id);
+    private handle_close() {
+        console.log("Window closed");
+        this.navigation_listener.then(unlisten => unlisten());
+        this.close_listener.then(unlisten => unlisten());
     }
 }
-
