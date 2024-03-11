@@ -36,32 +36,8 @@ export class InjectableWindow {
         );
     }
 
-    /**
-     *  Inject a function into the window at the specified interval.
-     *
-     * @param fn Function to inject
-     * @param args Arguments to pass to the function
-     * @param interval Interval in milliseconds
-     * @param injectOnNavigation If true, the function will be injected into the current page and all future pages,
-     *                           otherwise it will only be injected into the current page once and navigating
-     *                           (or a refresh) will not re-inject the function. (default: true)
-     *
-     * @returns The interval id
-     */
-    public injectAtInterval(
-        fn: (...args: Serializable[]) => Serializable,
-        args: Serializable[],
-        interval: number,
-        injectOnNavigation: boolean = true
-    ): InjectionId {
-        const injection_id = InjectableWindow.nextInjectionId();
-
-        const intervalFn = (id: number, fn: string, args: Serializable[]): void => {
-            const fn_ = new Function(`return ${fn}`)();
-            fn_(...args);
-        };
-
-        return injection_id;
+    public begin_sequence(sequence: ((sequence_builder: SequenceBuilder) => Promise<void>)): SequenceCanceller {
+        //TODO: Implement sequence
     }
 
     private handle_navigation(url: string) {
