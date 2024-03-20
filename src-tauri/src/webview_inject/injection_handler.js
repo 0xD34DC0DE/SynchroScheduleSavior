@@ -18,6 +18,7 @@ window.__INJECTOR__ = (initiator_label, injection_id, fn, args) => {
             if (unserializable_types.includes(result)) {
                 const type_index = unserializable_types.indexOf(result);
                 emit({ok: unserializable_types_str[type_index], special: true});
+                return;
             }
 
             emit({ok: result});
