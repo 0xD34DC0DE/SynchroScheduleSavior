@@ -38,7 +38,7 @@ impl<'a> Injector<'a> {
                         args: Option<Vec<Value>>,
     ) -> Result<()> {
         let js =
-            format!("__INJECTOR__('{}', {}, '{}', {})",
+            format!("__INJECTOR__('{}', '{}', {}, {})",
                     initiator.label(),
                     injection_id,
                     js_fn,
