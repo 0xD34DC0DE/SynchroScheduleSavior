@@ -1,6 +1,7 @@
-import {close_webview, open_webview} from "./commands.ts";
+import {close_webview, open_webview, webview_inject} from "./commands.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
+import {InjectionResult, process_raw_injection_result, RawInjectionResult} from "./injection.ts";
 
 
 export class InjectableWindow {
@@ -48,5 +49,42 @@ export class InjectableWindow {
         console.log("Window closed");
         this.navigation_listener.then(unlisten => unlisten());
         this.close_listener.then(unlisten => unlisten());
+    }
+
+    public async inject<F extends (...args: Parameters<F>) => ReturnType<F>>(
+        jsFunction: F,
+        args: Parameters<F>,
+        on_result: (result: InjectionResult<ReturnType<F>>) => void = () => {},
+        allowParallel: boolean = false,
+    ): Promise<UnlistenFn> {
+        return new Promise<UnlistenFn>(async (resolve, reject) => {
+            const injection_id = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+            console.log("(InjectableWindow) starting listener for injection id: ", injection_id);
+            this.underlying_window.once<RawInjectionResult<ReturnType<F>>>(
+                injection_id.toString(),
+                (event) => {
+                    console.log("(InjectableWindow) injection result received", event.payload);
+                    console.log("(InjectableWindow) calling on_result");
+                    on_result(process_raw_injection_result(event.payload));
+                }
+            ).then(async unlisten => {
+                try {
+                    console.log("(InjectableWindow) listener ready");
+                    console.log("(InjectableWindow) injecting");
+                    await webview_inject(
+                        this.window_label,
+                        injection_id,
+                        jsFunction,
+                        args,
+                        allowParallel
+                    );
+                    console.log("(InjectableWindow) injection complete, returning unlisten function");
+                    return resolve(unlisten);
+                } catch (e) {
+                    unlisten();
+                    reject(e);
+                }
+            })
+        });
     }
 }
