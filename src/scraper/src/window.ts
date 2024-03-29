@@ -36,8 +36,8 @@ export class InjectableWindow {
         );
     }
 
-    private handle_navigation(url: string) {
-        console.log("URL:", url);
+    private handle_navigation(_url: string) {
+        //console.log("URL:", url);
     }
 
     public async on_close(callback: () => void): Promise<UnlistenFn> {
