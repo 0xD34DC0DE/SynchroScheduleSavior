@@ -8,17 +8,15 @@ const close_webview = async (windowLabel: string): Promise<void> => {
     await invoke<void>('close_webview', {windowLabel});
 }
 
-
-type Serializable = string | number | boolean | null | Serializable[] | { [key: string]: Serializable };
-
-const webview_inject = async <F extends (...args: Parameters<F>) => ReturnType<F>, T extends ReturnType<F>>(
+const webview_inject = async <F extends (...args: Parameters<F>) => ReturnType<F>>(
     targetWindowLabel: string,
     injectionId: number,
     jsFunction: F,
     args: Parameters<F>,
     allowParallel: boolean = false,
-): Promise<ReturnType<F>> => {
-    return await invoke<T>('webview_inject', {
+): Promise<void> => {
+    console.log("(cmd::webview_inject) ", targetWindowLabel, injectionId, jsFunction, args, allowParallel);
+    return await invoke('webview_inject', {
         targetWindowLabel,
         injectionId,
         jsFunction: jsFunction.toString(),
@@ -32,5 +30,3 @@ export {
     close_webview,
     webview_inject
 };
-
-export type {Serializable};

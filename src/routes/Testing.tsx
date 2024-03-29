@@ -1,7 +1,8 @@
 import {useEffect, useState} from "react";
 import {InjectableWindow} from "../scraper";
 import {Button, Stack} from "@mui/material";
-import UrlPattern from "url-pattern";
+import {WebScrapper} from "../scraper/src/web_scraper.ts";
+import {defaultContextFactory} from "../scraper/src/context.ts";
 
 export interface TestingProps {
 
@@ -18,28 +19,20 @@ const Testing = ({}: TestingProps) => {
             setWindow(null);
         });
 
-        window.begin_sequence(async (sequence) => {
-            console.log("Sequence started");
-            await sequence
-                .wait_page_load("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?") // -> Page
-                .navigate_to("/psc/acprpr9/EMPLOYEE/SA/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL") // -> Navigation
-                .wait_page_load("*/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL*") // -> Page
-                .click_link("#gh-container-footer-4059") // -> Navigation
-                .wait_page_load("*/SA_LEARNER_SERVICES_2.SSR_SSENRL_CART.GBL/*") // -> Page
-                //dummy stuff VVV
-                .click("#dummy") // -> Action
-                .wait_element_load("#categoryOfDummies") // -> Condition
-                .select_all("#dummies") // -> Selection
-                .execute_subsequence(async (subsequence) => {
-                    //...
-                })
-                .run();
-                // Upon run, check for "Page" after Navigation to be
-                // able to start the listener before the page loads
-        });
+        const cancel = new WebScrapper(window, defaultContextFactory)
+            .begin()
+            .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
+            .task(
+                () => console.log("TARGET: Page loaded"),
+                [],
+                (r) => console.log("INITIATOR: Page loaded, result: ", r)
+            )
+            .execute();
+
 
         return () => {
-            unlisten_nav.then(unlisten => unlisten());
+            console.log("Cleaning up");
+            cancel();
             unlisten_close.then(unlisten => unlisten());
         };
     }, [window]);
@@ -56,3 +49,9 @@ const Testing = ({}: TestingProps) => {
 };
 
 export default Testing;
+
+//      .wait_page_load("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?") // -> Page
+//      .navigate_to("/psc/acprpr9/EMPLOYEE/SA/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL") // -> Navigation
+//      .wait_page_load("*/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL*") // -> Page
+//      .click_link("#gh-container-footer-4059") // -> Navigation
+//      .wait_page_load("*/SA_LEARNER_SERVICES_2.SSR_SSENRL_CART.GBL/*") // -> Page
