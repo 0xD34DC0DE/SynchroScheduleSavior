@@ -36,10 +36,6 @@ export class InjectableWindow {
         );
     }
 
-    public begin_sequence(sequence: ((sequence_builder: SequenceBuilder) => Promise<void>)): SequenceCanceller {
-        //TODO: Implement sequence
-    }
-
     private handle_navigation(url: string) {
         console.log("URL:", url);
     }
