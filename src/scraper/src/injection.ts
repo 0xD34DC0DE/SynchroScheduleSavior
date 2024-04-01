@@ -49,7 +49,7 @@ export class Injection<F extends (...args: Parameters<F>) => ReturnType<F>> {
     constructor(
         private readonly js_function: F,
         private readonly args: Parameters<F>,
-        private readonly allow_parallel: boolean,
+        private readonly allow_parallel: boolean = false,
     ) {
         this._injection_id = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
     }
