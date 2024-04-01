@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import {InjectableWindow} from "../scraper";
 import {Button, Stack} from "@mui/material";
-import {WebScrapper} from "../scraper/src/web_scraper.ts";
+import {WebScraper} from "../scraper/src/web_scraper.ts";
 import {defaultContextFactory} from "../scraper/src/context.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 
@@ -20,7 +20,7 @@ const Testing = ({}: TestingProps) => {
 
         console.log("Starting injection");
 
-        return new WebScrapper(defaultContextFactory)
+        return new WebScraper(defaultContextFactory)
             .begin()
             .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
             .task(

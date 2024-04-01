@@ -2,7 +2,7 @@ import {Context, ContextFactory} from "./context.ts";
 import {TaskPipeline} from "./pipeline/task_pipeline.ts";
 
 
-class WebScrapper<Ctx extends Context> {
+export class WebScraper<Ctx extends Context> {
     constructor(readonly context_factory: ContextFactory<Ctx>) {
     }
 
@@ -10,5 +10,3 @@ class WebScrapper<Ctx extends Context> {
         return new TaskPipeline(this);
     }
 }
-
-export {WebScrapper};
