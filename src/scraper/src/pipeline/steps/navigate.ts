@@ -1,9 +1,10 @@
 import {Context} from "../../context.ts";
-import {InjectableWindow} from "../../window.ts";
 import {PipelineStep} from "../pipeline_step.ts";
+import {WebviewWindow} from "@tauri-apps/api/window";
 import UrlPattern from "url-pattern";
+import {Injection} from "../../injection.ts";
 
-class Navigate<Ctx extends Context> extends PipelineStep<Ctx> {
+class Navigate extends PipelineStep {
     private readonly _url: string;
     private readonly _url_pattern: UrlPattern;
 
@@ -18,22 +19,20 @@ class Navigate<Ctx extends Context> extends PipelineStep<Ctx> {
         this._url_pattern = new UrlPattern(url_pattern || url);
     }
 
-    public async run(target_window: InjectableWindow, context: Ctx): Promise<Ctx> {
-        console.log("(PipelineStep::Navigate) running");
-        return this.begin(
-            context,
-            target_window.on_navigation(url => {
-                console.log("(PipelineStep::Navigate) on_navigation: ", url);
-                if (this._url_pattern.match(url)) this.complete();
-            }),
-            () => {
-                console.log("(PipelineStep::Navigate) navigating to: ", this._url);
-                target_window.inject(
-                    (href: string) => window.location.href = href,
-                    [this._url],
-                )
+    public async run(target: WebviewWindow, _context: Context): Promise<void> {
+        await this.add_listener(target.listen<{ url: string }>(
+            "navigation",
+            (event) => {
+                if (this._url_pattern.match(event.payload.url)) this.complete();
             }
+        ));
+
+        const injection = new Injection(
+            (href: string) => window.location.href = href,
+            [this._url],
         );
+
+        await this.add_listener(injection.inject(target));
     }
 }
 

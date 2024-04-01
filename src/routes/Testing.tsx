@@ -3,23 +3,24 @@ import {InjectableWindow} from "../scraper";
 import {Button, Stack} from "@mui/material";
 import {WebScrapper} from "../scraper/src/web_scraper.ts";
 import {defaultContextFactory} from "../scraper/src/context.ts";
+import {WebviewWindow} from "@tauri-apps/api/window";
 
 export interface TestingProps {
 
 }
 
 const Testing = ({}: TestingProps) => {
-    const [window, setWindow] = useState<InjectableWindow | null>(null);
+    const [targetLabel, setTargetLabel] = useState<string | null>(null);
+    const [windowOpen, setWindowOpen] = useState<boolean>(false);
 
     useEffect(() => {
-        if (!window) return;
+        if (targetLabel === null || !windowOpen) return;
+        let target = WebviewWindow.getByLabel(targetLabel);
+        if (target === null) return;
 
-        const unlisten_close = window.on_close(() => {
-            console.log("Window closed");
-            setWindow(null);
-        });
+        console.log("Starting injection");
 
-        const cancel = new WebScrapper(window, defaultContextFactory)
+        return new WebScrapper(defaultContextFactory)
             .begin()
             .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
             .task(
@@ -27,23 +28,31 @@ const Testing = ({}: TestingProps) => {
                 [],
                 (r) => console.log("INITIATOR: Page loaded, result: ", r)
             )
-            .execute();
+            .execute(target, () => {
+                console.log("Task completed");
+                setTargetLabel(null);
+            });
+
+    }, [targetLabel, windowOpen]);
 
 
-        return () => {
-            console.log("Cleaning up");
-            cancel();
-            unlisten_close.then(unlisten => unlisten());
-        };
-    }, [window]);
+    const createWindow = async () => {
+        await InjectableWindow.create(
+            "synchro",
+            "Testing",
+            "https://academique-dmz.synchro.umontreal.ca/"
+        );
+        setWindowOpen(true);
+    }
+
+    const startInjection = async () => {
+        setTargetLabel("synchro");
+    }
 
     return (
         <Stack direction={"column"}>
-            <Button
-                variant={"contained"}
-                onClick={async () => {
-                    setWindow(await InjectableWindow.create("synchro", "Testing", "https://academique-dmz.synchro.umontreal.ca/"));
-                }}>Open Window</Button>
+            <Button variant={"contained"} onClick={createWindow}>Open Window</Button>
+            <Button variant={"contained"} onClick={startInjection} disabled={!windowOpen}>Inject</Button>
         </Stack>
     );
 };
