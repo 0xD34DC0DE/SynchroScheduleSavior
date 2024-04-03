@@ -1,32 +1,49 @@
-import {createBrowserRouter} from "react-router-dom";
+import {createBrowserRouter, createRoutesFromElements, Link, Route, useNavigate} from "react-router-dom";
 import Root from "./routes/Root.tsx";
-import LandingPage from "./routes/LandingPage.tsx";
-import DataCollectionPage from "./routes/DataCollectionPage.tsx";
-import Testing from "./routes/Testing.tsx";
+import {Button} from "@mui/material";
+import ScraperRouteGuard from "./components/ScraperRouteGuard.tsx";
+import {useContext} from "react";
+import {ScraperContext} from "./components/ScraperProvider.tsx";
 
-const router = createBrowserRouter([
-    {
-        path: "/",
-        element: <Root/>,
-        children: [
-            {
-                path: "/test",
-                element: <Testing/>,
-            },
-            {
-                path: "/landing",
-                element: <LandingPage/>,
-            },
-            {
-                path: "/dashboard",
-                element: <div>TODO - Dashboard</div>,
-            },
-            {
-                path: "/data_collection",
-                element: <DataCollectionPage/>,
-            }
-        ],
-    },
-]);
+const TMP = ({children}) => {
+    const ctx = useContext(ScraperContext);
+    return (
+        <div>
+            {JSON.stringify(ctx, null, 2)}
+            {children}
+        </div>
+    );
+};
+
+const router = createBrowserRouter(
+    createRoutesFromElements(
+        <Route
+            path="/"
+            element={<Root/>}
+        >
+            <Route
+                index
+                element={<Link to={"/test"}>Launch</Link>}
+            />
+            <ScraperRouteGuard
+
+                windowClosedRedirectPath={"/closed"}
+                windowCreateArgs={{
+                    label: "synchro",
+                    title: "Testing",
+                    url: "https://academique-dmz.synchro.umontreal.ca/"
+                }}>
+                <Route
+                    index
+                    element={<TMP><Link to={"/closed"}>Go outside Guard</Link></TMP>}
+                />
+            </ScraperRouteGuard>
+            <Route
+                path={"/closed"}
+                element={<Button onClick={() => useNavigate()("/")}>Closed</Button>}
+            />
+        </Route>
+    )
+);
 
 export default router;
