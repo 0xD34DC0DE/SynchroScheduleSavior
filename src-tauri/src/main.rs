@@ -92,6 +92,7 @@ fn main() {
             webview_inject
         ])
         .manage(InjectorState(Arc::new(Semaphore::new(MAX_PARALLEL_INJECTIONS as usize))))
+        .plugin(tauri_plugin_sql::Builder::default().build())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

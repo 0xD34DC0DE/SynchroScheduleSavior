@@ -1,4 +1,4 @@
-import {WebScrapper} from "../web_scraper.ts";
+import {WebScraper} from "../web_scraper.ts";
 import {PipelineStep} from "./pipeline_step.ts";
 import {Context} from "../context.ts";
 import {Navigate} from "./steps/navigate.ts";
@@ -13,12 +13,12 @@ const noop = () => {
 type OnCompleteCallback = () => void;
 
 export class TaskPipeline<Ctx extends Context> {
-    private readonly _web_scraper: WebScrapper<Ctx>;
+    private readonly _web_scraper: WebScraper<Ctx>;
     private readonly _steps: PipelineStep[] = [];
     private _window_close_unlisten: UnlistenFn | null = null;
     private _cancel: (() => void) | null = null;
 
-    constructor(web_scraper: WebScrapper<Ctx>) {
+    constructor(web_scraper: WebScraper<Ctx>) {
         this._web_scraper = web_scraper;
     }
 
