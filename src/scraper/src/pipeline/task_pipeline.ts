@@ -7,8 +7,6 @@ import {InjectionResult} from "../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 
-const noop = () => {
-}
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
 
@@ -22,12 +20,12 @@ export class TaskPipeline<Ctx extends Context> {
         private readonly _context_factory: ContextFactory<Ctx>) {
     }
 
-    public execute(on_complete: OnCompleteCallback = noop): CancelFn {
+    public execute(on_complete?: OnCompleteCallback): CancelFn {
         this._target.once("tauri://destroyed", () => {
             this._cancel?.();
         }).then(unlisten => {
             this._window_close_unlisten = unlisten;
-            this._execute_steps().then(() => on_complete());
+            this._execute_steps().then(() => on_complete?.());
         });
 
         return () => this._cancel?.();
@@ -62,7 +60,7 @@ export class TaskPipeline<Ctx extends Context> {
     public task<F extends (...args: Parameters<F>) => ReturnType<F>>(
         injected_fn: F,
         args: Parameters<F>,
-        on_result: (result: InjectionResult<ReturnType<F>>) => void = noop,
+        on_result?: (result: InjectionResult<ReturnType<F>>) => void,
     ): TaskPipeline<Ctx> {
         this._steps.push(new Task(injected_fn, args, on_result));
         return this;
