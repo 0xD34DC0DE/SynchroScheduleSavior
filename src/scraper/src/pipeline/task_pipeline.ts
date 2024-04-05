@@ -65,8 +65,7 @@ export class TaskPipeline<Ctx extends Context> {
     public task<F extends (...args: Parameters<F>) => ReturnType<F>>(
         injected_fn: F,
         args: Parameters<F>,
-        on_result: (result: InjectionResult<ReturnType<F>>) => void = () => {
-        },
+        on_result: (result: InjectionResult<ReturnType<F>>) => void = noop,
     ): TaskPipeline<Ctx> {
         this._steps.push(new Task(injected_fn, args, on_result));
         return this;
