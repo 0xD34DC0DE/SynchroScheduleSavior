@@ -22,7 +22,7 @@ const ScraperRouteGuard = ({windowClosedRedirectPath}: ScraperRouteGuardProps) =
                 errorElement={<ScraperLoadingError/>}
             >
                 {(web_scraper: WebScraper) => (
-                    <ScraperProvider scraper_context={{web_scraper}}
+                    <ScraperProvider scraperContext={{web_scraper}}
                                      windowClosedRedirectPath={windowClosedRedirectPath}
                                      guardPath={guard_path.pathname}
                     >

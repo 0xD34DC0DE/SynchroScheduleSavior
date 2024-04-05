@@ -5,7 +5,7 @@ import {TaskPipeline} from "../scraper/src/pipeline/task_pipeline.ts";
 import {matchPath, useBlocker, useNavigate} from "react-router-dom";
 
 interface ScraperProviderProps {
-    scraper_context: ScraperContextType;
+    scraperContext: ScraperContextType;
     windowClosedRedirectPath: string;
     guardPath: string;
     children: ReactNode;
@@ -32,14 +32,14 @@ function useScraper<Ctx extends Context = Context>(scraper_context_factory?: Con
 
 export {useScraper};
 
-const ScraperProvider = ({scraper_context, windowClosedRedirectPath, guardPath, children}: ScraperProviderProps) => {
+const ScraperProvider = ({scraperContext, windowClosedRedirectPath, guardPath, children}: ScraperProviderProps) => {
     const navigate = useNavigate();
     const closeCallbackSet = useRef(false);
 
     // Abusing useBlocker a little bit to get a callback when there's a navigation
     useBlocker(({nextLocation}) => {
         if (!matchPath(`${guardPath}/*`, nextLocation.pathname)) {
-            scraper_context.web_scraper?.close();
+            scraperContext.web_scraper?.close();
         }
         return false;
     });
@@ -47,14 +47,14 @@ const ScraperProvider = ({scraper_context, windowClosedRedirectPath, guardPath, 
     useEffect(() => {
         if (closeCallbackSet.current) return;
 
-        scraper_context.web_scraper?.onDestroy(() => {
+        scraperContext.web_scraper?.onDestroy(() => {
             navigate(windowClosedRedirectPath);
         });
         closeCallbackSet.current = true;
-    }, [scraper_context.web_scraper]);
+    }, [scraperContext.web_scraper]);
 
     return (
-        <ScraperContext.Provider value={scraper_context}>
+        <ScraperContext.Provider value={scraperContext}>
             {children}
         </ScraperContext.Provider>
     );
