@@ -1,18 +1,7 @@
-import {WebviewWindow} from "@tauri-apps/api/window";
-
-export type WindowCreateArgs = {
-    label: string,
-    title: string,
-    url: string
-}
+import {WebScraper} from "../scraper/src/web_scraper.ts";
 
 interface ScraperContextType {
-    _details: {
-        _init: (args: WindowCreateArgs) => Promise<void>;
-        _window?: WebviewWindow;
-        _close: () => void;
-        _window_close_unlisten?: () => void;
-    }
+    web_scraper?: WebScraper;
 }
 
 export default ScraperContextType;
