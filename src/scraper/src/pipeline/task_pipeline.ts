@@ -10,6 +10,7 @@ import {UnlistenFn} from "@tauri-apps/api/event";
 const noop = () => {
 }
 type OnCompleteCallback = () => void;
+type CancelFn = () => void;
 
 export class TaskPipeline<Ctx extends Context> {
     private readonly _steps: PipelineStep[] = [];
@@ -21,9 +22,7 @@ export class TaskPipeline<Ctx extends Context> {
         private readonly _context_factory: ContextFactory<Ctx>) {
     }
 
-    public execute(
-        on_complete: OnCompleteCallback = noop
-    ): () => void {
+    public execute(on_complete: OnCompleteCallback = noop): CancelFn {
         this._target.once("tauri://destroyed", () => {
             this._cancel?.();
         }).then(unlisten => {
