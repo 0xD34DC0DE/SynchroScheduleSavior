@@ -1,4 +1,5 @@
 import {invoke} from '@tauri-apps/api/tauri';
+import {WebviewWindow} from "@tauri-apps/api/window";
 
 const open_webview = async (windowLabel: string, title: string, url: string): Promise<void> => {
     await invoke<void>('open_webview', {windowLabel, title, url});
@@ -25,8 +26,21 @@ const webview_inject = async <F extends (...args: Parameters<F>) => ReturnType<F
     });
 }
 
+//FIXME: This is a workaround for a bug in Tauri's WebviewWindow.getByLabel API
+// https://github.com/tauri-apps/tauri/issues/5380
+const get_window_by_label = async (windowLabel: string): Promise<WebviewWindow | null> => {
+    const exists = await invoke<boolean>('window_exists', {windowLabel});
+    if (!exists) return null;
+
+    return new WebviewWindow(windowLabel, {
+        //@ts-ignore (skip is private API, but necessary for the workaround)
+        skip: true
+    });
+}
+
 export {
     open_webview,
     close_webview,
-    webview_inject
+    webview_inject,
+    get_window_by_label,
 };

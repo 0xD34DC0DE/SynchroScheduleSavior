@@ -84,12 +84,20 @@ async fn webview_inject<'r>(
         .map_err(|e| e.to_string())
 }
 
+//FIXME: This is a workaround for the WebviewWindow.getByAll() javascript function
+// loosing track of existing windows after a page reload.
+#[tauri::command]
+fn window_exists(window_label: String, handle: AppHandle) -> bool {
+    handle.get_window(window_label.as_str()).is_some()
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             open_webview,
             close_webview,
-            webview_inject
+            webview_inject,
+            window_exists
         ])
         .manage(InjectorState(Arc::new(Semaphore::new(MAX_PARALLEL_INJECTIONS as usize))))
         .plugin(tauri_plugin_sql::Builder::default().build())
