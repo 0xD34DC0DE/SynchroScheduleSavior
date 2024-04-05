@@ -9,11 +9,12 @@ export interface TestingProps {
 
 const Testing = ({}: TestingProps) => {
     const [state, setState] = useState<string | null>(null);
-    const pipeline = useScraper();
+    const scraper = useScraper();
 
     const inject = () => {
         setState("Injecting");
-        pipeline
+        scraper
+            .begin()
             .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
             .task(
                 () => console.log("TARGET: Page loaded"),
