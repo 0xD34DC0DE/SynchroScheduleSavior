@@ -27,7 +27,6 @@ export abstract class PipelineStep {
     }
 
     protected async add_listener(listener: Promise<UnlistenFn>) {
-        console.log(`(PipelineStep) Adding listener to step '${this.name}'`);
         this._listeners.push(await listener);
     }
 
