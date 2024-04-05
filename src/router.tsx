@@ -1,19 +1,8 @@
-import {createBrowserRouter, createRoutesFromElements, Link, Route, useNavigate} from "react-router-dom";
+import {createBrowserRouter, createRoutesFromElements, Link, Route} from "react-router-dom";
 import Root from "./routes/Root.tsx";
-import {Button} from "@mui/material";
-import ScraperRouteGuard from "./components/ScraperRouteGuard.tsx";
-import {useContext} from "react";
-import {ScraperContext} from "./components/ScraperProvider.tsx";
-
-const TMP = ({children}) => {
-    const ctx = useContext(ScraperContext);
-    return (
-        <div>
-            {JSON.stringify(ctx, null, 2)}
-            {children}
-        </div>
-    );
-};
+import {Typography} from "@mui/material";
+import ScraperRouteGuard, {scraperLoader} from "./components/ScraperRouteGuard.tsx";
+import Testing from "./routes/Testing.tsx";
 
 const router = createBrowserRouter(
     createRoutesFromElements(
@@ -25,22 +14,18 @@ const router = createBrowserRouter(
                 index
                 element={<Link to={"/test"}>Launch</Link>}
             />
-            <ScraperRouteGuard
-
-                windowClosedRedirectPath={"/closed"}
-                windowCreateArgs={{
-                    label: "synchro",
-                    title: "Testing",
-                    url: "https://academique-dmz.synchro.umontreal.ca/"
-                }}>
-                <Route
-                    index
-                    element={<TMP><Link to={"/closed"}>Go outside Guard</Link></TMP>}
-                />
-            </ScraperRouteGuard>
+            <Route
+                path={"/test"}
+                loader={scraperLoader("synchro", "Testing", "https://academique-dmz.synchro.umontreal.ca/")}
+                element={<ScraperRouteGuard windowClosedRedirectPath="/closed"/>}
+            >
+                <Route index element={<Testing/>}/>
+                <Route path={"/test/second"} element={<><Testing/><Link to="/test/second/third">Third</Link></>}/>
+                <Route path={"/test/second/third"} element={<Link to="/">Root</Link>}/>
+            </Route>
             <Route
                 path={"/closed"}
-                element={<Button onClick={() => useNavigate()("/")}>Closed</Button>}
+                element={<Typography>Scraper closed, <Link to={"/"}>go back</Link></Typography>}
             />
         </Route>
     )
