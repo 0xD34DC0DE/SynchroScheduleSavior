@@ -1,58 +1,37 @@
-import {useEffect, useState} from "react";
-import {InjectableWindow} from "../scraper";
-import {Button, Stack} from "@mui/material";
-import {WebScraper} from "../scraper/src/web_scraper.ts";
-import {defaultContextFactory} from "../scraper/src/context.ts";
-import {WebviewWindow} from "@tauri-apps/api/window";
+import {Button, Stack, Typography} from "@mui/material";
+import {useScraper} from "../components/ScraperProvider.tsx";
+import {useState} from "react";
+import {Link} from "react-router-dom";
 
 export interface TestingProps {
 
 }
 
 const Testing = ({}: TestingProps) => {
-    const [targetLabel, setTargetLabel] = useState<string | null>(null);
-    const [windowOpen, setWindowOpen] = useState<boolean>(false);
+    const [state, setState] = useState<string | null>(null);
+    const pipeline = useScraper();
 
-    useEffect(() => {
-        if (targetLabel === null || !windowOpen) return;
-        let target = WebviewWindow.getByLabel(targetLabel);
-        if (target === null) return;
-
-        console.log("Starting injection");
-
-        return new WebScraper(defaultContextFactory)
-            .begin()
+    const inject = () => {
+        setState("Injecting");
+        pipeline
             .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
             .task(
                 () => console.log("TARGET: Page loaded"),
                 [],
                 (r) => console.log("INITIATOR: Page loaded, result: ", r)
             )
-            .execute(target, () => {
+            .execute(() => {
+                setState("Done");
                 console.log("Task completed");
-                setTargetLabel(null);
             });
-
-    }, [targetLabel, windowOpen]);
-
-
-    const createWindow = async () => {
-        await InjectableWindow.create(
-            "synchro",
-            "Testing",
-            "https://academique-dmz.synchro.umontreal.ca/"
-        );
-        setWindowOpen(true);
-    }
-
-    const startInjection = async () => {
-        setTargetLabel("synchro");
     }
 
     return (
         <Stack direction={"column"}>
-            <Button variant={"contained"} onClick={createWindow}>Open Window</Button>
-            <Button variant={"contained"} onClick={startInjection} disabled={!windowOpen}>Inject</Button>
+            <Button variant={"contained"} onClick={inject}>Inject</Button>
+            <Typography>{state}</Typography>
+            <Link to={"/"}>Back to Root</Link>
+            <Link to={"/test/second"}>Second</Link>
         </Stack>
     );
 };
