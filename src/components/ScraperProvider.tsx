@@ -1,32 +1,61 @@
 import ScraperContextType from "../contexts/ScraperContext.ts";
-import {createContext, ReactNode, useState} from "react";
-import {InjectableWindow} from "../scraper";
+import {createContext, ReactNode, useContext, useEffect, useRef} from "react";
+import {Context, ContextFactory, defaultContextFactory} from "../scraper/src/context.ts";
+import {TaskPipeline} from "../scraper/src/pipeline/task_pipeline.ts";
+import {matchPath, useBlocker, useNavigate} from "react-router-dom";
 
 interface ScraperProviderProps {
+    scraper_context: ScraperContextType;
+    windowClosedRedirectPath: string;
+    guardPath: string;
     children: ReactNode;
 }
 
-export const ScraperContext = createContext<ScraperContextType>({
-    _details: {
-        _init: async () => {
-            throw new Error("_init called outside of ScraperProvider context");
-        },
-        _close: function (): void {
-            throw new Error("_close called outside of ScraperProvider context");
-        }
-    }
-});
+const ScraperContext = createContext<ScraperContextType>({});
 
-const ScraperProvider = ({children}: ScraperProviderProps) => {
-    const [context, _setContext] = useState<ScraperContextType>({
-        _details: {
-            _init: (args) => InjectableWindow.create(args.label, args.title, args.url).then(() => {}),
-            _close: () => {}
+
+function useScraper(): TaskPipeline<Context>;
+function useScraper<Ctx extends Context>(scraper_context_factory: ContextFactory<Ctx>): TaskPipeline<Ctx>;
+
+function useScraper<Ctx extends Context = Context>(scraper_context_factory?: ContextFactory<Ctx>): TaskPipeline<Ctx> | TaskPipeline<Context> {
+    const context = useContext(ScraperContext);
+    if (!context.web_scraper) {
+        throw new Error("Scraper not initialized");
+    }
+
+    if (!scraper_context_factory) {
+        return context.web_scraper.begin(defaultContextFactory);
+    } else {
+        return context.web_scraper.begin(scraper_context_factory);
+    }
+}
+
+export {useScraper};
+
+const ScraperProvider = ({scraper_context, windowClosedRedirectPath, guardPath, children}: ScraperProviderProps) => {
+    const navigate = useNavigate();
+    const closeCallbackSet = useRef(false);
+
+    // Abusing useBlocker a little bit to get a callback when there's a navigation
+    // useLocation
+    useBlocker(({nextLocation}) => {
+        if (!matchPath(`${guardPath}/*`, nextLocation.pathname)) {
+            scraper_context.web_scraper?.close();
         }
+        return false;
     });
 
+    useEffect(() => {
+        if (closeCallbackSet.current) return;
+
+        scraper_context.web_scraper?.onDestroy(() => {
+            navigate(windowClosedRedirectPath);
+        });
+        closeCallbackSet.current = true;
+    }, [scraper_context.web_scraper]);
+
     return (
-        <ScraperContext.Provider value={context}>
+        <ScraperContext.Provider value={scraper_context}>
             {children}
         </ScraperContext.Provider>
     );

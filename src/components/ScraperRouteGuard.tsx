@@ -1,39 +1,43 @@
-import {Outlet, PathRouteProps, Route, Routes, useNavigate} from "react-router-dom";
+import {Await, defer, Outlet, useLoaderData, useResolvedPath} from "react-router-dom";
 import ScraperProvider from "./ScraperProvider.tsx";
-import ScraperLoader from "./ScraperLoader.tsx";
+import {WebScraper} from "../scraper/src/web_scraper.ts";
+import {Suspense} from "react";
+import ScraperLoadingIndicator from "./ScraperLoadingIndicator.tsx";
+import ScraperLoadingError from "./ScraperLoadingError.tsx";
 
-interface ScraperRouteGuardProps extends PathRouteProps {
+interface ScraperRouteGuardProps {
     windowClosedRedirectPath: string;
-    windowCreateArgs: {
-        label: string;
-        title: string;
-        url: string;
-    }
 }
 
-const ScraperRouteGuard = ({
-                               windowClosedRedirectPath,
-                               windowCreateArgs,
-                               ...routerProps
-                           }: ScraperRouteGuardProps) => {
-    const navigate = useNavigate();
-    const onWindowClose = () => navigate(windowClosedRedirectPath);
+const ScraperRouteGuard = ({windowClosedRedirectPath}: ScraperRouteGuardProps) => {
+    const data = useLoaderData() as {
+        web_scraper: any;
+    };
+    const guard_path = useResolvedPath(".", {relative: "route"});
 
     return (
-        <Routes>
-            <Route
-                element={
-                    <ScraperProvider>
-                        <ScraperLoader windowArgs={windowCreateArgs} onWindowClose={onWindowClose}>
-                            <Outlet/>
-                        </ScraperLoader>
-                    </ScraperProvider>
-                }
+        <Suspense fallback={<ScraperLoadingIndicator/>}>
+            <Await
+                resolve={data.web_scraper}
+                errorElement={<ScraperLoadingError/>}
             >
-                <Route {...routerProps}/>
-            </Route>
-        </Routes>
+                {(web_scraper: WebScraper) => (
+                    <ScraperProvider scraper_context={{web_scraper}}
+                                     windowClosedRedirectPath={windowClosedRedirectPath}
+                                     guardPath={guard_path.pathname}
+                    >
+                        <Outlet/>
+                    </ScraperProvider>
+                )}
+            </Await>
+        </Suspense>
     );
 };
 
 export default ScraperRouteGuard;
+
+export const scraperLoader = (label: string, title: string, url: string) => {
+    return async () => defer({
+        web_scraper: WebScraper.create(label, title, url)
+    });
+}
