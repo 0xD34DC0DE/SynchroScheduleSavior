@@ -3,6 +3,7 @@ import {useScraper} from "../components/ScraperProvider.tsx";
 import {useState} from "react";
 import {Link} from "react-router-dom";
 import {PipelineState} from "../scraper/src/pipeline/task_pipeline.ts";
+import test from "../assets/login_modal.html?raw";
 
 export interface TestingProps {
 
@@ -15,13 +16,30 @@ const Testing = ({}: TestingProps) => {
     const inject = () => {
         scraper
             .begin()
-            .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
+            //.wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
             .task(
-                () => console.log("TARGET: Page loaded"),
-                [],
-                (r) => console.log("INITIATOR: Page loaded, result: ", r)
+                (html: string) => {
+                    const placeholder = document.createElement("div");
+                    placeholder.innerHTML = html;
+                    document.body.appendChild(placeholder);
+                    const focus_button = document.getElementById("back-to-main-window");
+                    if (!focus_button) throw new Error("Button not found");
+                    focus_button.onclick = () => {
+                        //TODO: Call event emitter
+                    };
+                },
+                [test],
+                (r) => {
+                    if ("error" in r) {
+                        console.error(r.error);
+                    } else {
+                        console.log("Task completed");
+                    }
+                }
             )
-            .execute(() => {console.log("Task completed");}, setState);
+            .execute(() => {
+                console.log("Injection completed");
+            }, setState);
     }
 
     return (
