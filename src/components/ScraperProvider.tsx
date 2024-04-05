@@ -37,7 +37,6 @@ const ScraperProvider = ({scraper_context, windowClosedRedirectPath, guardPath, 
     const closeCallbackSet = useRef(false);
 
     // Abusing useBlocker a little bit to get a callback when there's a navigation
-    // useLocation
     useBlocker(({nextLocation}) => {
         if (!matchPath(`${guardPath}/*`, nextLocation.pathname)) {
             scraper_context.web_scraper?.close();
