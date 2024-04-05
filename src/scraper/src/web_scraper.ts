@@ -26,7 +26,6 @@ export class WebScraper {
             throw new Error(`Could not find window with label: ${label}`);
         }
         return new WebScraper(target);
-
     }
 
     private constructor(target: WebviewWindow) {

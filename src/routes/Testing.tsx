@@ -2,17 +2,17 @@ import {Button, Stack, Typography} from "@mui/material";
 import {useScraper} from "../components/ScraperProvider.tsx";
 import {useState} from "react";
 import {Link} from "react-router-dom";
+import {PipelineState} from "../scraper/src/pipeline/task_pipeline.ts";
 
 export interface TestingProps {
 
 }
 
 const Testing = ({}: TestingProps) => {
-    const [state, setState] = useState<string | null>(null);
+    const [state, setState] = useState<PipelineState | null>(null);
     const scraper = useScraper();
 
     const inject = () => {
-        setState("Injecting");
         scraper
             .begin()
             .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
@@ -21,10 +21,7 @@ const Testing = ({}: TestingProps) => {
                 [],
                 (r) => console.log("INITIATOR: Page loaded, result: ", r)
             )
-            .execute(() => {
-                setState("Done");
-                console.log("Task completed");
-            });
+            .execute(() => {console.log("Task completed");}, setState);
     }
 
     return (
