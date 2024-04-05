@@ -31,12 +31,12 @@ export abstract class PipelineStep {
     }
 
     protected complete() {
-        if (!this._resolve) throw new Error("(PipelineStep) Cannot complete step that is not running");
+        if (!this._resolve) throw new Error(`(PipelineStep) Cannot complete step '${this.name}'that is not running`);
         this._resolve();
     }
 
     public cancel() {
-        if (!this._reject) throw new Error("(PipelineStep) Cannot cancel step that is not running");
+        if (!this._reject) throw new Error(`(PipelineStep) Cannot cancel step '${this.name}' that is not running`);
         this._reject(new Error("Cancelled"));
     }
 
