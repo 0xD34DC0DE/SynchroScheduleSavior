@@ -60,7 +60,11 @@ export class Injection<F extends (...args: Parameters<F>) => ReturnType<F>> {
             (event) => on_result?.(process_raw_injection_result(event.payload))
         ).then(async unlisten => {
             try {
-                await webview_inject(target.label, this._injection_id, this.js_function, this.args, this.allow_parallel);
+                await webview_inject(target.label,
+                    this._injection_id,
+                    this.js_function.toString(),
+                    this.args,
+                    this.allow_parallel);
             } catch (e) {
                 unlisten();
                 throw e;
