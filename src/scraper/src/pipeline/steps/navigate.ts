@@ -1,4 +1,3 @@
-import {Context} from "../../context.ts";
 import {PipelineStep} from "../pipeline_step.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import UrlPattern from "url-pattern";
@@ -19,7 +18,7 @@ class Navigate extends PipelineStep {
         this._url_pattern = new UrlPattern(url_pattern || url);
     }
 
-    public async run(target: WebviewWindow, _context: Context): Promise<void> {
+    public async run(target: WebviewWindow): Promise<void> {
         await this.add_listener(target.listen<{ url: string }>(
             "navigation",
             (event) => {

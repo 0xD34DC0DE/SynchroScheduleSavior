@@ -26,13 +26,4 @@ class Context {
     }
 }
 
-interface ContextFactory<Ctx extends Context> {
-    create(): Ctx;
-}
-
-const defaultContextFactory: ContextFactory<Context> = {
-    create: () => new Context()
-};
-
-export {Context, defaultContextFactory};
-export type {ContextFactory};
+export {Context};

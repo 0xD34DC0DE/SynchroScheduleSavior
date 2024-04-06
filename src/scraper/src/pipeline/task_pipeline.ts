@@ -1,11 +1,12 @@
 import {PipelineStep} from "./pipeline_step.ts";
-import {Context, ContextFactory} from "../context.ts";
+import {Context} from "../context.ts";
 import {Navigate} from "./steps/navigate.ts";
 import {UrlWait} from "./steps/url_wait.ts";
 import {Task} from "./steps/task.ts";
-import {InjectionResult} from "../injection.ts";
+import {InjectionResult, ParametersWithoutContext, TaskWithContextFn} from "../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
+import {TaskWithContext} from "./steps/task_with_context.ts";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
@@ -18,17 +19,15 @@ export enum PipelineState {
 
 type OnPipelineStateChangeCallback = (state: PipelineState) => void;
 
-export class TaskPipeline<Ctx extends Context> {
+export class TaskPipeline {
     private readonly _target: WebviewWindow;
-    private readonly _context_factory: ContextFactory<Ctx>;
     private _on_state_change?: OnPipelineStateChangeCallback;
     private readonly _steps: PipelineStep[] = [];
     private _window_close_unlisten: UnlistenFn | null = null;
     private _cancel: (() => void) | null = null;
 
-    constructor(target: WebviewWindow, context_factory: ContextFactory<Ctx>) {
+    constructor(target: WebviewWindow) {
         this._target = target;
-        this._context_factory = context_factory;
     }
 
     public execute(on_complete?: OnCompleteCallback, on_state_change?: OnPipelineStateChangeCallback): CancelFn {
@@ -48,8 +47,6 @@ export class TaskPipeline<Ctx extends Context> {
     }
 
     private async _execute_steps(): Promise<void> {
-        const context = this._context_factory.create();
-
         for (let step of this._steps) {
             this._cancel = () => {
                 step.cancel();
@@ -58,7 +55,7 @@ export class TaskPipeline<Ctx extends Context> {
                 this._cancel = null;
                 this._on_state_change?.(PipelineState.CANCELLED);
             }
-            await step.execute(this._target, context);
+            await step.execute(this._target);
         }
 
         this._window_close_unlisten?.();
@@ -66,12 +63,12 @@ export class TaskPipeline<Ctx extends Context> {
         this._cancel = null;
     }
 
-    public navigate_to(url: string, url_pattern?: string): TaskPipeline<Ctx> {
+    public navigate_to(url: string, url_pattern?: string): TaskPipeline {
         this._steps.push(new Navigate(url, url_pattern));
         return this;
     }
 
-    public wait_for_url(url_pattern: string): TaskPipeline<Ctx> {
+    public wait_for_url(url_pattern: string): TaskPipeline {
         this._steps.push(new UrlWait(url_pattern));
         return this;
     }
@@ -80,7 +77,7 @@ export class TaskPipeline<Ctx extends Context> {
         injected_fn: F,
         args: Parameters<F>,
         on_result?: (result: InjectionResult<ReturnType<F>>) => void,
-    ): TaskPipeline<Ctx> {
+    ): TaskPipeline {
         this._steps.push(new Task(injected_fn, args, on_result));
         return this;
     }

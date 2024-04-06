@@ -1,4 +1,3 @@
-import {Context, ContextFactory, defaultContextFactory} from "./context.ts";
 import {TaskPipeline} from "./pipeline/task_pipeline.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {get_window_by_label, open_webview} from "./commands.ts";
@@ -36,10 +35,9 @@ export class WebScraper {
         });
     }
 
-    public begin<Ctx extends Context = Context>(context_factory?: ContextFactory<Ctx>):
-        TaskPipeline<Ctx> | TaskPipeline<Context> {
+    public begin(): TaskPipeline {
         if (!this._target) throw new Error("Window has been destroyed");
-        return new TaskPipeline(this._target, context_factory ?? defaultContextFactory);
+        return new TaskPipeline(this._target);
     }
 
 

@@ -1,4 +1,3 @@
-import {Context} from "../context.ts";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import {WebviewWindow} from "@tauri-apps/api/window";
 
@@ -13,13 +12,13 @@ export abstract class PipelineStep {
 
     public abstract readonly name: string;
 
-    protected abstract run(target: WebviewWindow, context: Context, ...args: any[]): Promise<void>;
+    protected abstract run(target: WebviewWindow, ...args: any[]): Promise<void>;
 
-    public async execute(target: WebviewWindow, context: Context, ...args: any[]): Promise<void> {
+    public async execute(target: WebviewWindow, ...args: any[]): Promise<void> {
         return new Promise<void>(async (resolve, reject) => {
             this._resolve = resolve;
             this._reject = reject;
-            await this.run(target, context, ...args);
+            await this.run(target, ...args);
         }).catch((error) => {
             console.error(`(PipelineStep) Error in step '${this.name}':`, error);
             throw error;

@@ -1,9 +1,8 @@
-import {Context} from "../../context.ts";
 import {PipelineStep} from "../pipeline_step.ts";
 import {Injection, InjectionResult} from "../../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 
-class Task<Ctx extends Context, F extends (...args: Parameters<F>) => ReturnType<F>> extends PipelineStep {
+class Task<F extends (...args: Parameters<F>) => ReturnType<F>> extends PipelineStep {
     private readonly _fn: F;
     private readonly _args: Parameters<F>;
     private readonly _on_result: (result: InjectionResult<ReturnType<F>>) => void;
@@ -22,7 +21,7 @@ class Task<Ctx extends Context, F extends (...args: Parameters<F>) => ReturnType
         this._on_result = on_result;
     }
 
-    public async run(target: WebviewWindow, _context: Ctx): Promise<void> {
+    public async run(target: WebviewWindow): Promise<void> {
         const injection = new Injection(
             this._fn,
             this._args,
