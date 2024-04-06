@@ -3,7 +3,8 @@ import {useScraper} from "../components/ScraperProvider.tsx";
 import {useState} from "react";
 import {Link} from "react-router-dom";
 import {PipelineState} from "../scraper/src/pipeline/task_pipeline.ts";
-import test from "../assets/login_modal.html?raw";
+import login_modal_html from "../assets/login_modal.html?raw";
+import { Context } from "../scraper/src/context.ts";
 
 export interface TestingProps {
 
@@ -18,9 +19,9 @@ const Testing = ({}: TestingProps) => {
             .begin()
             //.wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
             .task(
-                (html: string) => {
+                (login_modal_html: string) => {
                     const placeholder = document.createElement("div");
-                    placeholder.innerHTML = html;
+                    placeholder.innerHTML = login_modal_html;
                     document.body.appendChild(placeholder);
                     const focus_button = document.getElementById("back-to-main-window");
                     if (!focus_button) throw new Error("Button not found");
@@ -28,7 +29,7 @@ const Testing = ({}: TestingProps) => {
                         //TODO: Call event emitter
                     };
                 },
-                [test],
+                [login_modal_html],
                 (r) => {
                     if ("error" in r) {
                         console.error(r.error);
