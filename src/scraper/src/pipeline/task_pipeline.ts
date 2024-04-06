@@ -81,4 +81,14 @@ export class TaskPipeline {
         this._steps.push(new Task(injected_fn, args, on_result));
         return this;
     }
+
+    public taskWithContext<Ctx extends Context, F extends (...args: any[]) => any>(
+        context_ctor: new () => Ctx,
+        injected_fn: TaskWithContextFn<Ctx, F>,
+        args: ParametersWithoutContext<F>,
+        on_result?: (result: InjectionResult<ReturnType<F>>) => void,
+    ): TaskPipeline {
+        this._steps.push(new TaskWithContext<Ctx, F>(context_ctor, injected_fn, args, on_result));
+        return this;
+    }
 }

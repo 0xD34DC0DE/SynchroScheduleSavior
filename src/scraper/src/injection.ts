@@ -1,6 +1,7 @@
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import {webview_inject} from "./commands.ts";
+import {Context} from "./context.ts";
 
 
 type UnserializableValueTag = "undefined" | "null" | "NaN" | "Infinity" | "-Infinity";
@@ -40,13 +41,38 @@ const process_raw_injection_result = <T>(result: RawInjectionResult<T>): Injecti
     return result;
 }
 
-export class Injection<F extends (...args: Parameters<F>) => ReturnType<F>> {
+export type ParametersWithoutContext<F> = F extends (ctx: Context, ...args: infer P) => any ? P : never;
+
+export type TaskWithContextFn<
+    Ctx extends Context,
+    F extends (...args: any) => any
+> = F extends ((ctx: Ctx, ...args: ParametersWithoutContext<F>) => ReturnType<F>) ? F : never;
+
+export class Injection<Ctx extends Context, F extends (...args: any[]) => any> {
     private readonly _injection_id: number;
 
     constructor(
-        private readonly js_function: F,
-        private readonly args: Parameters<F>,
-        private readonly allow_parallel: boolean = false,
+        js_function: F,
+        args: Parameters<F>,
+        options?: {
+            allow_parallel?: boolean
+        }
+    );
+    constructor(
+        js_function: TaskWithContextFn<Ctx, F>,
+        args: ParametersWithoutContext<F>,
+        options: {
+            context_prototypes: Function[];
+            allow_parallel?: boolean;
+        }
+    );
+    constructor(
+        private readonly js_function: F | TaskWithContextFn<Ctx, F>,
+        private readonly args: Parameters<F> | ParametersWithoutContext<F>,
+        private readonly options?: {
+            context_prototypes?: Function[];
+            allow_parallel?: boolean;
+        }
     ) {
         this._injection_id = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
     }
@@ -64,7 +90,8 @@ export class Injection<F extends (...args: Parameters<F>) => ReturnType<F>> {
                     this._injection_id,
                     this.js_function.toString(),
                     this.args,
-                    this.allow_parallel);
+                    this.options?.allow_parallel ?? false,
+                    this.options?.context_prototypes);
             } catch (e) {
                 unlisten();
                 throw e;
