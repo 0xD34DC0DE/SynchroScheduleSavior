@@ -1,12 +1,10 @@
-import {Button, Stack, Typography} from "@mui/material";
+import {Button, LinearProgress, Stack, Typography} from "@mui/material";
 import {useScraper} from "../components/ScraperProvider.tsx";
 import {useState} from "react";
 import {Link} from "react-router-dom";
 import {PipelineState} from "../scraper/src/pipeline/task_pipeline.ts";
 import login_modal_html from "../assets/login_modal.html?raw";
 import {Context} from "../scraper/src/context.ts";
-import {once} from "@tauri-apps/api/event";
-import {getCurrent} from "@tauri-apps/api/window";
 
 export interface TestingProps {
 
@@ -19,8 +17,8 @@ const Testing = ({}: TestingProps) => {
     const inject = () => {
         scraper
             .begin()
-            //.wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
-            .taskWithContext(Context,
+            .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
+            .task_with_context(Context,
                 (ctx, modal_html: string) => {
                     const placeholder = document.createElement("div");
                     placeholder.innerHTML = modal_html;
@@ -28,32 +26,21 @@ const Testing = ({}: TestingProps) => {
                     const focus_button = document.getElementById("back-to-main-window");
                     if (!focus_button) throw new Error("Button not found");
                     focus_button.onclick = async () => {
-                        await ctx.initiator.emit("back-to-main-window");
+                        await ctx.initiator.setFocus();
                     };
                 },
-                [login_modal_html],
-                (r) => {
-                    if ("error" in r) {
-                        console.error("Injector error:", r.error);
-                    } else {
-                        console.log("Task completed, starting listener");
-                        once("back-to-main-window", async () => {
-                           await getCurrent().setFocus();
-                        }).then(() => {});
-                    }
-                }
+                [login_modal_html]
             )
-            .execute(() => {
-                console.log("Injection completed");
-            }, setState);
+            .wait_for_event("current", "tauri://focus")
+            .execute(() => {}, setState);
     }
 
     return (
         <Stack direction={"column"}>
             <Button variant={"contained"} onClick={inject}>Inject</Button>
+            {state === PipelineState.RUNNING && <LinearProgress/>}
+            {state === PipelineState.DONE && <Link to={"/"}>Done</Link>}
             <Typography>{state}</Typography>
-            <Link to={"/"}>Back to Root</Link>
-            <Link to={"/test/second"}>Second</Link>
         </Stack>
     );
 };

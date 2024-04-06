@@ -7,12 +7,13 @@ import {InjectionResult, ParametersWithoutContext, TaskWithContextFn} from "../i
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import {TaskWithContext} from "./steps/task_with_context.ts";
+import {EventWait} from "./steps/event_wait.ts";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
 
 export enum PipelineState {
-    RUNNING= "running",
+    RUNNING = "running",
     DONE = "done",
     CANCELLED = "cancelled",
 }
@@ -82,13 +83,34 @@ export class TaskPipeline {
         return this;
     }
 
-    public taskWithContext<Ctx extends Context, F extends (...args: any[]) => any>(
+    public task_with_context<Ctx extends Context, F extends (...args: any[]) => any>(
         context_ctor: new () => Ctx,
         injected_fn: TaskWithContextFn<Ctx, F>,
         args: ParametersWithoutContext<F>,
         on_result?: (result: InjectionResult<ReturnType<F>>) => void,
     ): TaskPipeline {
         this._steps.push(new TaskWithContext<Ctx, F>(context_ctor, injected_fn, args, on_result));
+        return this;
+    }
+
+    public wait_for_any_events(target_window: "current" | "target",
+                               event_names: string[],
+                               on_complete?: OnCompleteCallback): TaskPipeline {
+        this._steps.push(new EventWait(target_window, "any", event_names, on_complete));
+        return this;
+    }
+
+    public wait_for_event(target_window: "current" | "target",
+                          event_name: string,
+                          on_complete?: OnCompleteCallback): TaskPipeline {
+        this._steps.push(new EventWait(target_window, "any", [event_name], on_complete));
+        return this;
+    }
+
+    public wait_for_all_events(target_window: "current" | "target",
+                               event_names: string[],
+                               on_complete?: OnCompleteCallback): TaskPipeline {
+        this._steps.push(new EventWait(target_window, "all", event_names, on_complete));
         return this;
     }
 }
