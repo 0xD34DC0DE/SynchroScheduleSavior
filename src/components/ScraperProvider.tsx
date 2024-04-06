@@ -1,7 +1,8 @@
 import ScraperContextType from "../contexts/ScraperContext.ts";
-import {createContext, ReactNode, useContext, useEffect, useRef} from "react";
+import {createContext, ReactNode, useContext, useEffect, useRef, useState} from "react";
 import {matchPath, useBlocker, useNavigate} from "react-router-dom";
 import {WebScraper} from "../scraper/src/web_scraper.ts";
+import { PipelineState } from "../scraper/src/pipeline/task_pipeline.ts";
 
 interface ScraperProviderProps {
     scraperContext: ScraperContextType;
@@ -19,6 +20,8 @@ export const useScraper = (): WebScraper => {
     }
     return context.web_scraper;
 }
+
+export const usePipelineState = () => useState<PipelineState>(PipelineState.IDLE);
 
 const ScraperProvider = ({scraperContext, windowClosedRedirectPath, guardPath, children}: ScraperProviderProps) => {
     const navigate = useNavigate();

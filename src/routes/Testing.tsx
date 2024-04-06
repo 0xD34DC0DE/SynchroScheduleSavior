@@ -1,6 +1,5 @@
 import {Button, LinearProgress, Stack, Typography} from "@mui/material";
-import {useScraper} from "../components/ScraperProvider.tsx";
-import {useState} from "react";
+import {usePipelineState, useScraper} from "../components/ScraperProvider.tsx";
 import {Link} from "react-router-dom";
 import {PipelineState} from "../scraper/src/pipeline/task_pipeline.ts";
 import login_modal_html from "../assets/login_modal.html?raw";
@@ -11,12 +10,12 @@ export interface TestingProps {
 }
 
 const Testing = ({}: TestingProps) => {
-    const [state, setState] = useState<PipelineState | null>(null);
+    const [state, setState] = usePipelineState();
     const scraper = useScraper();
 
     const inject = () => {
         scraper
-            .begin()
+            .begin(setState)
             .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
             .task_with_context(Context,
                 (ctx, modal_html: string) => {
@@ -32,7 +31,7 @@ const Testing = ({}: TestingProps) => {
                 [login_modal_html]
             )
             .wait_for_event("current", "tauri://focus")
-            .execute(() => {}, setState);
+            .execute();
     }
 
     return (

@@ -13,26 +13,27 @@ type OnCompleteCallback = () => void;
 type CancelFn = () => void;
 
 export enum PipelineState {
+    IDLE = "idle",
     RUNNING = "running",
     DONE = "done",
     CANCELLED = "cancelled",
 }
 
-type OnPipelineStateChangeCallback = (state: PipelineState) => void;
+export type OnPipelineStateChangeCallback = (state: PipelineState) => void;
 
 export class TaskPipeline {
     private readonly _target: WebviewWindow;
-    private _on_state_change?: OnPipelineStateChangeCallback;
+    private readonly _on_state_change?: OnPipelineStateChangeCallback;
     private readonly _steps: PipelineStep[] = [];
     private _window_close_unlisten: UnlistenFn | null = null;
     private _cancel: (() => void) | null = null;
 
-    constructor(target: WebviewWindow) {
+    constructor(target: WebviewWindow, on_state_change?: OnPipelineStateChangeCallback) {
         this._target = target;
+        this._on_state_change = on_state_change;
     }
 
-    public execute(on_complete?: OnCompleteCallback, on_state_change?: OnPipelineStateChangeCallback): CancelFn {
-        this._on_state_change = on_state_change;
+    public execute(on_complete?: OnCompleteCallback): CancelFn {
         this._target.once("tauri://destroyed", () => {
             this._cancel?.();
         }).then(unlisten => {

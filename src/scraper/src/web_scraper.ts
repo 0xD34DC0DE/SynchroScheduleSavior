@@ -1,4 +1,4 @@
-import {TaskPipeline} from "./pipeline/task_pipeline.ts";
+import {OnPipelineStateChangeCallback, TaskPipeline} from "./pipeline/task_pipeline.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {get_window_by_label, open_webview} from "./commands.ts";
 import {UnlistenFn} from "@tauri-apps/api/event";
@@ -35,9 +35,9 @@ export class WebScraper {
         });
     }
 
-    public begin(): TaskPipeline {
+    public begin(on_state_change?: OnPipelineStateChangeCallback): TaskPipeline {
         if (!this._target) throw new Error("Window has been destroyed");
-        return new TaskPipeline(this._target);
+        return new TaskPipeline(this._target, on_state_change);
     }
 
 
