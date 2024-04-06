@@ -40,9 +40,6 @@ const process_raw_injection_result = <T>(result: RawInjectionResult<T>): Injecti
     return result;
 }
 
-const noop = () => {
-};
-
 export class Injection<F extends (...args: Parameters<F>) => ReturnType<F>> {
     private readonly _injection_id: number;
 
@@ -56,11 +53,11 @@ export class Injection<F extends (...args: Parameters<F>) => ReturnType<F>> {
 
     public async inject(
         target: WebviewWindow,
-        on_result: (result: InjectionResult<ReturnType<F>>) => void = noop,
+        on_result?: (result: InjectionResult<ReturnType<F>>) => void,
     ): Promise<UnlistenFn> {
         return target.once<RawInjectionResult<ReturnType<F>>>(
             this._injection_id.toString(),
-            (event) => on_result(process_raw_injection_result(event.payload))
+            (event) => on_result?.(process_raw_injection_result(event.payload))
         ).then(async unlisten => {
             try {
                 await webview_inject(target.label, this._injection_id, this.js_function, this.args, this.allow_parallel);
