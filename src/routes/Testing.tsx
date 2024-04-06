@@ -5,6 +5,17 @@ import {PipelineState} from "../scraper/src/pipeline/task_pipeline.ts";
 import login_modal_html from "../assets/login_modal.html?raw";
 import {Context} from "../scraper/src/context.ts";
 
+const show_login_modal = (ctx: Context, modal_html: string) => {
+    const placeholder = document.createElement("div");
+    placeholder.innerHTML = modal_html;
+    document.body.appendChild(placeholder);
+    const focus_button = document.getElementById("focus-main-window");
+    if (!focus_button) throw new Error("Button not found");
+    focus_button.onclick = async () => {
+        await ctx.initiator.setFocus();
+    };
+}
+
 export interface TestingProps {
 
 }
@@ -17,25 +28,13 @@ const Testing = ({}: TestingProps) => {
         scraper
             .begin(setState)
             .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
-            .task_with_context(Context,
-                (ctx, modal_html: string) => {
-                    const placeholder = document.createElement("div");
-                    placeholder.innerHTML = modal_html;
-                    document.body.appendChild(placeholder);
-                    const focus_button = document.getElementById("back-to-main-window");
-                    if (!focus_button) throw new Error("Button not found");
-                    focus_button.onclick = async () => {
-                        await ctx.initiator.setFocus();
-                    };
-                },
-                [login_modal_html]
-            )
+            .task_with_context(Context, show_login_modal, [login_modal_html])
             .wait_for_event("current", "tauri://focus")
             .execute();
     }
 
     return (
-        <Stack direction={"column"}>
+        <Stack direction={"column"} gap={2}>
             <Button variant={"contained"} onClick={inject}>Inject</Button>
             {state === PipelineState.RUNNING && <LinearProgress/>}
             {state === PipelineState.DONE && <Link to={"/"}>Done</Link>}
