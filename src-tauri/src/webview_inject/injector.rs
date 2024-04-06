@@ -9,13 +9,15 @@ pub async fn inject(target: Window,
                     initiator: Window,
                     injection_id: String,
                     js_function: String,
-                    args: Option<Vec<Value>>) -> Result<()> {
+                    args: Option<Vec<Value>>,
+                    context_classes: Option<Vec<String>>) -> Result<()> {
     Injector::new(&target)
         .inject(
             initiator,
             injection_id,
             js_function.as_ref(),
             args,
+            context_classes
         ).await
 }
 
@@ -36,13 +38,15 @@ impl<'a> Injector<'a> {
                         injection_id: String,
                         js_fn: &str,
                         args: Option<Vec<Value>>,
+                        context_classes: Option<Vec<String>>
     ) -> Result<()> {
         let js =
-            format!("__INJECTOR__('{}', '{}', {}, {})",
+            format!("__INJECTOR__('{}', '{}', {}, {}, {})",
                     initiator.label(),
                     injection_id,
                     js_fn,
-                    Self::make_args_array(args)
+                    Self::make_args_array(args),
+                    Self::make_context_builder(context_classes)
             );
 
         let (rx, tx) = oneshot::channel::<Option<()>>();
@@ -70,5 +74,13 @@ impl<'a> Injector<'a> {
                     .collect::<Vec<String>>()
                     .join(", ")
         )
+    }
+    fn make_context_builder(context_classes: Option<Vec<String>>) -> String {
+        match context_classes {
+            None => return "() => null".to_string(),
+            Some(classes) => {
+                format!("(initiator_label) => new ([{}].at(-1))", classes.join(", "))
+            }
+        }
     }
 }

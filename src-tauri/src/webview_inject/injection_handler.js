@@ -1,4 +1,6 @@
-window.__INJECTOR__ = (initiator_label, injection_id, fn, args) => {
+window.__INJECTOR__ = (initiator_label, injection_id, fn, args, context_builder) => {
+    
+    const context = context_builder(initiator_label);
 
     const emit = (result) =>
         window.__TAURI__.window.WebviewWindow
@@ -13,7 +15,7 @@ window.__INJECTOR__ = (initiator_label, injection_id, fn, args) => {
         const unserializable_types_str = ["undefined", "null", "NaN", "Infinity", "-Infinity"];
 
         try {
-            const result = fn(...args);
+            const result = context ? fn(context, ...args) : fn(...args);
 
             if (unserializable_types.includes(result)) {
                 const type_index = unserializable_types.indexOf(result);

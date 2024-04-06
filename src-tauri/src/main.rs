@@ -53,6 +53,7 @@ async fn webview_inject<'r>(
     js_function: String,
     allow_parallel: bool,
     args: Option<Vec<Value>>,
+    context_classes: Option<Vec<String>>,
     initiator_window: Window,
     handle: AppHandle,
     injector_state: State<'r, InjectorState>,
@@ -80,6 +81,7 @@ async fn webview_inject<'r>(
         injection_id.to_string(),
         js_function,
         args,
+        context_classes,
     ).await
         .map_err(|e| e.to_string())
 }

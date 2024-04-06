@@ -15,15 +15,18 @@ const webview_inject = async(
     jsFunction: string,
     args: any[] = [],
     allowParallel: boolean = false,
+    contextClasses?: Function[],
 ): Promise<void> => {
-    console.log("(cmd::webview_inject) ", targetWindowLabel, injectionId, jsFunction, args, allowParallel);
-    return await invoke('webview_inject', {
+    const cmd_args = {
         targetWindowLabel,
         injectionId,
         jsFunction,
         allowParallel,
-        args
-    });
+        args,
+        contextClasses: contextClasses?.map((c) => c.toString()),
+    };
+    console.log("(cmd::webview_inject) cmd_args:", cmd_args);
+    return await invoke('webview_inject', cmd_args);
 }
 
 //FIXME: This is a workaround for a bug in Tauri's WebviewWindow.getByLabel API
