@@ -1,0 +1,1 @@
+export type {default as ScraperContextType} from './ScraperContext';

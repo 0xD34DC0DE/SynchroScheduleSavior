@@ -1,4 +1,4 @@
-import ScraperContextType from "../contexts/ScraperContext.ts";
+import {ScraperContextType} from "../contexts";
 import {createContext, ReactNode, useEffect, useRef} from "react";
 import {matchPath, useBlocker, useNavigate} from "react-router-dom";
 
