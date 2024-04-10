@@ -1,6 +1,6 @@
 import {Await, defer, Outlet, useLoaderData, useResolvedPath} from "react-router-dom";
 import ScraperProvider from "./ScraperProvider.tsx";
-import {WebScraper} from "../lib/webview_scraper/src/web_scraper.ts";
+import WebScraper from "../src/web_scraper.ts";
 import {Suspense} from "react";
 import ScraperLoadingIndicator from "./ScraperLoadingIndicator.tsx";
 import ScraperLoadingError from "./ScraperLoadingError.tsx";

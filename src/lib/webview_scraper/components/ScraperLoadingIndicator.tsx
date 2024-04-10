@@ -1,6 +1,6 @@
 import {LinearProgress, Stack, Typography} from "@mui/material";
 
-export interface ScraperLoadingIndicatorProps {
+interface ScraperLoadingIndicatorProps {
 
 }
 
