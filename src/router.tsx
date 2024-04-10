@@ -1,8 +1,8 @@
 import {createBrowserRouter, createRoutesFromElements, Link, Route} from "react-router-dom";
 import Root from "./routes/Root.tsx";
 import {Typography} from "@mui/material";
-import ScraperRouteGuard, {scraperLoader} from "./lib/webview_scraper/components/ScraperRouteGuard.tsx";
 import Testing from "./routes/Testing.tsx";
+import {scraperLoader, ScraperRouteGuard} from "./lib/webview_scraper/components";
 
 const router = createBrowserRouter(
     createRoutesFromElements(
