@@ -5,7 +5,7 @@ import {WebviewWindow} from "@tauri-apps/api/window";
 type ResolveFn = () => void;
 type RejectFn = (error: Error) => void;
 
-export abstract class PipelineStep {
+abstract class PipelineStep {
     private readonly _listeners: Array<UnlistenFn> = [];
     private _resolve: ResolveFn | null = null;
     private _reject: RejectFn | null = null;
@@ -46,3 +46,5 @@ export abstract class PipelineStep {
         this._reject = null;
     }
 }
+
+export default PipelineStep;

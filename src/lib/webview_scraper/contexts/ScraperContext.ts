@@ -1,4 +1,4 @@
-import {WebScraper} from "../src/web_scraper.ts";
+import WebScraper from "../src/web_scraper.ts";
 
 interface ScraperContextType {
     web_scraper?: WebScraper;

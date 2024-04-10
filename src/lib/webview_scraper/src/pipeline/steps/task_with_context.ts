@@ -1,6 +1,6 @@
-import {Context} from "../../context.ts";
-import {PipelineStep} from "../pipeline_step.ts";
-import {Injection, InjectionResult, ParametersWithoutContext, TaskWithContextFn} from "../../injection.ts";
+import Context from "../../context.ts";
+import PipelineStep from "../pipeline_step.ts";
+import Injection, {InjectionResult, ParametersWithoutContext, TaskWithContextFn} from "../../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 
 type ContextConstructor<Ctx extends Context> = new () => Ctx;
@@ -59,6 +59,4 @@ class TaskWithContext<Ctx extends Context, F extends (...args: any) => any> exte
     }
 }
 
-export {TaskWithContext};
-
-
+export default TaskWithContext;

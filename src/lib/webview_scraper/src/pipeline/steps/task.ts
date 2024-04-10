@@ -1,5 +1,5 @@
-import {PipelineStep} from "../pipeline_step.ts";
-import {Injection, InjectionResult} from "../../injection.ts";
+import PipelineStep from "../pipeline_step.ts";
+import Injection, {InjectionResult} from "../../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 
 class Task<F extends (...args: Parameters<F>) => ReturnType<F>> extends PipelineStep {
@@ -36,4 +36,4 @@ class Task<F extends (...args: Parameters<F>) => ReturnType<F>> extends Pipeline
     }
 }
 
-export {Task};
+export default Task;

@@ -1,8 +1,8 @@
-import {PipelineStep} from "../pipeline_step.ts";
+import PipelineStep from "../pipeline_step.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import UrlPattern from "url-pattern";
 
-export class UrlWait extends PipelineStep {
+class UrlWait extends PipelineStep {
     private readonly url_pattern: UrlPattern;
 
     public readonly name: string = "UrlWait";
@@ -21,3 +21,5 @@ export class UrlWait extends PipelineStep {
         ));
     }
 }
+
+export default UrlWait;

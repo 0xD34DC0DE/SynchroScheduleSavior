@@ -1,7 +1,7 @@
-import {PipelineStep} from "../pipeline_step.ts";
+import PipelineStep from "../pipeline_step.ts";
 import {getCurrent, WebviewWindow} from "@tauri-apps/api/window";
 
-export class EventWait extends PipelineStep {
+class EventWait extends PipelineStep {
     private readonly _mode: "all" | "any";
     private readonly _target: "current" | "target";
     private readonly _event_names: string[];
@@ -38,3 +38,5 @@ export class EventWait extends PipelineStep {
         this.complete();
     }
 }
+
+export default EventWait;

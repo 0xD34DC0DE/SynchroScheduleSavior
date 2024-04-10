@@ -1,22 +1,27 @@
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import {webview_inject} from "./commands.ts";
-import {Context} from "./context.ts";
+import Context from "./context.ts";
 
 
 type UnserializableValueTag = "undefined" | "null" | "NaN" | "Infinity" | "-Infinity";
 
+type Ok<T> = { value: T; };
+type Err = { error: string; };
 type Unserializable = {
     value: UnserializableValueTag;
     unserializable: true;
 };
 
-type Ok<T> = { value: T; };
-
-type Err = { error: string; };
-
-export type InjectionResult<T> = Ok<T> | Err;
+type InjectionResult<T> = Ok<T> | Err;
 type RawInjectionResult<T> = Unserializable | InjectionResult<T>;
+
+type ParametersWithoutContext<F> = F extends (ctx: Context, ...args: infer P) => any ? P : never;
+
+type TaskWithContextFn<
+    Ctx extends Context,
+    F extends (...args: any) => any
+> = F extends ((ctx: Ctx, ...args: ParametersWithoutContext<F>) => ReturnType<F>) ? F : never;
 
 const resolved_values: Record<UnserializableValueTag, any> = {
     "undefined": undefined,
@@ -41,14 +46,7 @@ const process_raw_injection_result = <T>(result: RawInjectionResult<T>): Injecti
     return result;
 }
 
-export type ParametersWithoutContext<F> = F extends (ctx: Context, ...args: infer P) => any ? P : never;
-
-export type TaskWithContextFn<
-    Ctx extends Context,
-    F extends (...args: any) => any
-> = F extends ((ctx: Ctx, ...args: ParametersWithoutContext<F>) => ReturnType<F>) ? F : never;
-
-export class Injection<Ctx extends Context, F extends (...args: any[]) => any> {
+class Injection<Ctx extends Context, F extends (...args: any[]) => any> {
     private readonly _injection_id: number;
 
     constructor(
@@ -100,3 +98,6 @@ export class Injection<Ctx extends Context, F extends (...args: any[]) => any> {
         });
     }
 }
+
+export type {InjectionResult, ParametersWithoutContext, TaskWithContextFn};
+export default Injection;

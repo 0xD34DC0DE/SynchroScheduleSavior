@@ -26,4 +26,4 @@ class Context {
     }
 }
 
-export {Context};
+export default Context;

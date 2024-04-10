@@ -1,11 +1,11 @@
-import {OnPipelineStateChangeCallback, TaskPipeline} from "./pipeline/task_pipeline.ts";
+import TaskPipeline, {OnPipelineStateChangeCallback} from "./pipeline/task_pipeline.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {get_window_by_label, open_webview} from "./commands.ts";
 import {UnlistenFn} from "@tauri-apps/api/event";
 
 type DestroyCallback = () => void;
 
-export class WebScraper {
+class WebScraper {
     private readonly _destroy_listener: Promise<UnlistenFn>;
     private readonly _destroy_callbacks: DestroyCallback[] = [];
     private _target: WebviewWindow | null;
@@ -62,3 +62,5 @@ export class WebScraper {
         await this._target?.close();
     }
 }
+
+export default WebScraper;

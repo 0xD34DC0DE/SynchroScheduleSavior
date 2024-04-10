@@ -1,27 +1,27 @@
-import {PipelineStep} from "./pipeline_step.ts";
-import {Context} from "../context.ts";
-import {Navigate} from "./steps/navigate.ts";
-import {UrlWait} from "./steps/url_wait.ts";
-import {Task} from "./steps/task.ts";
+import PipelineStep from "./pipeline_step.ts";
+import Context from "../context.ts";
+import Navigate from "./steps/navigate.ts";
+import UrlWait from "./steps/url_wait.ts";
+import Task from "./steps/task.ts";
 import {InjectionResult, ParametersWithoutContext, TaskWithContextFn} from "../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
-import {TaskWithContext} from "./steps/task_with_context.ts";
-import {EventWait} from "./steps/event_wait.ts";
+import TaskWithContext from "./steps/task_with_context.ts";
+import EventWait from "./steps/event_wait.ts";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
 
-export enum PipelineState {
+enum PipelineState {
     IDLE = "idle",
     RUNNING = "running",
     DONE = "done",
     CANCELLED = "cancelled",
 }
 
-export type OnPipelineStateChangeCallback = (state: PipelineState) => void;
+type OnPipelineStateChangeCallback = (state: PipelineState) => void;
 
-export class TaskPipeline {
+class TaskPipeline {
     private readonly _target: WebviewWindow;
     private readonly _on_state_change?: OnPipelineStateChangeCallback;
     private readonly _steps: PipelineStep[] = [];
@@ -115,3 +115,7 @@ export class TaskPipeline {
         return this;
     }
 }
+
+export {PipelineState};
+export type {OnPipelineStateChangeCallback};
+export default TaskPipeline;

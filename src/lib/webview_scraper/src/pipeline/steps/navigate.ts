@@ -1,7 +1,7 @@
-import {PipelineStep} from "../pipeline_step.ts";
+import PipelineStep from "../pipeline_step.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import UrlPattern from "url-pattern";
-import {Injection} from "../../injection.ts";
+import Injection from "../../injection.ts";
 
 class Navigate extends PipelineStep {
     private readonly _url: string;
@@ -35,4 +35,4 @@ class Navigate extends PipelineStep {
     }
 }
 
-export {Navigate};
+export default Navigate;
