@@ -1,13 +1,9 @@
 import PipelineStep from "./pipeline_step.ts";
-import Context from "../context.ts";
-import Navigate from "./steps/navigate.ts";
-import UrlWait from "./steps/url_wait.ts";
-import Task from "./steps/task.ts";
+import Context from "../context";
 import {InjectionResult, ParametersWithoutContext, TaskWithContextFn} from "../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
-import TaskWithContext from "./steps/task_with_context.ts";
-import EventWait from "./steps/event_wait.ts";
+import * as steps from "./steps";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
@@ -66,12 +62,12 @@ class TaskPipeline {
     }
 
     public navigate_to(url: string, url_pattern?: string): TaskPipeline {
-        this._steps.push(new Navigate(url, url_pattern));
+        this._steps.push(new steps.Navigate(url, url_pattern));
         return this;
     }
 
     public wait_for_url(url_pattern: string): TaskPipeline {
-        this._steps.push(new UrlWait(url_pattern));
+        this._steps.push(new steps.UrlWait(url_pattern));
         return this;
     }
 
@@ -80,7 +76,7 @@ class TaskPipeline {
         args: Parameters<F>,
         on_result?: (result: InjectionResult<ReturnType<F>>) => void,
     ): TaskPipeline {
-        this._steps.push(new Task(injected_fn, args, on_result));
+        this._steps.push(new steps.Task(injected_fn, args, on_result));
         return this;
     }
 
@@ -90,28 +86,28 @@ class TaskPipeline {
         args: ParametersWithoutContext<F>,
         on_result?: (result: InjectionResult<ReturnType<F>>) => void,
     ): TaskPipeline {
-        this._steps.push(new TaskWithContext<Ctx, F>(context_ctor, injected_fn, args, on_result));
+        this._steps.push(new steps.TaskWithContext<Ctx, F>(context_ctor, injected_fn, args, on_result));
         return this;
     }
 
     public wait_for_any_events(target_window: "current" | "target",
                                event_names: string[],
                                on_complete?: OnCompleteCallback): TaskPipeline {
-        this._steps.push(new EventWait(target_window, "any", event_names, on_complete));
+        this._steps.push(new steps.EventWait(target_window, "any", event_names, on_complete));
         return this;
     }
 
     public wait_for_event(target_window: "current" | "target",
                           event_name: string,
                           on_complete?: OnCompleteCallback): TaskPipeline {
-        this._steps.push(new EventWait(target_window, "any", [event_name], on_complete));
+        this._steps.push(new steps.EventWait(target_window, "any", [event_name], on_complete));
         return this;
     }
 
     public wait_for_all_events(target_window: "current" | "target",
                                event_names: string[],
                                on_complete?: OnCompleteCallback): TaskPipeline {
-        this._steps.push(new EventWait(target_window, "all", event_names, on_complete));
+        this._steps.push(new steps.EventWait(target_window, "all", event_names, on_complete));
         return this;
     }
 }
