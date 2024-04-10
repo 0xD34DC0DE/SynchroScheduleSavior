@@ -1,7 +1,7 @@
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import {webview_inject} from "./commands.ts";
-import Context from "./context.ts";
+import Context from "./context";
 
 
 type UnserializableValueTag = "undefined" | "null" | "NaN" | "Infinity" | "-Infinity";

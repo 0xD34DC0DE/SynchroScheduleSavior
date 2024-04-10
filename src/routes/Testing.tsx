@@ -1,9 +1,8 @@
 import {Button, LinearProgress, Stack, Typography} from "@mui/material";
 import {Link} from "react-router-dom";
-import {PipelineState} from "../lib/webview_scraper/src/pipeline/task_pipeline.ts";
+import {Context, PipelineState, usePipelineState, useScraper} from "../lib/webview_scraper";
 import login_modal_html from "../assets/login_modal.html?raw";
-import Context from "../lib/webview_scraper/src/context.ts";
-import {usePipelineState, useScraper} from "../lib/webview_scraper/hooks";
+
 
 const show_login_modal = (ctx: Context, modal_html: string) => {
     const placeholder = document.createElement("div");
