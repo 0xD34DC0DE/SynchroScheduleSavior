@@ -1,8 +1,6 @@
 import {createBrowserRouter, createRoutesFromElements, Link, Route} from "react-router-dom";
-import Root from "./routes/Root.tsx";
-import {Typography} from "@mui/material";
-import Testing from "./routes/Testing.tsx";
-import {scraperLoader, ScraperRouteGuard} from "./lib/webview_scraper/components";
+import Root from "./Root.tsx";
+import {Routing as DataCollection} from "./features/data_collection";
 
 const router = createBrowserRouter(
     createRoutesFromElements(
@@ -10,23 +8,8 @@ const router = createBrowserRouter(
             path="/"
             element={<Root/>}
         >
-            <Route
-                index
-                element={<Link to={"/test"}>Launch</Link>}
-            />
-            <Route
-                path={"/test"}
-                loader={scraperLoader("synchro", "Testing", "https://academique-dmz.synchro.umontreal.ca/")}
-                element={<ScraperRouteGuard windowClosedRedirectPath="/closed"/>}
-            >
-                <Route index element={<Testing/>}/>
-                <Route path={"/test/second"} element={<><Testing/><Link to="/test/second/third">Third</Link></>}/>
-                <Route path={"/test/second/third"} element={<Link to="/">Root</Link>}/>
-            </Route>
-            <Route
-                path={"/closed"}
-                element={<Typography>Scraper closed, <Link to={"/"}>go back</Link></Typography>}
-            />
+            <Route index element={<Link to={DataCollection.rootPath}>Start</Link>}/>
+            {DataCollection.routes}
         </Route>
     )
 );
