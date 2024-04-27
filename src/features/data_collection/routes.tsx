@@ -12,18 +12,22 @@ const routes = (
         path={rootPath}
         element={<CenteredLayout children={<Outlet/>}/>}
     >
-        <Route index element={<IntroductionPage/>}/>
+        <Route index element={<IntroductionPage startPath={"steps"}/>}/>
         <Route
-            path={"run"}
+            path={"steps"}
             loader={scraperLoader("synchro", "Synchro", "https://academique-dmz.synchro.umontreal.ca/")}
             element={<ScraperRouteGuard windowClosedRedirectPath="closed"/>}
         >
-            <Route path="steps/:step" element={<DataCollectionStepper/>}>
-                <Route path={"login"} element={<LoginStep/>}/>
+            <Route
+                path={"*"}
+                element={<DataCollectionStepper onCompletionPath={"./../../completed"}/>}
+            >
+                <Route index element={<LoginStep/>}/>
                 <Route path={"semester-selection"} element={<SemesterSelectionStep/>}/>
             </Route>
         </Route>
         <Route path={"closed"} element={<ScraperClosedPage/>}/>
+        <Route path={"completed"} element={<h1>Completed</h1>}/>
     </Route>
 );
 
