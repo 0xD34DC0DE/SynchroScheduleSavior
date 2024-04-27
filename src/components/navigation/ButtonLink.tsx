@@ -2,7 +2,11 @@ import Button, {ButtonProps} from "@mui/material/Button";
 import {LinkProps, Link} from 'react-router-dom';
 import {forwardRef} from "react";
 
-interface ButtonLinkProps extends LinkProps, Omit<ButtonProps, 'component'> {
+type OmitCallbacks<T> = {
+    [K in keyof T as K extends `on${any}` ? never : K]: T[K]
+};
+
+interface ButtonLinkProps extends Omit<LinkProps, 'color'>, Omit<OmitCallbacks<ButtonProps>, 'type'> {
 
 }
 
