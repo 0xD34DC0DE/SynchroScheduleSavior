@@ -1,14 +1,17 @@
-import {CssBaseline} from "@mui/material";
+import {CssBaseline, ThemeProvider} from "@mui/material";
 import {Outlet} from "react-router-dom";
+import theme from "./theme.ts";
 
 interface RootProps {
 }
 
 const Root = ({}: RootProps) => {
     return (
-        <CssBaseline>
-            <Outlet/>
-        </CssBaseline>
+        <ThemeProvider theme={theme}>
+            <CssBaseline>
+                <Outlet/>
+            </CssBaseline>
+        </ThemeProvider>
     );
 };
 
