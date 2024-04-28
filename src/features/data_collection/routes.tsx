@@ -3,6 +3,7 @@ import {Route} from "react-router-dom";
 import {IntroductionPage, ScraperClosedPage} from "./pages";
 import {DataCollectionStepper, LoginStep, SemesterSelectionStep} from "./components";
 import CenteredGridLayout from "./components/CenteredGridLayout.tsx";
+import ExplanationPage from "./pages/ExplanationPage.tsx";
 
 
 const rootPath = "/data-collection";
@@ -12,7 +13,8 @@ const routes = (
         path={rootPath}
         element={<CenteredGridLayout/>}
     >
-        <Route index element={<IntroductionPage startPath={"steps"}/>}/>
+        <Route index element={<IntroductionPage linkPath="explanation"/>}/>
+        <Route path={"explanation"} element={<ExplanationPage startPath="steps"/>}/>
         <Route
             path={"steps"}
             loader={scraperLoader("synchro", "Synchro", "https://academique-dmz.synchro.umontreal.ca/")}
