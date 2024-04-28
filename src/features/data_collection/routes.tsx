@@ -1,8 +1,8 @@
 import {scraperLoader, ScraperRouteGuard} from "../../lib/webview_scraper/components";
-import {CenteredLayout} from "../../components/layouts";
-import {Outlet, Route} from "react-router-dom";
+import {Route} from "react-router-dom";
 import {IntroductionPage, ScraperClosedPage} from "./pages";
 import {DataCollectionStepper, LoginStep, SemesterSelectionStep} from "./components";
+import CenteredGridLayout from "./components/CenteredGridLayout.tsx";
 
 
 const rootPath = "/data-collection";
@@ -10,7 +10,7 @@ const rootPath = "/data-collection";
 const routes = (
     <Route
         path={rootPath}
-        element={<CenteredLayout children={<Outlet/>}/>}
+        element={<CenteredGridLayout/>}
     >
         <Route index element={<IntroductionPage startPath={"steps"}/>}/>
         <Route
