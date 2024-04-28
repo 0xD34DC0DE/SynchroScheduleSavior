@@ -1,12 +1,10 @@
 import Button, {ButtonProps} from "@mui/material/Button";
 import {LinkProps, Link} from 'react-router-dom';
 import {forwardRef} from "react";
+import {OmitWithPrefix} from "../../utils/type_utils.ts";
 
-type OmitCallbacks<T> = {
-    [K in keyof T as K extends `on${any}` ? never : K]: T[K]
-};
 
-interface ButtonLinkProps extends Omit<LinkProps, 'color'>, Omit<OmitCallbacks<ButtonProps>, 'type'> {
+interface ButtonLinkProps extends Omit<LinkProps, 'color'>, Omit<OmitWithPrefix<'on', ButtonProps>, 'type'> {
 
 }
 
