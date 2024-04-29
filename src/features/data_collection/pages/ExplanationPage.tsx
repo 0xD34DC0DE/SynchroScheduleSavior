@@ -1,6 +1,7 @@
 import {ButtonLink} from "../../../components/navigation";
 import {Grid, Typography} from "@mui/material";
 import TooltipTypography from "../components/TooltipTypography.tsx";
+import ExplanationAnimation from "../components/ExplanationAnimation.tsx";
 
 interface ExplanationPageProps {
     startPath: string;
@@ -88,8 +89,8 @@ const ExplanationPage = ({startPath}: ExplanationPageProps) => {
                 </Grid>
             </Grid>
 
-            <Grid container item xs={12} justifyContent="flex-end">
-                <ButtonLink to={startPath} variant="contained">Start</ButtonLink>
+            <Grid item xs={7}>
+                <ExplanationAnimation/>
             </Grid>
         </Grid>
     );

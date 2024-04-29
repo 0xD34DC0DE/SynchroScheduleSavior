@@ -19,6 +19,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.1",
+    "react-spring": "^9.7.3",
     "tauri-plugin-sql-api": "github:tauri-apps/tauri-plugin-sql#v1",
     "url-pattern": "^1.0.3",
     "zustand": "^4.4.7"
