@@ -14,7 +14,7 @@ const routes = (
         element={<CenteredGridLayout/>}
     >
         <Route index element={<IntroductionPage linkPath="explanation"/>}/>
-        <Route path={"explanation"} element={<ExplanationPage startPath="steps"/>}/>
+        <Route path={"explanation"} element={<ExplanationPage startPath="../steps"/>}/>
         <Route
             path={"steps"}
             loader={scraperLoader("synchro", "Synchro", "https://academique-dmz.synchro.umontreal.ca/")}
