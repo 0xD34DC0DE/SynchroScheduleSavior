@@ -9,15 +9,15 @@ interface ExplanationPageProps {
 
 const ExplanationPage = ({startPath}: ExplanationPageProps) => {
     return (
-        <Grid container item xs={12} sm={10} spacing={1}>
-            <Grid item xs={12}>
-                <Typography variant={"h2"} fontWeight={600}>
-                    How it works
-                </Typography>
-            </Grid>
-
+        <Grid container item xs={12} sm={10} spacing={1} alignItems="center">
             <Grid container item xs={5} spacing={2}>
-                <Grid item>
+                <Grid item xs={12}>
+                    <Typography variant={"h2"} fontWeight={600}>
+                        How it works
+                    </Typography>
+                </Grid>
+
+                <Grid item xs={12}>
                     <Typography variant={"h4"} fontWeight={600}>
                         Step 1: Login
                     </Typography>
@@ -86,6 +86,9 @@ const ExplanationPage = ({startPath}: ExplanationPageProps) => {
                         </TooltipTypography>
                         &nbsp;and will guide you through the data collection process.
                     </Typography>
+                </Grid>
+                <Grid item xs={12} mt={2} justifyContent={"center"} display={"flex"}>
+                        <ButtonLink to={startPath} variant="contained" sx={{px: 3, fontSize: "110%"}}>Start</ButtonLink>
                 </Grid>
             </Grid>
 
