@@ -2,6 +2,7 @@ import {scraperLoader, ScraperRouteGuard} from "../../lib/webview_scraper/compon
 import {Route} from "react-router-dom";
 import {IntroductionPage, ScraperErrorPage, ExplanationPage, ScraperClosedPage} from "./pages";
 import {DataCollectionStepper, LoginStep, SemesterSelectionStep, CenteredGridLayout} from "./components";
+import SemestersDataCollectionStep from "./components/SemestersDataCollectionStep.tsx";
 
 const rootPath = "/data-collection";
 
@@ -24,6 +25,7 @@ const routes = (
             >
                 <Route index element={<LoginStep/>}/>
                 <Route path={"semester-selection"} element={<SemesterSelectionStep/>}/>
+                <Route path={"semester-data-collection"} element={<SemestersDataCollectionStep/>}/>
             </Route>
         </Route>
         <Route path={"closed"} element={<ScraperClosedPage/>}/>

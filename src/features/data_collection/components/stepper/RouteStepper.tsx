@@ -1,5 +1,5 @@
-import {Outlet, useOutletContext, useParams} from "react-router-dom";
-import useChildrenRoutes from "../../../../hooks/childrenRoutes.ts";
+import {Outlet, useOutletContext, useParams, useResolvedPath} from "react-router-dom";
+import useSplatPathChildrenRoutes from "../../../../hooks/childrenRoutes.ts";
 import {Dispatch, MutableRefObject, SetStateAction, useRef, useState} from "react";
 
 type RouteStepperContextType = {
@@ -17,8 +17,8 @@ const RouteStepper = ({onCompletionPath}: RouteStepperProps) => {
     const activeStepPath = useParams()["*"];
     if (activeStepPath === undefined) throw new Error("Current path not found");
 
-    const stepsRoute = useChildrenRoutes();
-    if (stepsRoute.length === 0) throw new Error("Must have at least one step");
+    const stepsRoute = useSplatPathChildrenRoutes();
+    if (stepsRoute.length === 0) return null;// throw new Error("Must have at least one step");
 
     const firstStepPath = stepsRoute[0].index === true ? "" : stepsRoute[0].path;
     if (firstStepPath === undefined) throw new Error("First step must have a path or be an index route");
@@ -35,7 +35,7 @@ const RouteStepper = ({onCompletionPath}: RouteStepperProps) => {
     if (activeStepIndex === -1) throw new Error(`Current path ${activeStepPath} not found in children paths`);
 
     const isLastStep = activeStepIndex === stepsPath.length - 1;
-    const nextPath = isLastStep ? onCompletionPath : stepsPath[activeStepIndex + 1];
+    const nextPath = useResolvedPath(`../${isLastStep ? onCompletionPath : stepsPath[activeStepIndex + 1]}`);
     const stepCompleteStateRef = useRef<Dispatch<SetStateAction<boolean>>>();
     const stepDataStateRef = useRef<Dispatch<SetStateAction<any>>>();
 
