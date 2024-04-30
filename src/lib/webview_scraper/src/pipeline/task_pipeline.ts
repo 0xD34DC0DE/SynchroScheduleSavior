@@ -45,14 +45,23 @@ class TaskPipeline {
     }
 
     private async _execute_steps(): Promise<void> {
+        let cancelled = false;
         for (let step of this._steps) {
             this._cancel = () => {
-                step.cancel();
+                try {
+                    step.cancel();
+                } catch (e) {
+                    if ((e as Error | undefined)?.name !== "CancelledError") throw e;
+                    cancelled = true;
+                }
                 this._window_close_unlisten?.();
                 this._window_close_unlisten = null;
                 this._cancel = null;
                 this._on_state_change?.(PipelineState.CANCELLED);
             }
+
+            if (cancelled) break;
+
             await step.execute(this._target);
         }
 

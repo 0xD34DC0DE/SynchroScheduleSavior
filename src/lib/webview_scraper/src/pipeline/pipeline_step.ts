@@ -19,9 +19,6 @@ abstract class PipelineStep {
             this._resolve = resolve;
             this._reject = reject;
             await this.run(target, ...args);
-        }).catch((error) => {
-            console.error(`(PipelineStep) Error in step '${this.name}':`, error);
-            throw error;
         }).finally(() => this._cleanup());
     }
 
@@ -36,7 +33,9 @@ abstract class PipelineStep {
 
     public cancel() {
         if (!this._reject) throw new Error(`(PipelineStep) Cannot cancel step '${this.name}' that is not running`);
-        this._reject(new Error("Cancelled"));
+        const error = new Error("Pipeline step was cancelled.");
+        error.name = "CancelledError";
+        this._reject(error);
     }
 
     private _cleanup() {
