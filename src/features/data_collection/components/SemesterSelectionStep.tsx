@@ -23,10 +23,10 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
 
     useEffect(() => {
         setStepCompleted(selectedSemesters.length > 0);
-    }, [selectedSemesters.length === 0]);
+    }, [selectedSemesters, setStepCompleted]);
 
     useEffect(() => {
-        const cancel = scraper
+        return scraper
             .begin(setPipelineState)
             .navigate_to(
                 "/psc/acprpr9/EMPLOYEE/SA/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL",
@@ -44,13 +44,7 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
                }
             })
             .execute();
-
-        return () => {
-            console.log("Effect: Cancelling pipeline");
-            cancel();
-        }
-    }, []);
-
+    }, [scraper, setPipelineState, setSemestersData, setError]);
 
     return (
         <Grid item xs={8} sm={6} md={5} lg={4} xl={4}>

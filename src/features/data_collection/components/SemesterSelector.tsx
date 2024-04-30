@@ -1,11 +1,11 @@
 import {Grid, Typography} from "@mui/material";
-import {useCallback, useEffect, useState} from "react";
+import {Dispatch, SetStateAction, useCallback, useState} from "react";
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 
 interface SemesterSelectorProps {
     semesters: string[];
-    setSelectedSemesters: (selected: string[]) => void;
+    setSelectedSemesters: Dispatch<SetStateAction<string[]>>
 }
 
 const SemesterSelector = ({semesters, setSelectedSemesters}: SemesterSelectorProps) => {
@@ -17,11 +17,14 @@ const SemesterSelector = ({semesters, setSelectedSemesters}: SemesterSelectorPro
             newSelected[index] = !prev[index];
             return newSelected;
         });
-    }, [setSelected]);
-
-    useEffect(() => {
-        setSelectedSemesters(semesters.filter((_, index) => selectedSemesters[index]));
-    }, [selectedSemesters, setSelectedSemesters, semesters]);
+        setSelectedSemesters(prev => {
+            if (prev.includes(semesters[index])) {
+                return prev.filter(semester => semester !== semesters[index]);
+            } else {
+                return [...prev, semesters[index]];
+            }
+        });
+    }, [setSelected, setSelectedSemesters, semesters]);
 
     return (
         <Grid container justifyContent={"center"}>
