@@ -1,4 +1,4 @@
-import {Outlet, useOutletContext, useParams, useResolvedPath} from "react-router-dom";
+import {Outlet, useLocation, useOutletContext, useParams, useResolvedPath} from "react-router-dom";
 import useSplatPathChildrenRoutes from "../../../../hooks/childrenRoutes.ts";
 import {Dispatch, MutableRefObject, SetStateAction, useRef, useState} from "react";
 
@@ -53,7 +53,8 @@ const useStepState = () => {
 
 const useSetStepState = () => {
     const stepCompleteState = useState(false);
-    const stateDataState = useState<any>(undefined);
+    const {state: previousStepData} = useLocation();
+    const stateDataState = useState<any>(previousStepData);
     const stepperContext = useOutletContext<RouteStepperContextType>();
     stepperContext.stepCompleteStateRef.current = stepCompleteState;
     stepperContext.stepDataStateRef.current = stateDataState;
