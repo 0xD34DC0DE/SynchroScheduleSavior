@@ -4,7 +4,7 @@ import {useSetStepState} from "./stepper/RouteStepper.tsx";
 import Box from "@mui/material/Box";
 import {Context, PipelineState, usePipelineState, useScraper} from "../../../lib/webview_scraper";
 import login_modal_html from "../../../assets/login_modal.html?raw";
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 
 interface LoginStepProps {
 
@@ -12,6 +12,7 @@ interface LoginStepProps {
 
 const LoginStep = ({}: LoginStepProps) => {
     const [pipelineState, setPipelineState] = usePipelineState();
+    const [loginDetected, setLoginDetected] = useState(false);
     const scraper = useScraper();
     const setStepCompleted = useSetStepState();
 
@@ -20,17 +21,13 @@ const LoginStep = ({}: LoginStepProps) => {
     }, [pipelineState, setStepCompleted]);
 
     useEffect(() => {
-        const cancel =
-            scraper
-                .begin(setPipelineState)
-                .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
-                .task_with_context(Context, show_login_modal, [login_modal_html])
-                .wait_for_event("current", "tauri://focus")
-                .execute();
-
-        return () => {
-            cancel();
-        }
+        return scraper
+            .begin(setPipelineState)
+            .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
+            .task_with_context(Context, show_login_modal, [login_modal_html])
+            .callback(() => setLoginDetected(true))
+            .wait_for_event("current", "tauri://focus")
+            .execute();
     }, [undefined, scraper, setPipelineState]);
 
     return (
@@ -53,8 +50,20 @@ const LoginStep = ({}: LoginStepProps) => {
                     </Box>
                 </Stack>
                 <Box my={4} display={"flex"} flexDirection={"column"} alignItems={"center"}>
-                    <Typography variant={"body2"} my={1}>Waiting for login...</Typography>
-                    <LinearProgress sx={{width: "100%"}}/>
+
+                    {loginDetected &&
+                        <>
+                            <Typography variant={"body2"}>Login successful!</Typography>
+                            <LinearProgress sx={{width: "100%"}} variant={"determinate"} value={100} color={"success"}/>
+                        </>
+                    }
+                    {!loginDetected &&
+                        <>
+                            <Typography variant={"body2"}>Waiting for login...</Typography>
+                            <LinearProgress sx={{width: "100%"}}/>
+                        </>
+                    }
+
                 </Box>
             </Step>
         </Grid>
