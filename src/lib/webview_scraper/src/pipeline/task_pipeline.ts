@@ -83,6 +83,20 @@ class TaskPipeline {
         return this;
     }
 
+    public navigate_with_click(selector: string, url_pattern: string): TaskPipeline {
+        this._steps.push(
+            new steps.Task((selector: string) => {
+                const element = document.querySelector(selector);
+                if (typeof element === "undefined" || element === null) {
+                    throw new Error(`Element not found: ${selector}`);
+                }
+                (element as HTMLElement).click();
+            }, [selector])
+        );
+        this._steps.push(new steps.UrlWait(url_pattern));
+        return this;
+    }
+
     public task<F extends (...args: Parameters<F>) => ReturnType<F>>(
         injected_fn: F,
         args: Parameters<F>,
