@@ -1,15 +1,16 @@
 import {Await, defer, Outlet, useLoaderData, useResolvedPath} from "react-router-dom";
 import ScraperProvider from "./ScraperProvider.tsx";
 import WebScraper from "../src/web_scraper.ts";
-import {Suspense} from "react";
+import {ReactNode, Suspense} from "react";
 import ScraperLoadingIndicator from "./ScraperLoadingIndicator.tsx";
 import ScraperLoadingError from "./ScraperLoadingError.tsx";
 
 interface ScraperRouteGuardProps {
     windowClosedRedirectPath: string;
+    errorElement?: ReactNode;
 }
 
-const ScraperRouteGuard = ({windowClosedRedirectPath}: ScraperRouteGuardProps) => {
+const ScraperRouteGuard = ({windowClosedRedirectPath, errorElement}: ScraperRouteGuardProps) => {
     const data = useLoaderData() as {
         web_scraper: any;
     };
@@ -19,7 +20,7 @@ const ScraperRouteGuard = ({windowClosedRedirectPath}: ScraperRouteGuardProps) =
         <Suspense fallback={<ScraperLoadingIndicator/>}>
             <Await
                 resolve={data.web_scraper}
-                errorElement={<ScraperLoadingError/>}
+                errorElement={errorElement === undefined ? <ScraperLoadingError/> : errorElement}
             >
                 {(web_scraper: WebScraper) => (
                     <ScraperProvider scraperContext={{web_scraper}}
