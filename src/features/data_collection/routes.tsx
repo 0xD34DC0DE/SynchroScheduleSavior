@@ -16,7 +16,7 @@ const routes = (
         <Route
             path={"steps"}
             loader={scraperLoader("synchro", "Synchro", "https://academique-dmz.synchro.umontreal.ca/")}
-            element={<ScraperRouteGuard windowClosedRedirectPath="closed"/>}
+            element={<ScraperRouteGuard windowClosedRedirectPath="./../closed" errorElement={null}/>}
         >
             <Route
                 path={"*"}
