@@ -6,6 +6,7 @@ type RouteStepperContextType = {
     isLastStep: boolean;
     nextPath: string;
     stepCompleteStateRef: MutableRefObject<[boolean, Dispatch<SetStateAction<boolean>>] | undefined>;
+    stepDataStateRef: MutableRefObject<[any, Dispatch<SetStateAction<any>>] | undefined>;
 };
 
 interface RouteStepperProps {
@@ -35,9 +36,10 @@ const RouteStepper = ({onCompletionPath}: RouteStepperProps) => {
 
     const isLastStep = activeStepIndex === stepsPath.length - 1;
     const nextPath = isLastStep ? onCompletionPath : stepsPath[activeStepIndex + 1];
-    const stepCompleteStateRef = useRef<Dispatch<SetStateAction<boolean>>>()
+    const stepCompleteStateRef = useRef<Dispatch<SetStateAction<boolean>>>();
+    const stepDataStateRef = useRef<Dispatch<SetStateAction<any>>>();
 
-    return (<Outlet context={{isLastStep, nextPath, stepCompleteStateRef}}/>);
+    return (<Outlet context={{isLastStep, nextPath, stepCompleteStateRef, stepDataStateRef}}/>);
 };
 
 const useStepState = () => {
@@ -51,10 +53,17 @@ const useStepState = () => {
 
 const useSetStepState = () => {
     const stepCompleteState = useState(false);
+    const stateDataState = useState<any>(undefined);
     const stepperContext = useOutletContext<RouteStepperContextType>();
     stepperContext.stepCompleteStateRef.current = stepCompleteState;
+    stepperContext.stepDataStateRef.current = stateDataState;
     return stepperContext.stepCompleteStateRef.current[1];
 }
 
-export {useStepState, useSetStepState};
+const useStepData = <T,>(): [T, Dispatch<SetStateAction<T>>] => {
+    const stepperContext = useOutletContext<RouteStepperContextType>();
+    return stepperContext.stepDataStateRef.current as [T, Dispatch<SetStateAction<T>>];
+}
+
+export {useStepState, useSetStepState, useStepData};
 export default RouteStepper;

@@ -1,6 +1,6 @@
 import Step from "./stepper/Step.tsx";
 import {CircularProgress, Grid, Stack, Typography} from "@mui/material";
-import {useSetStepState} from "./stepper/RouteStepper.tsx";
+import {useSetStepState, useStepData} from "./stepper/RouteStepper.tsx";
 import Box from "@mui/material/Box";
 import {useEffect, useState} from "react";
 import {PipelineState, usePipelineState, useScraper} from "../../../lib/webview_scraper";
@@ -12,17 +12,21 @@ interface SemesterSelectionStepProps {
 
 const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
     const setStepCompleted = useSetStepState();
+    const [_, setStepData] = useStepData<SemesterData>();
     const scraper = useScraper();
     const [pipelineState, setPipelineState] = usePipelineState();
-    const [semestersData, setSemestersData] = useState<{
-        url: string,
-        semesters: { name: string, href: string }[]
-    } | null>(null);
+    const [semestersData, setSemestersData] = useState<SemesterData | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [selectedSemesters, setSelectedSemesters] = useState<string[]>([]);
 
     useEffect(() => {
         setStepCompleted(selectedSemesters.length > 0);
+        if (semestersData === null) return;
+        const selectedSemestersData = semestersData.semesters.filter(s => selectedSemesters.includes(s.name));
+        setStepData({
+            url: semestersData.url,
+            semesters: selectedSemestersData
+        });
     }, [selectedSemesters, setStepCompleted]);
 
     useEffect(() => {
@@ -37,11 +41,11 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
                 "*/SA_LEARNER_SERVICES_2.SSR_SSENRL_CART.GBL*"
             )
             .task(getSemestersData(), [], (semesters) => {
-               if("error" in semesters) {
-                   setError(semesters.error);
-               } else {
-                   setSemestersData(semesters.value);
-               }
+                if ("error" in semesters) {
+                    setError(semesters.error);
+                } else {
+                    setSemestersData(semesters.value);
+                }
             })
             .execute();
     }, [scraper, setPipelineState, setSemestersData, setError]);
@@ -83,7 +87,10 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
     );
 };
 
-export default SemesterSelectionStep;
+type SemesterData = {
+    url: string,
+    semesters: { name: string, href: string }[]
+}
 
 const getSemestersData = () => {
     return () => {
@@ -102,3 +109,6 @@ const getSemestersData = () => {
         }
     };
 }
+
+export type {SemesterData};
+export default SemesterSelectionStep;
