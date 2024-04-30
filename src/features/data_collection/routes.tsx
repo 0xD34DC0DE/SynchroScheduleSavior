@@ -9,6 +9,7 @@ const routes = (
     <Route
         path={rootPath}
         element={<CenteredGridLayout/>}
+        errorElement={<ScraperErrorPage/>}
     >
         <Route index element={<IntroductionPage linkPath="explanation"/>}/>
         <Route path={"explanation"} element={<ExplanationPage startPath="../steps"/>}/>
