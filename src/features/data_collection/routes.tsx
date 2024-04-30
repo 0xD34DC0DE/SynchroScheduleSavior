@@ -1,10 +1,7 @@
 import {scraperLoader, ScraperRouteGuard} from "../../lib/webview_scraper/components";
 import {Route} from "react-router-dom";
-import {IntroductionPage, ScraperClosedPage} from "./pages";
-import {DataCollectionStepper, LoginStep, SemesterSelectionStep} from "./components";
-import CenteredGridLayout from "./components/CenteredGridLayout.tsx";
-import ExplanationPage from "./pages/ExplanationPage.tsx";
-
+import {IntroductionPage, ScraperErrorPage, ExplanationPage, ScraperClosedPage} from "./pages";
+import {DataCollectionStepper, LoginStep, SemesterSelectionStep, CenteredGridLayout} from "./components";
 
 const rootPath = "/data-collection";
 
