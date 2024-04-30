@@ -38,6 +38,9 @@ class TaskPipeline {
             this._execute_steps().then(() => {
                 on_complete?.();
                 this._on_state_change?.(PipelineState.DONE);
+            }).catch(e => {
+                if ((e as Error | undefined)?.name !== "CancelledError") throw e;
+                this._on_state_change?.(PipelineState.CANCELLED);
             });
         });
 
