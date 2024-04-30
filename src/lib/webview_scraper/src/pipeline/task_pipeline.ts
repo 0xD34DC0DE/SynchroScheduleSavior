@@ -122,6 +122,11 @@ class TaskPipeline {
         this._steps.push(new steps.EventWait(target_window, "all", event_names, on_complete));
         return this;
     }
+
+    public callback(callback: OnCompleteCallback): TaskPipeline {
+        this._steps.push(new steps.Callback(callback));
+        return this;
+    }
 }
 
 export {PipelineState};
