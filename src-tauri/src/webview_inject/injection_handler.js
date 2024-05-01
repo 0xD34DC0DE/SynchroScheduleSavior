@@ -1,5 +1,5 @@
 window.__INJECTOR__ = (initiator_label, injection_id, fn, args, context_builder) => {
-    
+
     const context = context_builder(initiator_label);
 
     const emit = (result) =>
@@ -13,17 +13,22 @@ window.__INJECTOR__ = (initiator_label, injection_id, fn, args, context_builder)
 
         const unserializable_types = [undefined, null, NaN, Infinity, -Infinity];
         const unserializable_types_str = ["undefined", "null", "NaN", "Infinity", "-Infinity"];
-
-        try {
-            const result = context ? fn(context, ...args) : fn(...args);
-
+        const emit_result = (result) => {
             if (unserializable_types.includes(result)) {
                 const type_index = unserializable_types.indexOf(result);
                 emit({value: unserializable_types_str[type_index], special: true});
                 return;
             }
-
             emit({value: result});
+        }
+
+        try {
+            let result = context ? fn(context, ...args) : fn(...args);
+            if (result instanceof Promise) {
+                result.then(emit_result).catch((e) => emit({error: e.toString()}));
+            } else {
+                emit_result(result);
+            }
         } catch (e) {
             emit({error: e.toString()});
         }
