@@ -36,7 +36,7 @@ class TaskWithContext<Ctx extends Context, F extends (...args: any) => any> exte
             prototypes.push(current);
             current = Object.getPrototypeOf(current);
         }
-        return prototypes;
+        return prototypes.reverse();
     }
 
     public async run(target: WebviewWindow): Promise<void> {
