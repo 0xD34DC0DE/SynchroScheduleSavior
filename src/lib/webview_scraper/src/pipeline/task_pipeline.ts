@@ -1,9 +1,10 @@
 import PipelineStep from "./pipeline_step.ts";
-import Context from "../context";
+import Context, {ConditionConfig} from "../context";
 import {InjectionResult, ParametersWithoutContext, TaskWithContextFn} from "../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import * as steps from "./steps";
+import {ObservedMutation} from "./types.ts";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
@@ -16,6 +17,8 @@ enum PipelineState {
 }
 
 type OnPipelineStateChangeCallback = (state: PipelineState) => void;
+
+type WaitConfig = Omit<ConditionConfig, "condition_event_id" | "condition_met_event_id">;
 
 class TaskPipeline {
     private readonly _target: WebviewWindow;
@@ -154,8 +157,28 @@ class TaskPipeline {
         this._steps.push(new steps.Callback(callback));
         return this;
     }
+
+    public click_and_wait(selector: string,
+                          condition: (mutations: ObservedMutation[]) => boolean,
+                          wait_config: WaitConfig): TaskPipeline {
+        this._steps.push(
+            new steps.TaskWithCondition(
+                (selector: string) => {
+                    const element = document.querySelector(selector);
+                    if (element === null) {
+                        throw new Error(`Element not found: ${selector}`);
+                    }
+                    (element as HTMLElement).click();
+                },
+                [selector],
+                condition,
+                wait_config
+            )
+        );
+        return this;
+    }
 }
 
 export {PipelineState};
-export type {OnPipelineStateChangeCallback};
+export type {OnPipelineStateChangeCallback, WaitConfig};
 export default TaskPipeline;
