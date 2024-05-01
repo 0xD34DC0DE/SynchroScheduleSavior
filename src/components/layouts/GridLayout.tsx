@@ -14,6 +14,7 @@ const GridLayout = ({children, justifyContent, alignItems}: GridLayoutProps) => 
             sx={{
                 flexGrow: 1,
                 height: "100vh",
+                bgcolor: "lightgoldenrodyellow",
             }}
             container
             justifyContent={justifyContent}
