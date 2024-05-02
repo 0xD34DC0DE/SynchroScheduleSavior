@@ -1,3 +1,5 @@
+window.__INJECTOR_STATE__ = {};
+
 window.__INJECTOR__ = (initiator_label, injection_id, fn, args, context_builder) => {
 
     const context = context_builder(initiator_label);
