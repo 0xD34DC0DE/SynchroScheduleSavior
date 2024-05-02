@@ -75,6 +75,13 @@ class Injection<Ctx extends Context, F extends (...args: any[]) => any> {
         this._injection_id = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
     }
 
+    private static _prepare_args(args: any[]): any[] {
+        return args.map((arg) => {
+            if (arg instanceof Function) return { _fn_: arg.toString() };
+            return arg;
+        });
+    }
+
     public async inject(
         target: WebviewWindow,
         on_result?: (result: InjectionResult<ReturnType<F>>) => void,
@@ -87,7 +94,7 @@ class Injection<Ctx extends Context, F extends (...args: any[]) => any> {
                 await webview_inject(target.label,
                     this._injection_id,
                     this.js_function.toString(),
-                    this.args,
+                    Injection._prepare_args(this.args),
                     this.options?.allow_parallel ?? false,
                     this.options?.context_prototypes);
             } catch (e) {

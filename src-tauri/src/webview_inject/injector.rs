@@ -4,6 +4,7 @@ use serde_json::Value;
 use tauri::Window;
 use tokio::sync::oneshot;
 use tokio::time::timeout;
+use crate::webview_inject::injection_arg::InjectionArg;
 
 pub async fn inject(target: Window,
                     initiator: Window,
@@ -58,7 +59,7 @@ impl<'a> Injector<'a> {
         println!("Injecting: {}", js);
         self.window.eval(js.as_ref())?;
 
-        match timeout(Duration::from_secs(5), tx).await {
+        match timeout(Duration::from_secs(10), tx).await {
             Err(_) => Err(anyhow!("Injection timed out")),
             Ok(Err(e)) => Err(anyhow!("Injection failed: {}", e)),
             Ok(Ok(None)) => Err(anyhow!("Injection failed: empty response")),
@@ -70,7 +71,8 @@ impl<'a> Injector<'a> {
         format!("[{}]",
                 args.unwrap_or_default()
                     .iter()
-                    .map(|v| v.to_string())
+                    .map(|v| InjectionArg::from(v.clone()))
+                    .map(|arg| arg.to_string())
                     .collect::<Vec<String>>()
                     .join(", ")
         )
