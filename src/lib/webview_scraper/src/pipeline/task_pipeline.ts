@@ -4,6 +4,7 @@ import {InjectionResult, ParametersWithoutContext, TaskWithContextFn} from "../i
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import * as steps from "./steps";
+import {HTMLElementConstructor, RemoteHTMLElement} from "../remote_html_element.ts";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
@@ -170,6 +171,26 @@ class TaskPipeline {
                 [selector],
                 condition,
                 wait_config
+            )
+        );
+        return this;
+    }
+
+    public for_each<T extends HTMLElement>(
+        selector: string,
+        element_type: HTMLElementConstructor<T>,
+        sub_pipeline: (element: RemoteHTMLElement<T>, pipeline: TaskPipeline) => TaskPipeline
+    ) {
+        this._steps.push(
+            new steps.ForEachTask(
+                selector,
+                element_type,
+                (element, on_complete) => {
+                    sub_pipeline(
+                        element,
+                        new TaskPipeline(this._target, this._on_state_change)
+                    ).execute(on_complete);
+                }
             )
         );
         return this;
