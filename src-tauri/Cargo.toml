@@ -13,7 +13,7 @@ edition = "2021"
 tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
-tauri = { version = "1.5", features = [ "window-set-focus", "window-close", "shell-open"] }
+tauri = { version = "1.5", features = [ "window-create", "window-show", "window-hide", "window-set-focus", "window-close", "shell-open", "test"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
 url = "2.5.0"
