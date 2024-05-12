@@ -5,12 +5,11 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use serde_json::Value;
 use tauri::{AppHandle, Manager, State, Window};
 use tokio::sync::Semaphore;
 use url::Url;
 
-use crate::webview_inject as wv_inject;
+use crate::webview_inject::{InjectionRequest, InjectableWindowBuilder, AsInjector};
 
 mod webview_inject;
 
@@ -26,7 +25,7 @@ async fn open_webview(window_label: String, title: String, url: String, handle: 
 
     let url = Url::parse(url.as_ref()).map_err(|e| e.to_string())?;
 
-    wv_inject::InjectableWindowBuilder::new(
+    InjectableWindowBuilder::new(
         &handle,
         window_label.as_str(),
         tauri::WindowUrl::External(url),
@@ -49,17 +48,13 @@ async fn close_webview(window_label: String, handle: AppHandle) -> Result<(), St
 #[tauri::command]
 async fn webview_inject<'r>(
     target_window_label: String,
-    injection_id: u64,
-    js_function: String,
-    allow_parallel: bool,
-    args: Option<Vec<Value>>,
-    context_classes: Option<Vec<String>>,
+    request: InjectionRequest,
     initiator_window: Window,
-    handle: AppHandle,
+    app_handle: AppHandle,
     injector_state: State<'r, InjectorState>,
 ) -> Result<(), String> {
     let semaphore = injector_state.0.clone();
-    let _permit = if allow_parallel {
+    let _permit = if request.allow_parallel() {
         // If parallel injections are allowed, acquire a single permit to stay within the limit
         // of MAX_PARALLEL_INJECTIONS
         Some(semaphore.acquire().await)
@@ -69,20 +64,14 @@ async fn webview_inject<'r>(
         Some(semaphore.acquire_many(MAX_PARALLEL_INJECTIONS).await)
     };
 
-    let target_window = handle.get_window(target_window_label.as_str());
-    if target_window.is_none() {
-        return Err(anyhow!("Window '{}' not found", target_window_label).to_string());
-    }
-    let target_window = target_window.unwrap();
+    let target_window = app_handle.get_window(target_window_label.as_str())
+        .ok_or(anyhow!("Window '{}' not found", target_window_label))
+        .map_err(|e| e.to_string())?;
 
-    wv_inject::inject(
-        target_window,
-        initiator_window,
-        injection_id.to_string(),
-        js_function,
-        args,
-        context_classes,
-    ).await
+    initiator_window.as_injector()
+        .with_args(request)
+        .inject(target_window)
+        .await
         .map_err(|e| e.to_string())
 }
 
