@@ -1,5 +1,8 @@
 import {describe, expect, it} from "vitest";
 
+/**
+ * A constructor function type
+ */
 type Constructor<T> = new (...args: any) => T;
 
 /**
@@ -9,7 +12,9 @@ type Constructor<T> = new (...args: any) => T;
  * directly in any environment without the need for the parent classes to
  * be defined in the same scope.
  *
- * Example:
+ * @example
+ * // Leaf extends Intermediate which extends Root
+ * // Serialization result of serializing the Leaf class:
  * class Leaf extends
  *    Intermediate extends
  *      Root {
@@ -22,10 +27,10 @@ type Constructor<T> = new (...args: any) => T;
  *  <leaf class body...>
  * }
  *
- * @param ctor The class constructor to serialize
+ * @param {Constructor} ctor The class constructor to serialize
  * @returns {string} The serialized class as a string with all parent classes
  */
-const serialize_class = <T>(ctor: Constructor<T>): string => {
+const serializeClass = <T>(ctor: Constructor<T>): string => {
     const parent = Object.getPrototypeOf(ctor);
     if (parent.name === "") return ctor.toString(); // Not a subclass
 
@@ -34,23 +39,32 @@ const serialize_class = <T>(ctor: Constructor<T>): string => {
     const parentOffset = ctorStr.indexOf(parentName);
 
     return ctorStr.substring(0, parentOffset) + "\n" +
-        serialize_class(parent) +
+        serializeClass(parent) +
         ctorStr.substring(parentOffset + parentName.length);
 }
 
+/**
+ * {@link Serializable} are the types that can be serialized into JSON without any special handling
+ */
 type Serializable = string | number | boolean | null | Serializable[] | { [key: string]: Serializable };
 
-// Escaped objects are used to serialize objects that can't be normally serialized into JSON
-// like functions or classes. The object is serialized as a single key-value pair where the key
-// is a magic string and the value is the string representation of the object.
+/**
+ * {@link Escaped} objects are used to serialize objects that can't be normally serialized into JSON
+ * like functions or classes. The object is serialized as a single key-value pair where the key
+ * is a magic string and the value is the string representation of the object.
+ */
 type Escaped = { "_!_": string };
 
-// EJSON (Escaped JSON) is a type where certain value types that can't be normally serialized into JSON
-// are replaced with a special object that can be serialized.
+/**
+ * {@link EJSON} (Escaped JSON) is a type where certain value types that can't be normally serialized into JSON
+ * are replaced with a special object that can be serialized.
+ */
 type EJSON = Serializable | Escaped;
 
-// Serializable are the types that can be serialized into JSON without any special handling
-// and the types that can be serialized with the Escaped object
+/**
+ * {@link EJSONSerializable} is a union of {@link Serializable} types that can be serialized into JSON
+ * and the types that can be serialized with the {@link Escaped} object
+ */
 type EJSONSerializable =
     Serializable |
     Constructor<any> |
@@ -58,18 +72,33 @@ type EJSONSerializable =
     EJSONSerializable[] |
     { [key: string]: EJSONSerializable };
 
-// Based of https://stackoverflow.com/a/70810697/8629453
+/**
+ * Check if a value is a constructor function.
+ * @param value The value to check
+ * @returns True if the value is a constructor function, false otherwise
+ * @credit https://stackoverflow.com/a/70810697/8629453
+ * @example
+ * isConstructor(class {}) // true
+ * isConstructor(() => {}) // false
+ */
 const isConstructor = (value: any): value is Constructor<any> => {
     return typeof value === 'function' && !!value.prototype && value.prototype.constructor === value;
 }
 
-// Serialize an object into EJSON
-// This function works like structured clone algorithm in the browser, but it applies a transformation
-// to objects that can't be serialized into JSON.
-export const toEJSON = (obj: EJSONSerializable): EJSON => {
+/**
+ * @summary Serializes an object into EJSON
+ * @description This function traverses the object and applies a transformation
+ * to objects that can't be serialized into JSON.
+ * @param obj The object to serialize
+ * @returns The serialized object with all non-serializable objects replaced with Escaped objects
+ * @example
+ * toEJSON(() => 1) // {"_!_": "() => 1"}
+ * toEJSON(MyClass) // {"_!_": "class MyClass { ... }"}
+ */
+const toEJSON = (obj: EJSONSerializable): EJSON => {
     if (Array.isArray(obj)) return obj.map(toEJSON);
 
-    if (isConstructor(obj)) return {"_!_": serialize_class(obj)};
+    if (isConstructor(obj)) return {"_!_": serializeClass(obj)};
 
     if (typeof obj === "function") return {"_!_": obj.toString()};
 
@@ -83,6 +112,7 @@ export const toEJSON = (obj: EJSONSerializable): EJSON => {
     return result;
 }
 
+export default toEJSON;
 
 if (import.meta.vitest) {
     describe('toEJSON', () => {
