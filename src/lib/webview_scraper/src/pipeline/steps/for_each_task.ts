@@ -1,18 +1,18 @@
 import PipelineStep from "../pipeline_step.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import Injection from "../../injection.ts";
-import make_remote_element, {HTMLElementConstructor, RemoteHTMLElement} from "../../remote_html_element.ts";
+import makeHTMLElementStub, {HTMLElementCtor, HTMLElementStub} from "../../stubs/html_element.ts";
 
 class ForEachTask<T extends HTMLElement> extends PipelineStep {
     private readonly _selector: string;
-    private readonly _element_type: HTMLElementConstructor<T>;
+    private readonly _element_type: HTMLElementCtor<T>;
     private readonly _fn: ForEachCallback<T>;
 
     public readonly name: string = "ForEachTask";
 
     constructor(
         selector: string,
-        element_type: HTMLElementConstructor<T>,
+        element_type: HTMLElementCtor<T>,
         fn: ForEachCallback<T>,
     ) {
         super();
@@ -49,7 +49,7 @@ class ForEachTask<T extends HTMLElement> extends PipelineStep {
                     for (let element_id of result.value) {
                         await new Promise<void>(resolve => {
                             this._fn(
-                                make_remote_element(this._element_type, element_id),
+                                makeHTMLElementStub(this._element_type, element_id),
                                 resolve,
                             );
                         });
@@ -63,7 +63,7 @@ class ForEachTask<T extends HTMLElement> extends PipelineStep {
 
 export default ForEachTask;
 
-type ForEachCallback<T extends HTMLElement> = (element: RemoteHTMLElement<T>, on_complete: () => void) => void;
+type ForEachCallback<T extends HTMLElement> = (element: HTMLElementStub<T>, on_complete: () => void) => void;
 
 declare const window: {
     __INJECTOR_STATE__: Record<string, HTMLElement>;
