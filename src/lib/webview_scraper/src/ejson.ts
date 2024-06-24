@@ -1,4 +1,5 @@
 import {describe, expect, it} from "vitest";
+import {Resolvable, resolve} from "./stubs/resolvable.ts";
 
 /**
  * A constructor function type
@@ -69,6 +70,7 @@ type EJSONSerializable =
     Serializable |
     Constructor<any> |
     Function |
+    Resolvable<any> |
     EJSONSerializable[] |
     { [key: string]: EJSONSerializable };
 
@@ -100,18 +102,19 @@ const toEJSON = (obj: EJSONSerializable): EJSON => {
 
     if (isConstructor(obj)) return {"_!_": serializeClass(obj)};
 
-    if (typeof obj === "function") return {"_!_": obj.toString()};
-
     if (obj === null || typeof obj !== "object") return obj;
 
+    if (typeof obj === "function") return {"_!_": resolve(obj).toString()};
+
     const result: { [key: string]: EJSON } = {};
-    for (const key in obj) {
+    for (const key in resolve(obj)) {
         result[key] = toEJSON(obj[key]);
     }
 
     return result;
 }
 
+export type {EJSON, EJSONSerializable};
 export default toEJSON;
 
 if (import.meta.vitest) {

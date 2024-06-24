@@ -1,5 +1,6 @@
 import {invoke} from '@tauri-apps/api/tauri';
 import {WebviewWindow} from "@tauri-apps/api/window";
+import {EJSON} from "./ejson.ts";
 
 const open_webview = async (windowLabel: string, title: string, url: string): Promise<void> => {
     await invoke<void>('open_webview', {windowLabel, title, url});
@@ -11,22 +12,15 @@ const close_webview = async (windowLabel: string): Promise<void> => {
 
 const webview_inject = async(
     targetWindowLabel: string,
-    injectionId: number,
-    jsFunction: string,
-    args: any[] = [],
-    allowParallel: boolean = false,
-    contextClasses?: Function[],
+    request: {
+        injectionId: number,
+        allowParallel: boolean,
+        jsFunction: EJSON,
+        functionArgs?: EJSON,
+    }
 ): Promise<void> => {
-    const cmd_args = {
-        targetWindowLabel,
-        injectionId,
-        jsFunction,
-        allowParallel,
-        args,
-        contextClasses: contextClasses?.map((c) => c.toString()),
-    };
-    console.log("(cmd::webview_inject) cmd_args:", cmd_args);
-    return await invoke('webview_inject', cmd_args);
+    console.log(`Injecting into '${targetWindowLabel}: `, request);
+    return await invoke('webview_inject', {targetWindowLabel, request});
 }
 
 //FIXME: This is a workaround for a bug in Tauri's WebviewWindow.getByLabel API
