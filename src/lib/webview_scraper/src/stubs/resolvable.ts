@@ -11,7 +11,7 @@ type Resolver<T> =
         : Function;
 
 type Resolvable<T> =
-    T extends T & { resolve: Resolver<T> }
+    T extends { resolve: Resolver<T> }
         ? T
         : never;
 
