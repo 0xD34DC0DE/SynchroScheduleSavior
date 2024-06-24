@@ -3,7 +3,7 @@ import {UnlistenFn} from "@tauri-apps/api/event";
 import {webview_inject} from "./commands.ts";
 import {uniqueEventId} from "./utils.ts";
 import toEJSON from "./ejson.ts";
-import {Resolved} from "./stubs/resolvable.ts";
+import {ResolvedType} from "./stubs";
 
 type UnserializableValueTag = "undefined" | "null" | "NaN" | "Infinity" | "-Infinity";
 

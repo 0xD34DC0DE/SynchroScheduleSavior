@@ -56,5 +56,5 @@ const resolve = <T>(value: Function | Object): Resolved<T> | Object => {
     return resolved;
 }
 
-export type {Resolved, Resolvable, ResolvableClass};
+export type {ResolvedType, Resolved, Resolvable, ResolvableClass};
 export {toResolvable, resolve};
