@@ -13,10 +13,10 @@ const close_webview = async (windowLabel: string): Promise<void> => {
 const webview_inject = async(
     targetWindowLabel: string,
     request: {
-        injectionId: number,
-        allowParallel: boolean,
-        jsFunction: EJSON,
-        functionArgs?: EJSON,
+        injection_id: number,
+        allow_parallel: boolean,
+        js_function: EJSON,
+        function_args?: EJSON,
     }
 ): Promise<void> => {
     console.log(`Injecting into '${targetWindowLabel}: `, request);
