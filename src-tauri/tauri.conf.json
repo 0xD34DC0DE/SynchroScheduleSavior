@@ -20,7 +20,8 @@
       "window": {
         "all": false,
         "close": true,
-        "setFocus": true
+        "setFocus": true,
+        "show": true
       }
     },
     "bundle": {
