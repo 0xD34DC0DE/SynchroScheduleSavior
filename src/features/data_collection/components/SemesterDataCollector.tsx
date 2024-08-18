@@ -8,10 +8,11 @@ import {Selector, usePipelineState, useScraper} from "../../../lib/webview_scrap
 interface SemesterDataCollectorProps {
     setCollectedData: (data: any) => void;
     collectData: boolean;
+    start_url: string;
     semester: { name: string, href: string };
 }
 
-const SemesterDataCollector = ({setCollectedData, collectData, semester}: SemesterDataCollectorProps) => {
+const SemesterDataCollector = ({setCollectedData, collectData, start_url, semester}: SemesterDataCollectorProps) => {
     const [state, setState] = useState<SemesterDataCollectorState>("idle");
     const [foundCourses, setFoundCourses] = useState<string[]>([]);
     const [coursesData, setCoursesData] = useState<any[]>([]);
@@ -25,6 +26,7 @@ const SemesterDataCollector = ({setCollectedData, collectData, semester}: Semest
 
         return scraper
             .begin(setPipelineState)
+            .navigate_to(start_url, /ExactKeys/)
             .navigate_to(semester.href, "*/SA_LEARNER_SERVICES_2.SSR_SSENRL_CART.GBL*")
             .click_and_wait(
                 "input#DERIVED_REGFRM1_SSR_PB_SRCH",
@@ -42,7 +44,10 @@ const SemesterDataCollector = ({setCollectedData, collectData, semester}: Semest
                 (button, sub_pipeline) =>
                     sub_pipeline.click_and_wait(
                         button,
-                        mutation => mutation.oldValue === null,
+                        mutation => {
+                            return (mutation.oldValue?.includes("show") &&
+                                !(mutation.target as HTMLElement).classList.contains("show")) ?? false;
+                        },
                         {
                             selector: new Selector("div.gh-loader-popup"),
                             observer_config: {attributes: true, attributeFilter: ['class'], attributeOldValue: true}

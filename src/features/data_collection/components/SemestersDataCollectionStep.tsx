@@ -36,6 +36,7 @@ const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
                                 }}
                                 collectData={runningCollector.name === semester.name}
                                 semester={semester}
+                                start_url={previousStepData.url}
                             />
                         ))}
                     </Grid>
