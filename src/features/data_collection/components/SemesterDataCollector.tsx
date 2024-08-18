@@ -3,7 +3,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from '@mui/icons-material/Error';
 import PendingIcon from '@mui/icons-material/Pending';
 import {useEffect, useState} from "react";
-import {Context, usePipelineState, useScraper} from "../../../lib/webview_scraper";
+import {Selector, usePipelineState, useScraper} from "../../../lib/webview_scraper";
 
 interface SemesterDataCollectorProps {
     setCollectedData: (data: any) => void;
@@ -33,15 +33,21 @@ const SemesterDataCollector = ({setCollectedData, collectData, semester}: Semest
                         !(mutation.target as HTMLElement).classList.contains("show")) ?? false;
                 },
                 {
-                    selector: "div.gh-loader-popup",
+                    selector: new Selector("div.gh-loader-popup"),
                     observer_config: {attributes: true, attributeFilter: ['class'], attributeOldValue: true}
                 }
             )
-            .for_each(
-                "input[value^='Masquer']",
-                HTMLInputElement,
+            .for_each<HTMLInputElement>(
+                "input[value^='Afficher']",
                 (button, sub_pipeline) =>
-                    sub_pipeline
+                    sub_pipeline.click_and_wait(
+                        button,
+                        mutation => mutation.oldValue === null,
+                        {
+                            selector: new Selector("div.gh-loader-popup"),
+                            observer_config: {attributes: true, attributeFilter: ['class'], attributeOldValue: true}
+                        }
+                    )
             )
             .execute(() => {
                 console.log("done");
@@ -90,12 +96,3 @@ const SemesterDataCollector = ({setCollectedData, collectData, semester}: Semest
 export default SemesterDataCollector;
 
 type SemesterDataCollectorState = "idle" | "enumerating" | "collecting" | "done" | "error";
-
-const expandAllBlocks = async (ctx: Context): Promise<void> => {
-    const showMoreButtons = document.querySelectorAll<HTMLInputElement>("input[value^='Masquer']");
-    console.log(showMoreButtons);
-
-    for (const button of showMoreButtons) {
-        await (ctx as SynchroScraperContext).runAndWaitForLoader(() => button.click());
-    }
-};

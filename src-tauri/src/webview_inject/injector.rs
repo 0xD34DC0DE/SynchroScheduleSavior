@@ -48,8 +48,14 @@ impl<'a, R: Runtime> InjectorA<'a, R> {
             rx.send(event.payload().map(|_| ())).expect("Couldn't send injection done signal");
         });
 
-        println!("Injecting: {}", js);
-
+        println!(
+            "Injecting: {}",
+            js.replace("\\n", "\n")
+                .replace("\\t", "\t")
+                .replace("\\r", "\r")
+                .replace("\\\"", "\"")
+        );
+        
         target.eval(&js)?;
 
         match timeout(Duration::from_secs(10), tx).await {

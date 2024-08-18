@@ -30,7 +30,7 @@ window.__INJECTOR__ = (injector_args) => {
         clearInterval(state_check);
 
         try {
-            const result = fn(...args);
+            const result = fn(...args());
             if (result instanceof Promise) {
                 result.then(emit_result).catch((e) => emit({error: e.toString()}));
             } else {
@@ -44,4 +44,8 @@ window.__INJECTOR__ = (injector_args) => {
 
 window.document.addEventListener('DOMContentLoaded', () => {
     window.__TAURI__.event.emit('navigation', {url: window.location.href});
+});
+
+window.addEventListener('error', (event) => {
+    console.log('window error', event);
 });

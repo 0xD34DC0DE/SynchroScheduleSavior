@@ -1,5 +1,3 @@
-import {describe, expect, it} from "vitest";
-
 /**
  * Creates a stub for an immediately invoked function expression (IIFE).
  *
@@ -15,7 +13,7 @@ import {describe, expect, it} from "vitest";
 const makeIIFEStub = <Fn extends (...args: any[]) => any>(fn: Fn, ...args: Parameters<Fn>):
     () => ReturnType<Fn> => {
     fn.toString = ((f: string, ...args: any[]) =>
-            `(${f})(${args.map(a => JSON.stringify(a)).join(", ")})`
+            `(${f})(${args.map(a => JSON.stringify(a)).join(", ")})`.replace("\\\"", "\"")
     ).bind(null, fn.toString(), ...args);
 
     return new Proxy(fn, {
@@ -28,6 +26,8 @@ const makeIIFEStub = <Fn extends (...args: any[]) => any>(fn: Fn, ...args: Param
 export default makeIIFEStub;
 
 if (import.meta.vitest) {
+    const { it, expect, describe } = import.meta.vitest
+
     describe('makeIIFE', () => {
         it('should serialize to an IIFE', () => {
             const fn = makeIIFEStub((a: number, b: string) => a + b, 1, "2");

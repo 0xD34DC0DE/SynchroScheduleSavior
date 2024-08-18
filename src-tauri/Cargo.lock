@@ -3459,7 +3459,6 @@ dependencies = [
  "anyhow",
  "devtools",
  "rand 0.8.5",
- "regex",
  "serde",
  "serde_json",
  "tauri",

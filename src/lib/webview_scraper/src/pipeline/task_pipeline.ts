@@ -1,10 +1,11 @@
 import PipelineStep from "./pipeline_step.ts";
-import Context from "../context";
-import {InjectionResult, ParametersWithoutContext, TaskWithContextFn} from "../injection.ts";
+import {InjectionResult} from "../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import * as steps from "./steps";
-import {HTMLElementCtor, HTMLElementStub} from "../stubs/html_element.ts";
+import {HTMLElementProxy} from "../stubs/html_element.ts";
+import {Selector} from "../stubs";
+import {InjectedArgs, InjectedFunction,} from "../stubs/remote_object.ts";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
@@ -52,7 +53,7 @@ class TaskPipeline {
         for (let step of this._steps) {
             // TypeScript marks this as an unintentional comparison since the state is set to RUNNING just before
             // (but the value can change since it's running in a different asynchronous context)
-            // @ts-ignore
+            // @ts-expect-error
             if (this._pipeline_state !== PipelineState.RUNNING) return;
             await this._execute_step(step);
         }
@@ -97,36 +98,26 @@ class TaskPipeline {
         return this;
     }
 
-    public navigate_with_click(selector: string, url_pattern: string): TaskPipeline {
+    public navigate_with_click<T extends HTMLElement>(
+        selector: string | HTMLElementProxy<T>,
+        url_pattern: string
+    ): TaskPipeline {
         this._steps.push(
-            new steps.Task((selector: string) => {
-                const element = document.querySelector(selector);
-                if (typeof element === "undefined" || element === null) {
-                    throw new Error(`Element not found: ${selector}`);
-                }
-                (element as HTMLElement).click();
-            }, [selector])
+            new steps.Task(
+                (element: HTMLElement) => element.click(),
+                [new Selector<HTMLElement>(selector)]
+            )
         );
         this._steps.push(new steps.UrlWait(url_pattern));
         return this;
     }
 
-    public task<F extends (...args: Parameters<F>) => ReturnType<F>>(
-        injected_fn: F,
-        args: Parameters<F>,
-        on_result?: (result: InjectionResult<ReturnType<F>>) => void,
+    public task<Args extends [...any], Params extends [...any]>(
+        injected_fn: InjectedFunction<Params, Args>,
+        args: InjectedArgs<Args, Params>,
+        on_result?: (result: InjectionResult<ReturnType<InjectedFunction<Params, Args>>>) => void,
     ): TaskPipeline {
         this._steps.push(new steps.Task(injected_fn, args, on_result));
-        return this;
-    }
-
-    public task_with_context<Ctx extends Context, F extends (...args: any[]) => any>(
-        context_ctor: new () => Ctx,
-        injected_fn: TaskWithContextFn<Ctx, F>,
-        args: ParametersWithoutContext<F>,
-        on_result?: (result: InjectionResult<ReturnType<F>>) => void,
-    ): TaskPipeline {
-        this._steps.push(new steps.TaskWithContext<Ctx, F>(context_ctor, injected_fn, args, on_result));
         return this;
     }
 
@@ -156,35 +147,30 @@ class TaskPipeline {
         return this;
     }
 
-    public click_and_wait(selector: string,
-                          condition: steps.ConditionCallback,
-                          wait_config: steps.ConditionConfig): TaskPipeline {
+    public click_and_wait<T extends HTMLElement>(
+        selector: string | HTMLElementProxy<T>,
+        condition: steps.ConditionCallback,
+        wait_config: steps.ConditionConfig<T>
+    ): TaskPipeline {
         this._steps.push(
-            new steps.TaskWithCondition(
-                (selector: string) => {
-                    const element = document.querySelector(selector);
-                    if (element === null) {
-                        throw new Error(`Element not found: ${selector}`);
-                    }
-                    (element as HTMLElement).click();
-                },
-                [selector],
-                condition,
-                wait_config
+            new steps.Task(
+                (element: HTMLElement) => element.click(),
+                [new Selector<HTMLElement>(selector)]
             )
+        );
+        this._steps.push(
+            new steps.TaskWithCondition(condition, wait_config)
         );
         return this;
     }
 
     public for_each<T extends HTMLElement>(
         selector: string,
-        element_type: HTMLElementCtor<T>,
-        sub_pipeline: (element: HTMLElementStub<T>, pipeline: TaskPipeline) => TaskPipeline
+        sub_pipeline: (element: HTMLElementProxy<T>, pipeline: TaskPipeline) => TaskPipeline
     ) {
         this._steps.push(
-            new steps.ForEachTask(
+            new steps.ForEachTask<T>(
                 selector,
-                element_type,
                 (element, on_complete) => {
                     sub_pipeline(
                         element,

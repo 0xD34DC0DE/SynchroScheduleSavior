@@ -1,3 +1,3 @@
-export type {Selector} from './selector.ts';
+export {Selector} from './selector.ts';
 export type {InitiatorWindow, TargetWindow} from './window.ts';
-export type {ResolvedType} from './resolvable.ts';
+export type {RemoteObjectProxy} from './remote_object.ts';

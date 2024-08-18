@@ -1,9 +1,9 @@
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
+import {InjectedArgs, InjectedFunction} from "./stubs/remote_object.ts";
 import {webview_inject} from "./commands.ts";
 import {uniqueEventId} from "./utils.ts";
 import toEJSON from "./ejson.ts";
-import {ResolvedType} from "./stubs";
 
 type UnserializableValueTag = "undefined" | "null" | "NaN" | "Infinity" | "-Infinity";
 
@@ -40,39 +40,51 @@ const process_raw_injection_result = <T>(result: RawInjectionResult<T>): Injecti
     return result;
 }
 
+type InjectionResultCallbackFor<Fn extends (...args: any[]) => ReturnType<Fn>> =
+    (result: InjectionResult<ReturnType<Fn>>) => void;
 
-type ResolvedParameters<T> =
-    T extends (...args: infer Args) => any
-        ? ResolvedType<Args>
-        : never;
+type OnInjectionResultCallback<Params extends readonly [...any], Args extends readonly [...any]> =
+    InjectionResultCallbackFor<InjectedFunction<Params, Args>>;
 
-class Injection<F extends (...args: any[]) => any> {
+type RawInjectionResultFor<Params extends readonly [...any], Args extends readonly [...any]> =
+    RawInjectionResult<ReturnType<InjectedFunction<Params, Args>>>;
+
+class Injection<Args extends readonly [...any], Params extends readonly [...any]> {
     private readonly _injection_id: number;
+    private readonly js_function: InjectedFunction<Params, Args>;
+    private readonly args: [...any];
+
+    private readonly options?: {
+        allow_parallel?: boolean;
+    };
 
     constructor(
-        private readonly js_function: F,
-        private readonly args: ResolvedParameters<F>,
-        private readonly options?: {
+        js_function: InjectedFunction<Params, Args>,
+        args: InjectedArgs<Args, Params>,
+        options?: {
             allow_parallel?: boolean;
         }
     ) {
+        this.options = options;
+        this.args = args;
+        this.js_function = js_function;
         this._injection_id = uniqueEventId();
     }
 
     public async inject(
         target: WebviewWindow,
-        on_result?: (result: InjectionResult<ReturnType<F>>) => void,
+        on_result?: OnInjectionResultCallback<Params, Args>
     ): Promise<UnlistenFn> {
-        return target.once<RawInjectionResult<ReturnType<F>>>(
+        return target.once<RawInjectionResultFor<Params, Args>>(
             this._injection_id.toString(),
             (event) => on_result?.(process_raw_injection_result(event.payload))
         ).then(async unlisten => {
             try {
                 await webview_inject(target.label, {
-                    injectionId: this._injection_id,
-                    jsFunction: toEJSON(this.js_function),
-                    functionArgs: toEJSON(this.args),
-                    allowParallel: this.options?.allow_parallel ?? false,
+                    injection_id: this._injection_id,
+                    js_function: toEJSON(this.js_function),
+                    function_args: toEJSON(this.args),
+                    allow_parallel: this.options?.allow_parallel ?? false,
                 });
             } catch (e) {
                 unlisten();
@@ -83,5 +95,5 @@ class Injection<F extends (...args: any[]) => any> {
     }
 }
 
-export type {InjectionResult};
+export type {InjectionResult, InjectionResultCallbackFor};
 export default Injection;

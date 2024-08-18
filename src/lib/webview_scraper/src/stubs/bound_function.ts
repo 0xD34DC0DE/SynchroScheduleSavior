@@ -1,7 +1,8 @@
-import {describe, expect, it} from "vitest";
-
 const makeBoundFunctionStub =
-    <Fn extends (...args: any[]) => any>(fn: Fn): Fn => {
+    <Params extends [...any], Args extends readonly [...any]>(
+        fn: (...args: [...Args, ...Params]) => any,
+        ...args: Args
+    ): ((...args: Params) => any) => {
         fn.toString = ((f: string, ...args: any[]) =>
                 `(${f}).bind(null, ${args.map(a => JSON.stringify(a)).join(", ")})`
         ).bind(null, fn.toString());
@@ -17,12 +18,13 @@ const makeBoundFunctionStub =
             return fn;
         }
 
-        return bindable(fn);
+        return bindable(fn).bind(null, ...args);
     }
 
 export default makeBoundFunctionStub;
 
 if (import.meta.vitest) {
+    const { it, expect, describe } = import.meta.vitest
     describe('makeBoundFunction', () => {
         it('should throw when called', () => {
             const fn = makeBoundFunctionStub((a: number, b: string) => a + b);
@@ -32,6 +34,8 @@ if (import.meta.vitest) {
         it('should serialize to function with a bind call', () => {
             const fn = makeBoundFunctionStub((a: number, b: string) => a + b).bind(null, 1);
             expect(fn.toString()).toBe("((a, b) => a + b).bind(null, 1)");
+            const fn2 = makeBoundFunctionStub((a: number, b: string) => a + b, 1);
+            expect(fn2.toString()).toBe("((a, b) => a + b).bind(null, 1)");
         });
 
         it('should serialize to function with a bind call multiple times', () => {

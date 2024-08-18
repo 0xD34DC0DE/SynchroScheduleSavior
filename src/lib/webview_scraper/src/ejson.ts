@@ -1,5 +1,9 @@
-import {describe, expect, it} from "vitest";
-import {Resolvable, resolve} from "./stubs/resolvable.ts";
+import {
+    getRemoteObjectResolver,
+    hasRemoteObjectResolver,
+    makeRemoteObjectProxy,
+    REMOTE_OBJECT_RESOLVER
+} from "./stubs/remote_object.ts";
 
 /**
  * A constructor function type
@@ -66,13 +70,13 @@ type EJSON = Serializable | Escaped;
  * {@link EJSONSerializable} is a union of {@link Serializable} types that can be serialized into JSON
  * and the types that can be serialized with the {@link Escaped} object
  */
-type EJSONSerializable =
+type EJSONSerializable<T> =
     Serializable |
-    Constructor<any> |
+    Constructor<T> |
     Function |
-    Resolvable<any> |
-    EJSONSerializable[] |
-    { [key: string]: EJSONSerializable };
+    EJSONSerializable<T>[] |
+    { [key: string]: EJSONSerializable<T> } |
+    { [REMOTE_OBJECT_RESOLVER]: () => T };
 
 /**
  * Check if a value is a constructor function.
@@ -97,18 +101,23 @@ const isConstructor = (value: any): value is Constructor<any> => {
  * toEJSON(() => 1) // {"_!_": "() => 1"}
  * toEJSON(MyClass) // {"_!_": "class MyClass { ... }"}
  */
-const toEJSON = (obj: EJSONSerializable): EJSON => {
+const toEJSON = <T extends object>(obj: EJSONSerializable<T>): EJSON => {
     if (Array.isArray(obj)) return obj.map(toEJSON);
+
+    if (hasRemoteObjectResolver(obj)) return { "_!_": getRemoteObjectResolver(obj).toString() }
 
     if (isConstructor(obj)) return {"_!_": serializeClass(obj)};
 
-    if (obj === null || typeof obj !== "object") return obj;
+    if (typeof obj === "function") return { "_!_": obj.toString() };
 
-    if (typeof obj === "function") return {"_!_": resolve(obj).toString()};
+    if (obj === null || typeof obj !== "object") {
+        if (typeof obj === "string") return { "_!_": `"""${obj}"""` };
+        return obj;
+    }
 
     const result: { [key: string]: EJSON } = {};
-    for (const key in resolve(obj)) {
-        result[key] = toEJSON(obj[key]);
+    for (const [key, value] of Object.entries(obj)) {
+        result[key] = toEJSON(value);
     }
 
     return result;
@@ -118,6 +127,8 @@ export type {EJSON, EJSONSerializable};
 export default toEJSON;
 
 if (import.meta.vitest) {
+    const { it, expect, describe } = import.meta.vitest
+
     describe('toEJSON', () => {
         class Root {
             root() {
@@ -147,6 +158,14 @@ if (import.meta.vitest) {
 
             leaf() {
             }
+        }
+
+        class Resolvable {
+            constructor() {
+                return new Proxy({}, {});
+            }
+
+            static readonly [REMOTE_OBJECT_RESOLVER] = () => new Resolvable();
         }
 
         // Helper function to remove all whitespace and newlines from strings in an object
@@ -207,6 +226,19 @@ if (import.meta.vitest) {
 
         it('should serialize a function', () => {
             expect(toEJSON(() => 1)).toMatchObject({"_!_": "() => 1"});
+        });
+
+        it('should serialize a class with remote object resolver to its resolver function', () => {
+            expect(toEJSON(Resolvable)).toMatchObject({"_!_": "() => new Resolvable()"});
+        });
+
+        it('should serialize an object with a remote object resolver to its resolver function', () => {
+            const obj = makeRemoteObjectProxy(() => ({} as HTMLDivElement), "test");
+            expect(toEJSON(obj)).toMatchObject({"_!_": "() => {}"});
+        });
+
+        it('should serialize a string to a string with triple quotes', () => {
+            expect(toEJSON("string")).toMatchObject({"_!_": '"""string"""'});
         });
 
         it('should serialize all supported types', () => {

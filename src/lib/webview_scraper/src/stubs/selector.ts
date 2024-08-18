@@ -1,36 +1,27 @@
-import {HTMLElementStub} from "./html_element.ts";
-import makeBoundFunctionStub from "./bound_function.ts";
-import {ResolvableClass} from "./resolvable.ts";
+import {HTMLElementProxy} from "./html_element.ts";
+import {getRemoteObjectResolver, hasRemoteObjectResolver, REMOTE_OBJECT_RESOLVER,} from "./remote_object.ts";
+import makeIIFEStub from "./iife.ts";
 
-class Selector<T extends HTMLElement> implements ResolvableClass<Selector<T>> {
-    constructor(public readonly selector: string | HTMLElementStub<T>) {
+class Selector<T extends HTMLElement> {
+    constructor(public readonly selector: string | HTMLElementProxy<T>) {
     }
 
-    resolve(): () => T {
+    get [REMOTE_OBJECT_RESOLVER](): () => T {
         if (typeof this.selector === "string") {
-            return makeBoundFunctionStub((sel: string) => {
+            return makeIIFEStub((sel: string) => {
                 const element = document.querySelector(sel);
                 if (!element) throw new Error(`Element with selector ${sel} not found`);
                 if (!(element instanceof HTMLElement)) throw new Error(`Element is not an HTMLElement: ${element}`);
                 return element as T;
-            }).bind(null, this.selector);
+            }, this.selector);
         }
 
-        if (this.selector._remote_id_) {
-            return makeBoundFunctionStub((id: string) => {
-                const element = window.__INJECTOR_STATE__[id];
-                if (!element) throw new Error(`Element with id ${id} not found`);
-                if (!(element instanceof HTMLElement)) throw new Error(`Element is not an HTMLElement: ${element}`);
-                return element as T;
-            }).bind(null, this.selector._remote_id_);
+        if (hasRemoteObjectResolver(this.selector)) {
+            return getRemoteObjectResolver(this.selector);
         }
 
         throw new Error("Invalid selector");
     }
 }
 
-export type {Selector};
-
-declare const window: {
-    __INJECTOR_STATE__: Record<string, HTMLElement>;
-};
+export {Selector};

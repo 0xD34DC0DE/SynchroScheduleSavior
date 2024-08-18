@@ -2,9 +2,10 @@ import {Grid, LinearProgress, Stack, Typography} from "@mui/material";
 import Step from "./stepper/Step.tsx";
 import {useSetStepState} from "./stepper/RouteStepper.tsx";
 import Box from "@mui/material/Box";
-import {Context, PipelineState, usePipelineState, useScraper} from "../../../lib/webview_scraper";
+import {InitiatorWindow, PipelineState, usePipelineState, useScraper} from "../../../lib/webview_scraper";
 import login_modal_html from "../../../assets/login_modal.html?raw";
 import {useEffect, useState} from "react";
+
 
 interface LoginStepProps {
 
@@ -24,7 +25,7 @@ const LoginStep = ({}: LoginStepProps) => {
         return scraper
             .begin(setPipelineState)
             .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
-            .task_with_context(Context, show_login_modal, [login_modal_html])
+            .task(show_login_modal, [InitiatorWindow, login_modal_html])
             .callback(() => setLoginDetected(true))
             .wait_for_event("current", "tauri://focus")
             .execute();
@@ -73,13 +74,13 @@ const LoginStep = ({}: LoginStepProps) => {
 export default LoginStep;
 
 
-const show_login_modal = (ctx: Context, modal_html: string) => {
+const show_login_modal = (initiator: InitiatorWindow, modal_html: string) => {
     const placeholder = document.createElement("div");
     placeholder.innerHTML = modal_html;
     document.body.appendChild(placeholder);
     const focus_button = document.getElementById("focus-main-window");
     if (!focus_button) throw new Error("Button not found");
     focus_button.onclick = async () => {
-        await ctx.initiator.setFocus();
+        await initiator.setFocus();
     };
 }
