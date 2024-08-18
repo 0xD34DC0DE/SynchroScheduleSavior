@@ -88,12 +88,12 @@ class TaskPipeline {
         this._set_pipeline_state(PipelineState.CANCELLED);
     }
 
-    public navigate_to(url: string, url_pattern?: string): TaskPipeline {
+    public navigate_to(url: string, url_pattern?: string | RegExp): TaskPipeline {
         this._steps.push(new steps.Navigate(url, url_pattern));
         return this;
     }
 
-    public wait_for_url(url_pattern: string): TaskPipeline {
+    public wait_for_url(url_pattern: string | RegExp): TaskPipeline {
         this._steps.push(new steps.UrlWait(url_pattern));
         return this;
     }

@@ -7,9 +7,12 @@ class UrlWait extends PipelineStep {
 
     public readonly name: string = "UrlWait";
 
-    constructor(url_pattern: string) {
+    constructor(url_pattern: string | RegExp) {
         super();
-        this.url_pattern = new UrlPattern(url_pattern);
+        if (url_pattern instanceof RegExp)
+            this.url_pattern = new UrlPattern(url_pattern);
+        else
+            this.url_pattern = new UrlPattern(url_pattern);
     }
 
     public async run(target: WebviewWindow): Promise<void> {

@@ -11,11 +11,14 @@ class Navigate extends PipelineStep {
 
     constructor(
         url: string,
-        url_pattern?: string
+        url_pattern?: string | RegExp
     ) {
         super();
         this._url = url;
-        this._url_pattern = new UrlPattern(url_pattern || url);
+        if (url_pattern instanceof RegExp)
+            this._url_pattern = new UrlPattern(url_pattern);
+        else
+            this._url_pattern = new UrlPattern(url_pattern || url);
     }
 
     public async run(target: WebviewWindow): Promise<void> {
