@@ -7,7 +7,7 @@ use serde::de::{Error, MapAccess, SeqAccess, Unexpected, Visitor};
 use serde_json::ser::Formatter;
 use serde_json::Value;
 use serde_json::value::{RawValue, to_raw_value};
-use regex::{Regex};
+use tauri::regex::{Regex, Captures};
 
 /// EJSON, or Escaped JSON, is a JSON value where objects with a specific structure represent
 /// values that have been serialized as strings to be able to be serialized as JSON.
@@ -76,7 +76,7 @@ impl Formatter for EJSONFormatter {
                 }  
                 
                 let re = Regex::new(r#"\\."#).unwrap();
-                let fragment = re.replace_all(fragment, |caps: &regex::Captures| {
+                let fragment = re.replace_all(fragment, |caps: &Captures| {
                     let cap = caps.get(0).unwrap();
                     let cap = cap.as_str();
                     match cap {
