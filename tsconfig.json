@@ -22,6 +22,9 @@
 
     /* Type checking */
     "types": ["vitest/importMeta"],
+
+    /* Output Formatting */
+    "noErrorTruncation": true
   },
   "include": [
     "src",
