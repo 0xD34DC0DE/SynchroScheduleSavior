@@ -31,6 +31,10 @@ async fn open_webview(window_label: String, title: String, url: String, handle: 
         tauri::WindowUrl::External(url),
     ).map_err(|e| e.to_string())?
         .title(title.as_str())
+        //FIXME: 'visible(true)' is a workaround for a race condition causing the the window to
+        // freeze during loading.
+        // https://github.com/tauri-apps/tauri/issues/10256
+        .visible(false)
         .build()
         .map_err(|e| e.to_string())?;
 

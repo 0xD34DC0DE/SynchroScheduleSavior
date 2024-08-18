@@ -24,6 +24,16 @@ class WebScraper {
         if (target === null) {
             throw new Error(`Could not find window with label: ${label}`);
         }
+
+        //FIXME: This is a workaround for a race condition causing the the window to freeze during loading.
+        // "navigation" event reused as a signal that the window has finished loading since 'tauri://created' is
+        // a native event and native events are part of the problem.
+        // https://github.com/tauri-apps/tauri/issues/10256
+        await new Promise<void>(resolve => {
+            target.once("navigation", () => resolve());
+        });
+        await target.show();
+
         return new WebScraper(target);
     }
 
