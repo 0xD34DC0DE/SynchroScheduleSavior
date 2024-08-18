@@ -10,10 +10,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1.5", features = [] }
+tauri-build = { version = "1.5.3", features = [] }
 
 [dependencies]
-tauri = { version = "1.5", features = [ "window-set-focus", "window-close", "shell-open", "test"] }
+tauri = { version = "1.7", features = [ "window-show", "window-set-focus", "window-close", "shell-open", "test"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
 url = "2.5.0"
@@ -21,6 +21,7 @@ rand = "0.8.5"
 tokio = { version = "1", features = ["time"] }
 anyhow = "1.0.77"
 thiserror = "1.0"
+devtools = "0.3.3"
 
 [dependencies.tauri-plugin-sql]
 git = "https://github.com/tauri-apps/plugins-workspace"

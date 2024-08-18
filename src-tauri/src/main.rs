@@ -83,7 +83,12 @@ fn window_exists(window_label: String, handle: AppHandle) -> bool {
 }
 
 fn main() {
-    tauri::Builder::default()
+    #[cfg(debug_assertions)]
+        let builder = tauri::Builder::default().plugin(devtools::init());
+    #[cfg(not(debug_assertions))]
+        let builder = tauri::Builder::default();
+
+    builder
         .invoke_handler(tauri::generate_handler![
             open_webview,
             close_webview,
