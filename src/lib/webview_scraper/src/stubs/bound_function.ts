@@ -1,10 +1,18 @@
+import {getRemoteObjectResolver, hasRemoteObjectResolver, makeRemoteObjectProxy} from "./remote_object.ts";
+
+const serializeArg = (arg: any) => {
+    if (typeof arg === "function") return arg.toString();
+    if (hasRemoteObjectResolver(arg)) return getRemoteObjectResolver(arg).toString();
+    return JSON.stringify(arg);
+}
+
 const makeBoundFunctionStub =
     <Params extends [...any], Args extends readonly [...any]>(
         fn: (...args: [...Args, ...Params]) => any,
         ...args: Args
     ): ((...args: Params) => any) => {
         fn.toString = ((f: string, ...args: any[]) =>
-                `(${f}).bind(null, ${args.map(a => JSON.stringify(a)).join(", ")})`
+                `(${f}).bind(null, ${args.map(serializeArg).join(", ")})`
         ).bind(null, fn.toString());
 
         const bindable = <T extends Function>(fn: T) => {
@@ -12,7 +20,11 @@ const makeBoundFunctionStub =
                 apply(target: any, thisArg: any, argArray: any[]): any {
                     const bound = Reflect.apply(target, thisArg, argArray) as Function;
                     bound.toString = thisArg.toString.bind(null, ...argArray.slice(1));
-                    return bindable(bound);
+                    return new Proxy(bindable(bound), {
+                        apply(): any {
+                            throw new Error("Bound function stub cannot be called outside injection context");
+                        }
+                    });
                 }
             });
             return fn;
@@ -42,9 +54,19 @@ if (import.meta.vitest) {
             const fn = makeBoundFunctionStub((a: number, b: string) => a + b)
                 .bind(null, 1)
                 .bind(null, "2");
-            expect(fn.toString()).toBe("((a, b) => a + b).bind(null, 1, 2)");
+            expect(fn.toString()).toBe("((a, b) => a + b).bind(null, 1, \"2\")");
         });
 
+        it('should serialize function arguments to their string representation', () => {
+            const fn = makeBoundFunctionStub((a: (b: number) => number ) => a(1)).bind(null, (a) => a);
+            expect(fn.toString()).toBe("((a) => a(1)).bind(null, (a) => a)");
+        });
+
+        it('should serialize remote object arguments to their resolver', () => {
+            const proxy = makeRemoteObjectProxy(() => ({} as HTMLDivElement), "HTMLDivElement");
+            const fn = makeBoundFunctionStub((a: HTMLDivElement) => a, proxy);
+            expect(fn.toString()).toBe(`((a) => a).bind(null, ${getRemoteObjectResolver(proxy)})`);
+        });
         it('should serialize with different argument types', () => {
             const fn = makeBoundFunctionStub((_a: number, _b: string, _c: boolean, _d: object, _e: any) => 0)
                 .bind(null, 1)

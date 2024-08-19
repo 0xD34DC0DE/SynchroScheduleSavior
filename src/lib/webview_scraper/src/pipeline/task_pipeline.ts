@@ -4,7 +4,7 @@ import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import * as steps from "./steps";
 import {HTMLElementProxy} from "../stubs/html_element.ts";
-import {Selector} from "../stubs";
+import {Selector, SelectorType} from "../stubs";
 import {InjectedArgs, InjectedFunction,} from "../stubs/remote_object.ts";
 
 type OnCompleteCallback = () => void;
@@ -99,7 +99,7 @@ class TaskPipeline {
     }
 
     public navigate_with_click<T extends HTMLElement>(
-        selector: string | HTMLElementProxy<T>,
+        selector: SelectorType<T>,
         url_pattern: string
     ): TaskPipeline {
         this._steps.push(
@@ -148,7 +148,7 @@ class TaskPipeline {
     }
 
     public click_and_wait<T extends HTMLElement>(
-        selector: string | HTMLElementProxy<T>,
+        selector: SelectorType<T>,
         condition: steps.ConditionCallback,
         wait_config: steps.ConditionConfig<T>
     ): TaskPipeline {
