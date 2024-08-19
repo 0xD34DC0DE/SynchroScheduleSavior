@@ -45,7 +45,11 @@ impl<'a, R: Runtime> InjectorA<'a, R> {
         let (rx, tx) = oneshot::channel::<Option<()>>();
 
         let _event_handler = target.once(args.id.to_string(), move |event| {
-            rx.send(event.payload().map(|_| ())).expect("Couldn't send injection done signal");
+            if rx.is_closed() {
+                eprintln!("Couldn't send injection done signal: receiver closed");
+                return;
+            }
+            rx.send(event.payload().map(|_| ())).expect("Sender was open, but failed to send");
         });
 
         println!(
