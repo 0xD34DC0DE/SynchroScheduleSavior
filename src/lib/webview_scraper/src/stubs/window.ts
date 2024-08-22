@@ -5,7 +5,7 @@ import makeIIFEStub from "./iife.ts";
 class InitiatorWindow extends WebviewWindow {
     static readonly [REMOTE_OBJECT_RESOLVER]: () => InitiatorWindow =
         makeIIFEStub(
-            (label) => {
+            (label: string) => {
                 const w = (window.__TAURI__ as unknown as {
                     window: { WebviewWindow: typeof WebviewWindow }
                 }).window.WebviewWindow.getByLabel(label);
