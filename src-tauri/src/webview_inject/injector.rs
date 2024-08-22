@@ -66,7 +66,10 @@ impl<'a, R: Runtime> InjectorA<'a, R> {
             Err(_) => Err(anyhow!("Injection timed out")),
             Ok(Err(e)) => Err(anyhow!("Injection failed: {}", e)),
             Ok(Ok(None)) => Err(anyhow!("Injection failed: empty response")),
-            Ok(Ok(Some(_))) => Ok(()),
+            Ok(Ok(Some(_))) => {
+                println!("Injection done, id: {}", args.id);
+                Ok(())
+            },
         }
     }
 

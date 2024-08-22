@@ -5,6 +5,7 @@ import {
     RemoteObjectProxy
 } from "./remote_object.ts";
 import makeIIFEStub from "./iife.ts";
+import "../injection_handler.d.ts";
 
 type HTMLElementProxy<T extends HTMLElement> = T & RemoteObjectProxy<T>;
 
@@ -12,23 +13,13 @@ const makeHTMLElementProxy = <T extends HTMLElement>(
     remote_id: string
 ): HTMLElementProxy<T> => {
     return makeRemoteObjectProxy(
-        makeIIFEStub(
-            (id: string) => {
-            const element = window.__INJECTOR_STATE__[id];
-            if (!element) throw new Error(`Element with id ${id} not found`);
-            if (!(element instanceof HTMLElement)) throw new Error(`Element is not an HTMLElement: ${element}`);
-            return element as T;
-        }, remote_id),
+        makeIIFEStub((id: string) => __INJECTOR_ELEMENT_TRACKER__.get_element(id), remote_id),
         "HTMLElement"
     );
 }
 
 export type {HTMLElementProxy};
 export default makeHTMLElementProxy;
-
-declare const window: {
-    __INJECTOR_STATE__: Record<string, HTMLElement>;
-};
 
 if (import.meta.vitest) {
     const { it, expect, describe } = import.meta.vitest

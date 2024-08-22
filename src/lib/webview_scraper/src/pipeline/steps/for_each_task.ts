@@ -2,6 +2,7 @@ import PipelineStep from "../pipeline_step.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import Injection from "../../injection.ts";
 import makeHTMLElementProxy, {HTMLElementProxy} from "../../stubs/html_element.ts";
+import "../../injection_handler.d.ts";
 
 class ForEachTask<T extends HTMLElement> extends PipelineStep {
     private readonly _selector: string;
@@ -21,17 +22,12 @@ class ForEachTask<T extends HTMLElement> extends PipelineStep {
     public async run(target: WebviewWindow): Promise<void> {
         const query_and_persist = (selector: string) => {
             const elements = document.querySelectorAll(selector);
-            if (elements === null) throw new Error(`Element not found: ${selector}`);
-            const existing_elements = Object.entries(window.__INJECTOR_STATE__);
+            if (elements === null) throw new Error(`Not elements found for selector: ${selector}`);
 
             return Array.from(elements)
                 .map(element => {
                     if (!(element instanceof HTMLElement)) throw new Error(`Element is not an HTMLElement: ${element}`);
-                    const existing_id = existing_elements.find(([_, existing_element]) => existing_element === element);
-                    if (existing_id) return existing_id[0];
-                    const element_id = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER).toString();
-                    window.__INJECTOR_STATE__[element_id] = element;
-                    return element_id;
+                    return __INJECTOR_ELEMENT_TRACKER__.track_element(element);
                 });
         };
 
@@ -61,7 +57,3 @@ class ForEachTask<T extends HTMLElement> extends PipelineStep {
 export default ForEachTask;
 
 type ForEachCallback<T extends HTMLElement> = (element: HTMLElementProxy<T>, on_complete: () => void) => void;
-
-declare const window: {
-    __INJECTOR_STATE__: Record<string, HTMLElement>;
-};
