@@ -32,7 +32,7 @@ const LoginStep = ({}: LoginStepProps) => {
     }, [undefined, scraper, setPipelineState]);
 
     return (
-        <Grid item xs={8} sm={6} md={5} lg={4} xl={4}>
+        <Grid item xs={8} sm={6} md={5}>
             <Step title={"Login"}>
                 <Stack spacing={2}>
                     <Typography variant={"body1"}>

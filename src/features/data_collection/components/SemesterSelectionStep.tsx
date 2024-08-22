@@ -51,7 +51,7 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
     }, [scraper, setPipelineState, setSemestersData, setError]);
 
     return (
-        <Grid item xs={8} sm={6} md={5} lg={4} xl={4}>
+        <Grid item xs={8} sm={6} md={5}>
             <Step title={"Semester selection"}>
                 <Stack spacing={2}>
                     <Typography variant={"body1"}>

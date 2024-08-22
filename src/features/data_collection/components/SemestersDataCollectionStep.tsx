@@ -16,7 +16,7 @@ const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
     const [runningCollector, setRunningCollector] = useState(previousStepData.semesters[0]);
 
     return (
-        <Grid item xs={8} sm={6} md={5} lg={4} xl={4}>
+        <Grid item xs={8} sm={6} md={5}>
             <Step title={"Semester data collection"}>
                 <Stack spacing={2}>
                     <Typography variant={"body1"}>
