@@ -31,7 +31,7 @@ const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
                         {previousStepData.semesters.map(semester => (
                             <SemesterDataCollector
                                 key={semester.name}
-                                setCollectedData={() => {
+                                setCollectedCoursesData={() => {
 
                                 }}
                                 collectData={runningCollector.name === semester.name}
