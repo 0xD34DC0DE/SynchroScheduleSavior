@@ -69,14 +69,7 @@ const SemesterDataCollector = (
                 <Typography variant={"h5"}>{semester.name}</Typography>
             </Grid>
             <Grid item display={"flex"} justifyContent={"center"} alignItems={"center"}>
-                {state === "done" && <Typography variant={"body2"}>Data collection done</Typography>}
-                {state === "idle" && <Typography variant={"body2"}>Waiting...</Typography>}
-                {state === "enumerating" && <Typography variant={"body2"}>Searching available courses...</Typography>}
-                {state === "collecting" &&
-                    <Typography variant={"body2"}>
-                        Collecting course information: {coursesData.length} done out of {foundCourses.length}
-                    </Typography>
-                }
+                <SemesterDataCollectionStatus state={state} foundCourses={foundCourses} coursesData={coursesData}/>
             </Grid>
             <Grid item xs={1} display={"flex"} justifyContent={"center"} alignItems={"center"}>
                 {state === "done" && <CheckCircleIcon color={"success"}/>}
@@ -107,6 +100,29 @@ type TakenCourseData = Omit<BaseCourseData, "status"> & {
 }
 
 type CourseData = BaseCourseData | TakenCourseData;
+
+interface SemesterDataCollectionProps {
+    state: SemesterDataCollectorState;
+    coursesData: MutableRefObject<(CourseData)[]>;
+    foundCourses: string[];
+}
+
+function SemesterDataCollectionStatus({state, coursesData, foundCourses}: SemesterDataCollectionProps) {
+    switch (state) {
+        case "done":
+            return <Typography variant={"body2"}>Data collection done</Typography>;
+        case "idle":
+            return <Typography variant={"body2"}>Waiting...</Typography>;
+        case "enumerating":
+            return <Typography variant={"body2"}>Searching available courses...</Typography>
+        case "collecting":
+            return (
+                <Typography variant={"body2"}>
+                    Collecting course information: {coursesData.current.length} done out of {foundCourses.length}
+                </Typography>
+            );
+    }
+}
 
 function next_button_condition(course_block: HTMLDivElement): boolean {
     const next_button = course_block.querySelector(
