@@ -6,6 +6,7 @@ import * as steps from "./steps";
 import {HTMLElementProxy} from "../stubs/html_element.ts";
 import {Selector, SelectorType} from "../stubs";
 import {InjectedArgs, InjectedFunction,} from "../stubs/remote_object.ts";
+import {IterationData} from "./steps";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
@@ -177,6 +178,33 @@ class TaskPipeline {
                         new TaskPipeline(this._target, this._on_state_change)
                     ).execute(on_complete);
                 }
+            )
+        );
+        return this;
+    }
+
+    public while<
+        ConditionArgs extends [...any],
+        ConditionParams extends [...any]
+    >(
+        condition_type: steps.WhileConditionType,
+        condition_fn: InjectedFunction<ConditionParams, ConditionArgs>,
+        condition_args: InjectedArgs<ConditionArgs, ConditionParams>,
+        sub_pipeline: (iteration_data: IterationData, pipeline: TaskPipeline) => TaskPipeline,
+        config?: steps.WhileTaskConfig
+    ): TaskPipeline {
+        this._steps.push(
+            new steps.WhileTask(
+                condition_type,
+                condition_fn,
+                condition_args,
+                (iteration_data, on_complete) => {
+                    sub_pipeline(
+                        iteration_data,
+                        new TaskPipeline(this._target, this._on_state_change)
+                    ).execute(on_complete);
+                },
+                config
             )
         );
         return this;
