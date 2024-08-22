@@ -27,7 +27,7 @@ pub enum EJSON {
 }
 
 #[derive(Debug, Serialize)]
-struct EscapedString(Box<RawValue>);
+pub struct EscapedString(Box<RawValue>);
 
 impl PartialEq for EscapedString {
     fn eq(&self, other: &Self) -> bool {
