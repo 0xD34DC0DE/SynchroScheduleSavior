@@ -3,10 +3,7 @@ import {InjectionResult} from "../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import * as steps from "./steps";
-import {HTMLElementProxy} from "../stubs/html_element.ts";
-import {Selector, SelectorType} from "../stubs";
-import {InjectedArgs, InjectedFunction,} from "../stubs/remote_object.ts";
-import {IterationData} from "./steps";
+import {HTMLElementProxy, InjectedArgs, InjectedFunction, Selector, SelectorType} from "../stubs";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
@@ -89,12 +86,17 @@ class TaskPipeline {
         this._set_pipeline_state(PipelineState.CANCELLED);
     }
 
-    public navigate_to(url: string, url_pattern?: string | RegExp): TaskPipeline {
+    protected sub_pipeline(): this {
+        const constructor = Object.getPrototypeOf(this).constructor;
+        return new constructor(this._target, this._on_state_change);
+    }
+
+    public navigate_to(url: string, url_pattern?: string | RegExp): this {
         this._steps.push(new steps.Navigate(url, url_pattern));
         return this;
     }
 
-    public wait_for_url(url_pattern: string | RegExp): TaskPipeline {
+    public wait_for_url(url_pattern: string | RegExp): this {
         this._steps.push(new steps.UrlWait(url_pattern));
         return this;
     }
@@ -102,7 +104,7 @@ class TaskPipeline {
     public navigate_with_click<T extends HTMLElement>(
         selector: SelectorType<T>,
         url_pattern: string
-    ): TaskPipeline {
+    ): this {
         this._steps.push(
             new steps.Task(
                 (element: HTMLElement) => element.click(),
@@ -117,33 +119,33 @@ class TaskPipeline {
         injected_fn: InjectedFunction<Params, Args>,
         args: InjectedArgs<Args, Params>,
         on_result?: (result: InjectionResult<ReturnType<InjectedFunction<Params, Args>>>) => void,
-    ): TaskPipeline {
+    ): this {
         this._steps.push(new steps.Task(injected_fn, args, on_result));
         return this;
     }
 
     public wait_for_any_events(target_window: "current" | "target",
                                event_names: string[],
-                               on_complete?: OnCompleteCallback): TaskPipeline {
+                               on_complete?: OnCompleteCallback): this {
         this._steps.push(new steps.EventWait(target_window, "any", event_names, on_complete));
         return this;
     }
 
     public wait_for_event(target_window: "current" | "target",
                           event_name: string,
-                          on_complete?: OnCompleteCallback): TaskPipeline {
+                          on_complete?: OnCompleteCallback): this {
         this._steps.push(new steps.EventWait(target_window, "any", [event_name], on_complete));
         return this;
     }
 
     public wait_for_all_events(target_window: "current" | "target",
                                event_names: string[],
-                               on_complete?: OnCompleteCallback): TaskPipeline {
+                               on_complete?: OnCompleteCallback): this {
         this._steps.push(new steps.EventWait(target_window, "all", event_names, on_complete));
         return this;
     }
 
-    public callback(callback: OnCompleteCallback): TaskPipeline {
+    public callback(callback: OnCompleteCallback): this {
         this._steps.push(new steps.Callback(callback));
         return this;
     }
@@ -152,7 +154,7 @@ class TaskPipeline {
         selector: SelectorType<T>,
         condition: steps.ConditionCallback,
         wait_config: steps.ConditionConfig<T>
-    ): TaskPipeline {
+    ): this {
         this._steps.push(
             new steps.Task(
                 (element: HTMLElement) => element.click(),
@@ -167,7 +169,7 @@ class TaskPipeline {
 
     public for_each<T extends HTMLElement>(
         selector: string,
-        sub_pipeline: (element: HTMLElementProxy<T>, pipeline: TaskPipeline) => TaskPipeline
+        sub_pipeline: (element: HTMLElementProxy<T>, pipeline: this) => this
     ) {
         this._steps.push(
             new steps.ForEachTask<T>(
@@ -175,7 +177,7 @@ class TaskPipeline {
                 (element, on_complete) => {
                     sub_pipeline(
                         element,
-                        new TaskPipeline(this._target, this._on_state_change)
+                        this.sub_pipeline()
                     ).execute(on_complete);
                 }
             )
@@ -190,9 +192,9 @@ class TaskPipeline {
         condition_type: steps.WhileConditionType,
         condition_fn: InjectedFunction<ConditionParams, ConditionArgs>,
         condition_args: InjectedArgs<ConditionArgs, ConditionParams>,
-        sub_pipeline: (iteration_data: IterationData, pipeline: TaskPipeline) => TaskPipeline,
+        sub_pipeline: (iteration_data: steps.WhileIterationData, pipeline: this) => this,
         config?: steps.WhileTaskConfig
-    ): TaskPipeline {
+    ): this {
         this._steps.push(
             new steps.WhileTask(
                 condition_type,
@@ -201,7 +203,7 @@ class TaskPipeline {
                 (iteration_data, on_complete) => {
                     sub_pipeline(
                         iteration_data,
-                        new TaskPipeline(this._target, this._on_state_change)
+                        this.sub_pipeline()
                     ).execute(on_complete);
                 },
                 config
@@ -211,6 +213,8 @@ class TaskPipeline {
     }
 }
 
+type TaskPipelineExtension<T extends TaskPipeline> = new (...args: ConstructorParameters<typeof TaskPipeline>) => T;
+
 export {PipelineState};
-export type {OnPipelineStateChangeCallback};
+export type {OnPipelineStateChangeCallback, TaskPipelineExtension};
 export default TaskPipeline;

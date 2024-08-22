@@ -1,4 +1,4 @@
-import TaskPipeline, {OnPipelineStateChangeCallback} from "./pipeline/task_pipeline.ts";
+import TaskPipeline, {OnPipelineStateChangeCallback, TaskPipelineExtension} from "./pipeline/task_pipeline.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {get_window_by_label, open_webview} from "./commands.ts";
 import {UnlistenFn} from "@tauri-apps/api/event";
@@ -45,11 +45,24 @@ class WebScraper {
         });
     }
 
-    public begin(on_state_change?: OnPipelineStateChangeCallback): TaskPipeline {
+    public begin(on_state_change?: OnPipelineStateChangeCallback): TaskPipeline;
+    public begin<T extends TaskPipeline>(
+        on_state_change?: OnPipelineStateChangeCallback,
+        extension?: TaskPipelineExtension<T>
+    ): T;
+    public begin<T extends TaskPipeline = TaskPipeline>(
+        on_state_change?: OnPipelineStateChangeCallback,
+        extension?: TaskPipelineExtension<T>
+    ): T | TaskPipeline {
         if (!this._target) throw new Error("Window has been destroyed");
+        if (extension) {
+            if (!(extension.prototype instanceof TaskPipeline)) {
+                throw new Error("Extension must be a subclass of TaskPipeline");
+            }
+            return new extension(this._target, on_state_change);
+        }
         return new TaskPipeline(this._target, on_state_change);
     }
-
 
     /**
      * Register a callback to be called when the window is destroyed.

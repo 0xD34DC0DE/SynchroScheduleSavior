@@ -1,0 +1,1 @@
+export {default as SynchroPipelineExtension} from './synchro_pipeline_extension';

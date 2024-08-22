@@ -3,9 +3,8 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from '@mui/icons-material/Error';
 import PendingIcon from '@mui/icons-material/Pending';
 import {MutableRefObject, useEffect, useRef, useState} from "react";
-import {Selector, usePipelineState, useScraper} from "../../../lib/webview_scraper";
-import TaskPipeline from "../../../lib/webview_scraper/src/pipeline/task_pipeline.ts";
-import {HTMLElementProxy} from "../../../lib/webview_scraper/src/stubs/html_element.ts";
+import {HTMLElementProxy, usePipelineState, useScraper} from "../../../lib/webview_scraper";
+import {SynchroPipelineExtension} from "../utils";
 
 interface SemesterDataCollectorProps {
     setCollectedCoursesData: (courses_data: CourseData[]) => void;
@@ -14,13 +13,14 @@ interface SemesterDataCollectorProps {
     semester: { name: string, href: string };
 }
 
-
-const SemesterDataCollector = ({
-                                   setCollectedCoursesData,
-                                   collectData,
-                                   start_url,
-                                   semester
-                               }: SemesterDataCollectorProps) => {
+const SemesterDataCollector = (
+    {
+        setCollectedCoursesData,
+        collectData,
+        start_url,
+        semester
+    }: SemesterDataCollectorProps
+) => {
     const [state, setState] = useState<SemesterDataCollectorState>("idle");
     const [foundCourses, setFoundCourses] = useState<string[]>([]);
     const coursesData = useRef<CourseData[]>([]);
@@ -32,31 +32,21 @@ const SemesterDataCollector = ({
         if (state !== "idle") return;
         setState("enumerating");
 
-        const loader_condition = (mutation: MutationRecord) => {
-            return (mutation.oldValue?.includes("show") &&
-                !(mutation.target as HTMLElement).classList.contains("show")) ?? false;
-        }
-        const loader_wait_config = {
-            selector: new Selector("div.gh-loader-popup"),
-            observer_config: {attributes: true, attributeFilter: ['class'], attributeOldValue: true}
-        };
-
         return scraper
-            .begin(setPipelineState)
+            .begin(setPipelineState, SynchroPipelineExtension)
             .navigate_to(start_url, /ExactKeys/)
             .navigate_to(semester.href, "*/SA_LEARNER_SERVICES_2.SSR_SSENRL_CART.GBL*")
-            .click_and_wait("input#DERIVED_REGFRM1_SSR_PB_SRCH", loader_condition, loader_wait_config)
+            .click_and_wait_for_loader("input#DERIVED_REGFRM1_SSR_PB_SRCH")
             .for_each<HTMLInputElement>(
                 "input[value^='Afficher']",
-                (button, sub_pipeline) => sub_pipeline.click_and_wait(button, loader_condition, loader_wait_config)
+                (button, sub_pipeline) => sub_pipeline.click_and_wait_for_loader(button)
             )
             .for_each<HTMLDivElement>(
                 "div[id^=win0divCOURSE_LIST\\$]",
-                course_block_sub_pipeline_builder(loader_condition, loader_wait_config, coursesData)
+                course_block_sub_pipeline(coursesData)
             )
-            .execute(() => {
-                console.log("done", coursesData.current);
-            });
+            .callback(() => setState("collecting"))
+            .execute();
     }, [undefined, collectData]);
 
     return (
@@ -142,15 +132,13 @@ function extract_block_courses(course_block: HTMLDivElement): CourseData[] {
         })
 }
 
-function course_block_sub_pipeline_builder(
-    loader_condition: (mutation: MutationRecord) => boolean,
-    loader_wait_config: {
-        observer_config: { attributeFilter: string[]; attributeOldValue: boolean; attributes: boolean };
-        selector: Selector<HTMLElement>
-    },
-    coursesData: MutableRefObject<(CourseData)[]>
-) {
-    return (course_list_div: HTMLElementProxy<HTMLDivElement>, foreach_sub_pipeline: TaskPipeline) =>
+const makeNextButtonSelector = (course_list_div: HTMLElementProxy<HTMLDivElement>) => ({
+    element: course_list_div,
+    selector: "div[id^=gh-table-pager-COURSE_LIST]>div:first-child>ul>li:nth-child(4)>a"
+});
+
+function course_block_sub_pipeline(coursesData: MutableRefObject<(CourseData)[]>) {
+    return (course_list_div: HTMLElementProxy<HTMLDivElement>, foreach_sub_pipeline: SynchroPipelineExtension) =>
         foreach_sub_pipeline
             .while(
                 "post-condition",
@@ -159,13 +147,8 @@ function course_block_sub_pipeline_builder(
                 (iteration_data, while_sub_pipeline) => {
                     if (iteration_data.condition_result) {
                         while_sub_pipeline = while_sub_pipeline
-                            .click_and_wait(
-                                {
-                                    element: course_list_div,
-                                    selector: "div[id^=gh-table-pager-COURSE_LIST]>div:first-child>ul>li:nth-child(4)>a"
-                                },
-                                loader_condition,
-                                loader_wait_config
+                            .click_and_wait_for_loader(
+                                makeNextButtonSelector(course_list_div)
                             )
                     }
 
@@ -173,7 +156,6 @@ function course_block_sub_pipeline_builder(
                         extract_block_courses,
                         [course_list_div],
                         (result) => {
-                            console.log("Course data: ", result);
                             if ("error" in result) throw result.error;
                             coursesData.current.push(...result.value);
                         }

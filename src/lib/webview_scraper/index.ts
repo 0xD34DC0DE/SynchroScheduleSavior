@@ -1,5 +1,7 @@
-export { usePipelineState, useScraper } from './hooks';
-export { PipelineState } from './src/pipeline/task_pipeline.ts';
+export {usePipelineState, useScraper} from './hooks';
+export {PipelineState} from './src/pipeline/task_pipeline.ts';
 export type {ConditionConfig, ConditionCallback} from "./src/pipeline/steps";
-export {Selector} from "./src/stubs/selector.ts";
+export {type SelectorType, Selector} from "./src/stubs/selector.ts";
+export {type HTMLElementProxy} from "./src/stubs/html_element.ts";
 export {InitiatorWindow, TargetWindow} from "./src/stubs/window.ts";
+export {default as TaskPipeline, type OnPipelineStateChangeCallback} from "./src/pipeline/task_pipeline.ts";
