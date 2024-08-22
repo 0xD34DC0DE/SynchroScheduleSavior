@@ -99,69 +99,6 @@ impl Formatter for EJSONFormatter {
     }
 }
 
-struct UnescapeQuotes<'a> {
-    input: &'a str,
-    pos: usize,
-}
-
-impl<'a> UnescapeQuotes<'a> {
-    fn new(input: &'a str) -> Self {
-        Self { input, pos: 0 }
-    }
-}
-
-impl<'a> Iterator for UnescapeQuotes<'a> {
-    type Item = &'a str;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut offset = 0;
-        loop {
-            if self.pos >= self.input.len() {
-                return None;
-            }
-
-            let next_slash = self.input[self.pos + offset..].find('\\');
-            if next_slash.is_none() {
-                let part = &self.input[self.pos..];
-                self.pos = self.input.len();
-                return Some(part);
-            }
-
-            let slash_pos = self.pos + next_slash?;
-
-            if slash_pos + 1 >= self.input.len() {
-                let part = &self.input[self.pos..];
-                self.pos = self.input.len();
-                return Some(part);
-            }
-
-            
-            let next_char = self.input.bytes().nth(slash_pos + 1)? as char;
-            if next_char == '"' {
-                if slash_pos == 0 {
-                    self.pos = slash_pos + 1;
-                    continue;
-                }
-                let part = &self.input[self.pos..=slash_pos - 1];
-                self.pos = slash_pos + 1;
-                return Some(part);
-            }
-            
-            offset += next_slash? + 1;
-        }
-    }
-}
-
-trait UnescapeQuotesExt<'a> {
-    fn unescape(&'a self) -> UnescapeQuotes<'a>;
-}
-
-impl<'a> UnescapeQuotesExt<'a> for str {
-    fn unescape(&'a self) -> UnescapeQuotes<'a> {
-        UnescapeQuotes::new(self)
-    }
-}
-
 // A visitor for deserializing JSON into EJSON values.
 //
 // The visitor does nothing special for normal JSON values, it just returns them as is.
@@ -536,66 +473,6 @@ mod tests {
             assert_eq!(serialized, "{\"a\":console.log('Hello, World!');}");
 
             println!("Serialized value: {}", serialized);
-        }
-    }
-
-    mod unescape_quotes {
-        use super::super::UnescapeQuotesExt;
-
-        #[test]
-        fn unescape_quotes() {
-            let input = r#"\"hello\" \"world\" \"!\""#;
-            let expected = ["\"hello", "\" ", "\"world", "\" ", "\"!", "\""];
-            let result: Vec<&str> = input.unescape().collect();
-            assert_eq!(result, expected);
-        }
-
-        #[test]
-        fn empty() {
-            let input = r#""#;
-            let expected: [&str; 0] = [];
-            let result: Vec<&str> = input.unescape().collect();
-            assert_eq!(result, expected);
-        }
-
-        #[test]
-        fn no_quotes() {
-            let input = r#"hello world!"#;
-            let expected = ["hello world!"]; // No quotes
-            let result: Vec<&str> = input.unescape().collect();
-            assert_eq!(result, expected);
-        }
-
-        #[test]
-        fn no_escaped_quotes() {
-            let input = r#"hello world!""#;
-            let expected = ["hello world!\""]; // No escaped quotes
-            let result: Vec<&str> = input.unescape().collect();
-            assert_eq!(result, expected);
-        }
-
-        #[test]
-        fn no_escaped_quotes_end() {
-            let input = r#"hello world!\"#;
-            let expected = ["hello world!\\"];
-            let result: Vec<&str> = input.unescape().collect();
-            assert_eq!(result, expected);
-        }
-
-        #[test]
-        fn no_escaped_quotes_start() {
-            let input = r#"\hello world!"#;
-            let expected = ["\\hello world!"];
-            let result: Vec<&str> = input.unescape().collect();
-            assert_eq!(result, expected);
-        }
-        
-        #[test]
-        fn double_backslash() {
-            let input = r#"\\"#;
-            let expected = ["\\\\"];
-            let result: Vec<&str> = input.unescape().collect();
-            assert_eq!(result, expected);
         }
     }
 }
