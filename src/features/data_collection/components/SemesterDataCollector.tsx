@@ -1,9 +1,9 @@
-import {CircularProgress, Grid, Typography} from "@mui/material";
+import {CircularProgress, Grid, Stack, Typography} from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ErrorIcon from '@mui/icons-material/Error';
 import PendingIcon from '@mui/icons-material/Pending';
-import {MutableRefObject, useEffect, useRef, useState} from "react";
-import {HTMLElementProxy, usePipelineState, useScraper} from "../../../lib/webview_scraper";
+import {Dispatch, SetStateAction, useEffect, useState} from "react";
+import {HTMLElementProxy, PipelineState, usePipelineState, useScraper} from "../../../lib/webview_scraper";
 import {SynchroPipelineExtension} from "../utils";
 
 interface SemesterDataCollectorProps {
@@ -22,28 +22,33 @@ const SemesterDataCollector = (
     }: SemesterDataCollectorProps
 ) => {
     const [state, setState] = useState<SemesterDataCollectorState>("idle");
-    const [foundCourses, setFoundCourses] = useState<string[]>([]);
-    const coursesData = useRef<CourseData[]>([]);
+    const [coursesData, setCoursesData] = useState<CourseData[]>([]);
+    const [foundCoursesBlocksCount, setFoundCoursesBlocksCount] = useState<number>(0);
+    const [collectedCoursesCount, setCollectedCoursesCount] = useState<number>(0);
     const scraper = useScraper();
     const [pipelineState, setPipelineState] = usePipelineState();
 
     useEffect(() => {
         if (!collectData) return;
         if (state !== "idle") return;
-        setState("enumerating");
+        setState("navigating");
 
         return scraper
             .begin(setPipelineState, SynchroPipelineExtension)
             .navigate_to(start_url, /ExactKeys/)
             .navigate_to(semester.href, "*/SA_LEARNER_SERVICES_2.SSR_SSENRL_CART.GBL*")
             .click_and_wait_for_loader("input#DERIVED_REGFRM1_SSR_PB_SRCH")
+            .callback(() => setState("enumerating-blocks"))
             .for_each<HTMLInputElement>(
                 "input[value^='Afficher']",
-                (button, sub_pipeline) => sub_pipeline.click_and_wait_for_loader(button)
+                (button, sub_pipeline) => sub_pipeline
+                    .click_and_wait_for_loader(button)
+                    .callback(() => setFoundCoursesBlocksCount(prev => prev + 1))
             )
+            .callback(() => setState("enumerating-courses"))
             .for_each<HTMLDivElement>(
                 "div[id^=win0divCOURSE_LIST\\$]",
-                course_block_sub_pipeline(coursesData)
+                course_block_sub_pipeline(setCoursesData)
             )
             .callback(() => setState("collecting"))
             .execute();
@@ -65,25 +70,43 @@ const SemesterDataCollector = (
                 },
             }}
         >
-            <Grid item xs={3} display={"flex"} justifyContent={"center"} alignItems={"center"}>
-                <Typography variant={"h5"}>{semester.name}</Typography>
-            </Grid>
-            <Grid item display={"flex"} justifyContent={"center"} alignItems={"center"}>
-                <SemesterDataCollectionStatus state={state} foundCourses={foundCourses} coursesData={coursesData}/>
-            </Grid>
-            <Grid item xs={1} display={"flex"} justifyContent={"center"} alignItems={"center"}>
-                {state === "done" && <CheckCircleIcon color={"success"}/>}
-                {state === "idle" && <PendingIcon/>}
-                {(state === "enumerating" || state === "collecting") && <CircularProgress size={20}/>}
-                {state === "error" && <ErrorIcon color={"error"}/>}
-            </Grid>
+            {pipelineState === PipelineState.CANCELLED &&
+                <Typography variant={"body2"} color={"error"}>
+                    An error occurred during data collection
+                </Typography>
+            }
+            {pipelineState !== PipelineState.CANCELLED &&
+                <>
+                    <Grid item xs={4} display={"flex"} justifyContent={"center"} alignItems={"center"}>
+                        <Typography variant={"h6"}>{semester.name}</Typography>
+                    </Grid>
+                    <Grid item display={"flex"} justifyContent={"center"} alignItems={"center"}>
+                        <SemesterDataCollectionStatus
+                            state={state}
+                            foundCoursesBlocksCount={foundCoursesBlocksCount}
+                            coursesToCollectCount={coursesData.length}
+                            collectedCoursesCount={collectedCoursesCount}
+                        />
+                    </Grid>
+                    <Grid item xs={1} display={"flex"} justifyContent={"center"} alignItems={"center"}>
+                        <SemesterDataCollectionIcon state={state}/>
+                    </Grid>
+                </>
+            }
         </Grid>
     );
 };
 
 export default SemesterDataCollector;
 
-type SemesterDataCollectorState = "idle" | "enumerating" | "collecting" | "done" | "error";
+type SemesterDataCollectorState =
+    "idle"
+    | "navigating"
+    | "enumerating-blocks"
+    | "enumerating-courses"
+    | "collecting"
+    | "done"
+    | "error";
 
 type BaseCourseData = {
     id: string;
@@ -103,24 +126,71 @@ type CourseData = BaseCourseData | TakenCourseData;
 
 interface SemesterDataCollectionProps {
     state: SemesterDataCollectorState;
-    coursesData: MutableRefObject<(CourseData)[]>;
-    foundCourses: string[];
+    foundCoursesBlocksCount: number;
+    coursesToCollectCount: number;
+    collectedCoursesCount: number;
 }
 
-function SemesterDataCollectionStatus({state, coursesData, foundCourses}: SemesterDataCollectionProps) {
+function SemesterDataCollectionStatus(
+    {
+        state,
+        foundCoursesBlocksCount,
+        coursesToCollectCount,
+        collectedCoursesCount
+    }: SemesterDataCollectionProps
+) {
     switch (state) {
         case "done":
             return <Typography variant={"body2"}>Data collection done</Typography>;
         case "idle":
             return <Typography variant={"body2"}>Waiting...</Typography>;
-        case "enumerating":
-            return <Typography variant={"body2"}>Searching available courses...</Typography>
+        case "navigating":
+            return <Typography variant={"body2"}>Navigating to courses basket...</Typography>;
+        case "enumerating-blocks":
+            return (
+                <Stack>
+                    <Typography variant={"body2"}>Searching courses blocks...</Typography>
+                    <Typography variant={"caption"}>Found {foundCoursesBlocksCount} blocks</Typography>
+                </Stack>
+            );
+        case "enumerating-courses":
+            return (
+                <Stack>
+                    <Typography variant={"body2"}>Searching available courses...</Typography>
+                    <Typography variant={"caption"}>Found {coursesToCollectCount} courses</Typography>
+                </Stack>
+            );
         case "collecting":
             return (
-                <Typography variant={"body2"}>
-                    Collecting course information: {coursesData.current.length} done out of {foundCourses.length}
-                </Typography>
+                <Stack>
+                    <Typography variant={"body2"}>Collecting course information...</Typography>
+                    <Typography variant={"caption"}>
+                        Collected {collectedCoursesCount} out of {coursesToCollectCount}
+                    </Typography>
+                </Stack>
             );
+        case "error":
+            return <Typography variant={"body2"} color={"error"}>An error occurred</Typography>;
+    }
+}
+
+interface SemesterDataCollectionIconProps {
+    state: SemesterDataCollectorState;
+}
+
+function SemesterDataCollectionIcon({state}: SemesterDataCollectionIconProps) {
+    switch (state) {
+        case "done":
+            return <CheckCircleIcon color={"success"}/>;
+        case "idle":
+            return <PendingIcon/>;
+        case "navigating":
+        case "enumerating-courses":
+        case "collecting":
+        case "enumerating-blocks":
+            return <CircularProgress size={20}/>;
+        case "error":
+            return <ErrorIcon color={"error"}/>;
     }
 }
 
@@ -153,7 +223,7 @@ const makeNextButtonSelector = (course_list_div: HTMLElementProxy<HTMLDivElement
     selector: "div[id^=gh-table-pager-COURSE_LIST]>div:first-child>ul>li:nth-child(4)>a"
 });
 
-function course_block_sub_pipeline(coursesData: MutableRefObject<(CourseData)[]>) {
+function course_block_sub_pipeline(setCoursesData: Dispatch<SetStateAction<(CourseData)[]>>) {
     return (course_list_div: HTMLElementProxy<HTMLDivElement>, foreach_sub_pipeline: SynchroPipelineExtension) =>
         foreach_sub_pipeline
             .while(
@@ -173,7 +243,11 @@ function course_block_sub_pipeline(coursesData: MutableRefObject<(CourseData)[]>
                         [course_list_div],
                         (result) => {
                             if ("error" in result) throw result.error;
-                            coursesData.current.push(...result.value);
+                            setCoursesData(prev => {
+                                console.log("prev", prev)
+                                return [...prev, ...result.value];
+                            })
+                            console.log("value", result.value);
                         }
                     )
                 },
