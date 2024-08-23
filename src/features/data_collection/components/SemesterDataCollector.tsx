@@ -99,15 +99,6 @@ const SemesterDataCollector = (
 
 export default SemesterDataCollector;
 
-type SemesterDataCollectorState =
-    "idle"
-    | "navigating"
-    | "enumerating-blocks"
-    | "enumerating-courses"
-    | "collecting"
-    | "done"
-    | "error";
-
 type BaseCourseData = {
     id: string;
     name: string;
@@ -123,6 +114,15 @@ type TakenCourseData = Omit<BaseCourseData, "status"> & {
 }
 
 type CourseData = BaseCourseData | TakenCourseData;
+
+type SemesterDataCollectorState =
+    "idle"
+    | "navigating"
+    | "enumerating-blocks"
+    | "enumerating-courses"
+    | "collecting"
+    | "done"
+    | "error";
 
 interface SemesterDataCollectionProps {
     state: SemesterDataCollectorState;
