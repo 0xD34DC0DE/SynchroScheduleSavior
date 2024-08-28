@@ -4,7 +4,19 @@ import react from "@vitejs/plugin-react";
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'html-transform',
+      transformIndexHtml(html) {
+        // Add a script tag in the head section
+        return html.replace(
+          /(<head>)/,
+          `$1\n<script src="http://localhost:8097"></script>`,
+        );
+      },
+    }
+  ],
   test: {
     includeSource: ['src/**/*.ts'],
   },
