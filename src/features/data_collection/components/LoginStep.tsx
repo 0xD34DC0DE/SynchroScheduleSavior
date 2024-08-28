@@ -27,7 +27,6 @@ const LoginStep = ({}: LoginStepProps) => {
             .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
             .task(show_login_modal, [InitiatorWindow, login_modal_html])
             .callback(() => setLoginDetected(true))
-            .wait_for_event("current", "tauri://focus")
             .execute();
     }, [undefined, scraper, setPipelineState]);
 
