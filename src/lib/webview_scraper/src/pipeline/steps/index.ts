@@ -1,7 +1,7 @@
 export {default as UrlWait} from "./url_wait";
 export {default as Navigate} from "./navigate";
 export {default as Task} from "./task";
-export {default as EventWait} from "./event_wait";
+export {default as EventWait, type EventWaitMode, type EventWaitTarget} from "./event_wait";
 export {default as Callback} from "./callback";
 export {default as TaskWithCondition} from "./task_with_condition";
 export type {ConditionConfig, ConditionCallback} from "./task_with_condition";
@@ -12,3 +12,4 @@ export type {
     ConditionType as WhileConditionType, WhileTaskConfig, IterationData as WhileIterationData
 } from "./while_task";
 export {default as DeferredStep, type PipelineStepsBuilder} from "./deferred";
+export type {UrlPattern} from "./types.ts";

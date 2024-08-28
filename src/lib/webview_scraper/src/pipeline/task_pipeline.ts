@@ -96,12 +96,12 @@ class TaskPipeline {
         return new constructor(this._target, on_state_change);
     }
 
-    public navigate_to(url: string, url_pattern?: string | RegExp): this {
+    public navigate_to(url: string, url_pattern?: steps.UrlPattern): this {
         this._steps.push(new steps.Navigate(url, url_pattern));
         return this;
     }
 
-    public wait_for_url(url_pattern: string | RegExp): this {
+    public wait_for_url(url_pattern: steps.UrlPattern): this {
         this._steps.push(new steps.UrlWait(url_pattern));
         return this;
     }
@@ -129,21 +129,21 @@ class TaskPipeline {
         return this;
     }
 
-    public wait_for_any_events(target_window: "current" | "target",
+    public wait_for_any_events(target_window: steps.EventWaitTarget,
                                event_names: string[],
                                on_complete?: OnCompleteCallback): this {
         this._steps.push(new steps.EventWait(target_window, "any", event_names, on_complete));
         return this;
     }
 
-    public wait_for_event(target_window: "current" | "target",
+    public wait_for_event(target_window: steps.EventWaitTarget,
                           event_name: string,
                           on_complete?: OnCompleteCallback): this {
         this._steps.push(new steps.EventWait(target_window, "any", [event_name], on_complete));
         return this;
     }
 
-    public wait_for_all_events(target_window: "current" | "target",
+    public wait_for_all_events(target_window: steps.EventWaitTarget,
                                event_names: string[],
                                on_complete?: OnCompleteCallback): this {
         this._steps.push(new steps.EventWait(target_window, "all", event_names, on_complete));
