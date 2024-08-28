@@ -89,7 +89,11 @@ class TaskPipeline {
 
     protected sub_pipeline(): this {
         const constructor = Object.getPrototypeOf(this).constructor;
-        return new constructor(this._target, this._on_state_change);
+        // Only bubble up the CANCELLED state to prevent excessive state updates
+        const on_state_change = (state: PipelineState) => {
+            if (state === PipelineState.CANCELLED) this._on_state_change?.(PipelineState.CANCELLED);
+        }
+        return new constructor(this._target, on_state_change);
     }
 
     public navigate_to(url: string, url_pattern?: string | RegExp): this {
