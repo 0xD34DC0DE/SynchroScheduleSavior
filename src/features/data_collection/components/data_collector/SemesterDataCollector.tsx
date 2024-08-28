@@ -3,7 +3,7 @@ import {useEffect, useState} from "react";
 import {AsyncPipelineStepsBuilder, PipelineState, usePipelineState, useScraper} from "../../../../lib/webview_scraper";
 import {SynchroPipelineExtension} from "../../utils";
 import {CourseData} from "./types.ts";
-import ParentPipelineProvider from "./ParentPipelineProvider.tsx";
+import {DeferredSteps} from "../../../../lib/webview_scraper/components";
 import DataCollectorBasketNavigationStep from "./DataCollectorBasketNavigationStep.tsx";
 import DataCollectorBlocksExpansionStep from "./DataCollectorBlocksExpansionStep.tsx";
 import DataCollectorCourseEnumerationStep from "./DataCollectorCourseEnumerationStep.tsx";
@@ -65,11 +65,11 @@ const SemesterDataCollector = (
                     <Grid item xs={4} display={"flex"} justifyContent={"center"} alignItems={"center"}>
                         <Typography variant={"h6"}>{semester.name}</Typography>
                     </Grid>
-                    <ParentPipelineProvider onStepsBuilderReady={setStepsBuilder}>
+                    <DeferredSteps onStepsBuilderReady={setStepsBuilder}>
                         <DataCollectorBasketNavigationStep startUrl={start_url} semesterHref={semester.href}/>
                         <DataCollectorBlocksExpansionStep/>
                         <DataCollectorCourseEnumerationStep/>
-                    </ParentPipelineProvider>
+                    </DeferredSteps>
                     <Grid item xs={1} display={"flex"} justifyContent={"center"} alignItems={"center"}>
                         <CircularProgress size={20}/>
                     </Grid>

@@ -1,9 +1,8 @@
-import {Dispatch, ReactNode, SetStateAction, useEffect, useState} from "react";
+import {ReactNode} from "react";
 import {SynchroPipelineExtension} from "../../utils";
-import {useParentPipeline} from "./ParentPipelineProvider.tsx";
-import {PipelineStepsBuilder, TaskPipeline} from "../../../../lib/webview_scraper";
 import {Fade} from "@mui/material";
 import Box from "@mui/material/Box";
+import {useDeferredSteps} from "../../../../lib/webview_scraper/hooks";
 
 interface DataCollectorStepProps {
     pipelineSteps: (pipeline: SynchroPipelineExtension) => SynchroPipelineExtension;
@@ -11,17 +10,7 @@ interface DataCollectorStepProps {
 }
 
 const DataCollectorStep = ({children, pipelineSteps}: DataCollectorStepProps) => {
-    const {registerStepBuilder, unregisterStepBuilder} = useParentPipeline<SynchroPipelineExtension>();
-    const [isRunning, setIsRunning] = useState(false);
-    const [stepIndex, setStepIndex] = useState<number | null>(null);
-
-    useEffect(() => {
-        if (stepIndex !== null) return;
-        const withExecutionStepUpdates = addExecutionStepUpdates(pipelineSteps, setIsRunning);
-        const newIndex = registerStepBuilder(withExecutionStepUpdates);
-        setStepIndex(newIndex);
-        return () => unregisterStepBuilder(newIndex);
-    }, [pipelineSteps, stepIndex, registerStepBuilder, unregisterStepBuilder]);
+    const isRunning = useDeferredSteps(pipelineSteps);
 
     if (!isRunning) return null;
     return (
@@ -33,14 +22,6 @@ const DataCollectorStep = ({children, pipelineSteps}: DataCollectorStepProps) =>
     );
 };
 
-function addExecutionStepUpdates<T extends TaskPipeline>(
-    pipelineStepsBuilder: PipelineStepsBuilder<T>,
-    setIsRunning: Dispatch<SetStateAction<boolean>>
-): PipelineStepsBuilder<T> {
-    return (pipeline: T) => {
-        pipeline = pipeline.callback(() => setIsRunning(true));
-        return pipelineStepsBuilder(pipeline).callback(() => setIsRunning(false));
-    }
-}
+
 
 export default DataCollectorStep;

@@ -2,22 +2,23 @@ import {
     Children,
     createContext,
     Dispatch,
-    ReactNode, SetStateAction,
+    ReactNode,
+    SetStateAction,
     useCallback,
-    useContext,
     useEffect,
     useRef,
     useState
 } from "react";
-import {AsyncPipelineStepsBuilder, PipelineStepsBuilder, TaskPipeline} from "../../../../lib/webview_scraper";
+import {AsyncPipelineStepsBuilder, PipelineStepsBuilder, TaskPipeline} from "../index.ts";
+import DeferredStepsContextType from "../contexts/DeferredStepsContext.ts";
 
-interface ParentPipelineProviderProps<T extends TaskPipeline> {
+interface DeferredStepsProps<T extends TaskPipeline> {
     onStepsBuilderReady: Dispatch<SetStateAction<AsyncPipelineStepsBuilder<T> | undefined>>;
     children: ReactNode | ReactNode[];
 }
 
-const ParentPipelineProvider = <T extends TaskPipeline>(
-    {children, onStepsBuilderReady}: ParentPipelineProviderProps<T>
+const DeferredSteps = <T extends TaskPipeline>(
+    {children, onStepsBuilderReady}: DeferredStepsProps<T>
 ) => {
     const childrenCount = Children.count(children);
     const [registeredStepBuilders, setRegisteredStepBuilders] = useState<RegisteredStepBuilder<T>[]>([]);
@@ -45,9 +46,9 @@ const ParentPipelineProvider = <T extends TaskPipeline>(
     }, [childrenCount, onStepsBuilderReady, registeredStepBuilders]);
 
     return (
-        <ParentPipelineContext.Provider value={{registerStepBuilder, unregisterStepBuilder}}>
+        <DeferredStepsContext.Provider value={{registerStepBuilder, unregisterStepBuilder}}>
             {children}
-        </ParentPipelineContext.Provider>
+        </DeferredStepsContext.Provider>
     );
 };
 
@@ -56,20 +57,7 @@ type RegisteredStepBuilder<T extends TaskPipeline> = {
     index: number;
 }
 
-type ParentPipelineContextType<T extends TaskPipeline> = {
-    registerStepBuilder: (builder: PipelineStepsBuilder<T>) => number;
-    unregisterStepBuilder: (index: number) => void;
-}
+const DeferredStepsContext = createContext<DeferredStepsContextType<any> | undefined>(undefined);
 
-const ParentPipelineContext = createContext<ParentPipelineContextType<any> | undefined>(undefined);
-
-const useParentPipeline = <T extends TaskPipeline>(): ParentPipelineContextType<T> => {
-    const context = useContext(ParentPipelineContext);
-    if (!context) {
-        throw new Error("useParentPipeline must be used within a ParentPipelineProvider");
-    }
-    return context;
-}
-
-export {useParentPipeline};
-export default ParentPipelineProvider;
+export {DeferredStepsContext};
+export default DeferredSteps;
