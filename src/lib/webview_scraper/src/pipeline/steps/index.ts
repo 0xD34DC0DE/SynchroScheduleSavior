@@ -11,3 +11,4 @@ export {default as WhileTask} from "./while_task";
 export type {
     ConditionType as WhileConditionType, WhileTaskConfig, IterationData as WhileIterationData
 } from "./while_task";
+export {default as DeferredStep, type PipelineStepsBuilder} from "./deferred";
