@@ -2,6 +2,8 @@ import {Dispatch, ReactNode, SetStateAction, useEffect, useState} from "react";
 import {SynchroPipelineExtension} from "../../utils";
 import {useParentPipeline} from "./ParentPipelineProvider.tsx";
 import {PipelineStepsBuilder, TaskPipeline} from "../../../../lib/webview_scraper";
+import {Fade} from "@mui/material";
+import Box from "@mui/material/Box";
 
 interface DataCollectorStepProps {
     pipelineSteps: (pipeline: SynchroPipelineExtension) => SynchroPipelineExtension;
@@ -22,14 +24,20 @@ const DataCollectorStep = ({children, pipelineSteps}: DataCollectorStepProps) =>
     }, [pipelineSteps, stepIndex, registerStepBuilder, unregisterStepBuilder]);
 
     if (!isRunning) return null;
-    return <>{children}</>;
+    return (
+        <Fade in={true} timeout={1000} unmountOnExit>
+            <Box>
+                {children}
+            </Box>
+        </Fade>
+    );
 };
 
 function addExecutionStepUpdates<T extends TaskPipeline>(
     pipelineStepsBuilder: PipelineStepsBuilder<T>,
     setIsRunning: Dispatch<SetStateAction<boolean>>
 ): PipelineStepsBuilder<T> {
-    return (pipeline: T)=> {
+    return (pipeline: T) => {
         pipeline = pipeline.callback(() => setIsRunning(true));
         return pipelineStepsBuilder(pipeline).callback(() => setIsRunning(false));
     }
