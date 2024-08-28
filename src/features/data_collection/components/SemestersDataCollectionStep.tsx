@@ -3,16 +3,19 @@ import Step from "./stepper/Step.tsx";
 import Box from "@mui/material/Box";
 import {useSetStepState, useStepData} from "./stepper/RouteStepper.tsx";
 import {SemesterData} from "./SemesterSelectionStep.tsx";
-import SemesterDataCollector from "./SemesterDataCollector.tsx";
+import {SemesterDataCollector} from "./data_collector";
 import {useState} from "react";
 
 interface SemestersDataCollectionStepProps {
-
 }
 
 const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
+    //@ts-expect-error
     const setStepCompleted = useSetStepState();
+
     const [previousStepData, _] = useStepData<SemesterData>();
+
+    // @ts-expect-error
     const [runningCollector, setRunningCollector] = useState(previousStepData.semesters[0]);
 
     return (
