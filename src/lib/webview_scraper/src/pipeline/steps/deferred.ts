@@ -16,9 +16,7 @@ class DeferredStep<T extends TaskPipeline> extends PipelineStep {
 
     public async run(): Promise<void> {
         const pipeline = this._pipeline_builder();
-        console.log("Waiting for deferred steps to be built");
         await this._steps_builder(pipeline);
-        console.log("Deferred steps built");
         pipeline.execute(() => this.complete());
     }
 }
