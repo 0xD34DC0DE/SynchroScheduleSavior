@@ -25,5 +25,5 @@ export type {PipelineStepsBuilder, AsyncPipelineStepsBuilder};
 
 export default DeferredStep;
 
-type PipelineStepsBuilder<T extends TaskPipeline> = (pipeline: T) => T;
-type AsyncPipelineStepsBuilder<T extends TaskPipeline> = (pipeline: T) => Promise<T>;
+type PipelineStepsBuilder<T extends TaskPipeline = TaskPipeline> = (pipeline: T) => T;
+type AsyncPipelineStepsBuilder<T extends TaskPipeline = TaskPipeline> = (pipeline: T) => Promise<T>;
