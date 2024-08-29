@@ -1,13 +1,15 @@
 use std::{fmt, io};
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde::de::{Error, MapAccess, SeqAccess, Unexpected, Visitor};
 use serde_json::ser::Formatter;
 use serde_json::Value;
 use serde_json::value::{RawValue, to_raw_value};
 use tauri::regex::{Regex, Captures};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 /// EJSON, or Escaped JSON, is a JSON value where objects with a specific structure represent
 /// values that have been serialized as strings to be able to be serialized as JSON.
@@ -42,12 +44,10 @@ impl TryFrom<&str> for EscapedString {
     }
 }
 
-thread_local! {
-    // This set, stores the pointers of the strings that have been escaped.
-    // This serves as a way to do in-band signaling to the formatter.
-    // Pointers are used since we only need to compare identity and not the content.
-    static ESCAPED_STRINGS_HANDLES: Mutex<HashSet<*const str>> = Mutex::new(HashSet::new());
-}
+// This set, stores the pointers of the strings that have been escaped.
+// This serves as a way to do in-band signaling to the formatter.
+// Pointers are used since we only need to compare identity and not the content.
+static ESCAPED_STRINGS_HANDLES: LazyLock<Mutex<HashSet<u64>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
 
 /// Formatter for escaped JSON values.
 ///
@@ -64,38 +64,45 @@ impl Formatter for EJSONFormatter {
     where
         W: ?Sized + Write,
     {
-        ESCAPED_STRINGS_HANDLES.with(|handles| {
-            let mut handles = handles.lock().unwrap();
+        let ptr_hash = {
+            let mut hasher = DefaultHasher::new();
             let ptr: *const str = fragment;
-            
-            if handles.remove(&ptr) {
-                if fragment.starts_with(r#""\"\"\""#) && fragment.ends_with(r#"\"\"\"""#) {
-                    let fragment = fragment.replace(r#"\"\"\""#, "");
-                    writer.write_all(fragment.as_bytes())?;
-                    return Ok(());
-                }  
-                
-                let re = Regex::new(r#"\\."#).unwrap();
-                let fragment = re.replace_all(fragment, |caps: &Captures| {
-                    let cap = caps.get(0).unwrap();
-                    let cap = cap.as_str();
-                    match cap {
-                        r#"\n"# => "\n",
-                        r#"\t"# => "\t",
-                        r#"\r"# => "\r",
-                        r#"\\"# => "\\",
-                        r#"\""# => "\"",
-                        _ => unreachable!(),
-                    }
-                });
-               
-                writer.write_all(fragment[1..fragment.len() - 1].as_bytes())?;
-            } else {
+            ptr.hash(&mut hasher);
+            hasher.finish()
+        };
+
+        let removed = {
+            let mut handles = ESCAPED_STRINGS_HANDLES.lock().unwrap();
+            handles.remove(&ptr_hash)
+        };
+
+        if removed {
+            if fragment.starts_with(r#""\"\"\""#) && fragment.ends_with(r#"\"\"\"""#) {
+                let fragment = fragment.replace(r#"\"\"\""#, "");
                 writer.write_all(fragment.as_bytes())?;
+                return Ok(());
             }
 
-            Ok(())
-        })
+            let re = Regex::new(r#"\\."#).unwrap();
+            let fragment = re.replace_all(fragment, |caps: &Captures| {
+                let cap = caps.get(0).unwrap();
+                let cap = cap.as_str();
+                match cap {
+                    r#"\n"# => "\n",
+                    r#"\t"# => "\t",
+                    r#"\r"# => "\r",
+                    r#"\\"# => "\\",
+                    r#"\""# => "\"",
+                    _ => unreachable!(),
+                }
+            });
+
+            writer.write_all(fragment[1..fragment.len() - 1].as_bytes())?;
+        } else {
+            writer.write_all(fragment.as_bytes())?;
+        }
+    
+        Ok(())
     }
 }
 
@@ -216,12 +223,17 @@ impl<'de> Visitor<'de> for EJSONVisitor {
                         let escaped =
                             EscapedString::try_from(str.as_str()).map_err(Error::custom)?;
 
-                        let ptr: *const str = escaped.0.get();
-
-                        ESCAPED_STRINGS_HANDLES.with(|handles| {
-                            let mut handles = handles.lock().unwrap();
-                            handles.insert(ptr);
-                        });
+                        let ptr_hash = {
+                            let mut hasher = DefaultHasher::new();
+                            let ptr: *const str = escaped.0.get();
+                            ptr.hash(&mut hasher);
+                            hasher.finish()
+                        };
+                        
+                        {
+                            let mut handles = ESCAPED_STRINGS_HANDLES.lock().unwrap();
+                            handles.insert(ptr_hash);
+                        }
 
                         Ok(EJSON::Escaped(escaped))
                     }
@@ -250,7 +262,6 @@ impl<'de> Deserialize<'de> for EJSON {
 mod tests {
     mod serializer {
         use serde_json::json;
-
         use super::super::*;
 
         #[test]
