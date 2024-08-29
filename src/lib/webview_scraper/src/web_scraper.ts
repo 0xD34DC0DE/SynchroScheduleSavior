@@ -2,21 +2,30 @@ import TaskPipeline, {OnPipelineStateChangeCallback, TaskPipelineExtension} from
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {get_window_by_label, open_webview} from "./commands.ts";
 import {UnlistenFn} from "@tauri-apps/api/event";
+import {PipelineStepsBuilder, UrlPattern} from "./pipeline/steps";
+import {default as UrlPatternMatcher} from "url-pattern";
 
 type DestroyCallback = () => void;
 
 class WebScraper {
     private readonly _destroy_listener: Promise<UnlistenFn>;
+    private readonly _navigation_listener: Promise<UnlistenFn>;
     private readonly _destroy_callbacks: DestroyCallback[] = [];
     private _target: WebviewWindow | null;
+    private readonly _on_page_load_pipelines: OnPageLoadPipeline[];
 
-    static async create(label: string, title: string, url: string): Promise<WebScraper> {
+
+    static async create(label: string,
+                        title: string,
+                        url: string,
+                        onPageLoadPipelines: OnPageLoadPipeline[] = []
+    ): Promise<WebScraper> {
         //FIXME: getByLabel is broken, it doesn't return existing windows after a page reload
         // https://github.com/tauri-apps/tauri/issues/5380
         // For now, get_window_by_label is a workaround
         const existing_window = await get_window_by_label(label);
         if (existing_window) {
-            return new WebScraper(existing_window);
+            return new WebScraper(existing_window, onPageLoadPipelines);
         }
 
         await open_webview(label, title, url);
@@ -24,6 +33,8 @@ class WebScraper {
         if (target === null) {
             throw new Error(`Could not find window with label: ${label}`);
         }
+
+        const scraper = new WebScraper(target, onPageLoadPipelines);
 
         //FIXME: This is a workaround for a race condition causing the the window to freeze during loading.
         // "navigation" event reused as a signal that the window has finished loading since 'tauri://created' is
@@ -34,14 +45,44 @@ class WebScraper {
         });
         await target.show();
 
-        return new WebScraper(target);
+        return scraper
     }
 
-    private constructor(target: WebviewWindow) {
+    private constructor(target: WebviewWindow, onPageLoadPipelines: OnPageLoadPipeline[]) {
         this._target = target;
+        this._on_page_load_pipelines = onPageLoadPipelines;
+
+        this._navigation_listener = this.getNavigationListener();
+
         this._destroy_listener = this._target.once("tauri://destroyed", () => {
             this._target = null;
             this._destroy_callbacks.forEach(callback => callback());
+        });
+    }
+
+    private getNavigationListener() {
+        if (!this._target) throw new Error("Window has been destroyed");
+
+        return this._target.listen<{ url: string }>("navigation", (event) => {
+            if (!this._target) return;
+            for (let pipeline of this._on_page_load_pipelines) {
+
+                let url_patten_matcher: UrlPatternMatcher;
+                try {
+                    url_patten_matcher = pipeline.url_pattern instanceof RegExp
+                        ? new UrlPatternMatcher(pipeline.url_pattern)
+                        : new UrlPatternMatcher(pipeline.url_pattern);
+                } catch (e) {
+                    console.error("Error while creating UrlPatternMatcher", e);
+                    continue;
+                }
+
+                if (!url_patten_matcher.match(event.payload.url)) continue;
+
+                pipeline.pipelineSteps(new TaskPipeline(this._target)).execute(() => {
+                    console.log("Pipeline done for", event.payload.url);
+                });
+            }
         });
     }
 
@@ -80,10 +121,16 @@ class WebScraper {
      * callbacks.
      */
     public async close(): Promise<void> {
-        const unlisten = await this._destroy_listener;
-        unlisten(); // Remove the listener to not trigger the onDestroy callbacks
+        (await this._destroy_listener)(); // Remove the listener to not trigger the onDestroy callbacks
+        (await this._navigation_listener)();
         await this._target?.close();
     }
 }
 
+type OnPageLoadPipeline = {
+    pipelineSteps: PipelineStepsBuilder
+    url_pattern: UrlPattern;
+};
+
+export type {OnPageLoadPipeline};
 export default WebScraper;

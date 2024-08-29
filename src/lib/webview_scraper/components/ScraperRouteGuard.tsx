@@ -1,6 +1,6 @@
 import {Await, defer, Outlet, useLoaderData, useResolvedPath} from "react-router-dom";
 import ScraperProvider from "./ScraperProvider.tsx";
-import WebScraper from "../src/web_scraper.ts";
+import WebScraper, {OnPageLoadPipeline} from "../src/web_scraper.ts";
 import {ReactNode, Suspense} from "react";
 import ScraperLoadingIndicator from "./ScraperLoadingIndicator.tsx";
 import ScraperLoadingError from "./ScraperLoadingError.tsx";
@@ -35,10 +35,16 @@ const ScraperRouteGuard = ({windowClosedRedirectPath, errorElement}: ScraperRout
     );
 };
 
-export default ScraperRouteGuard;
-
-export const scraperLoader = (label: string, title: string, url: string) => {
+const scraperLoader = (
+    label: string,
+    title: string,
+    url: string,
+    onPageLoadPipelines: OnPageLoadPipeline[] = []
+) => {
     return async () => defer({
-        web_scraper: WebScraper.create(label, title, url)
+        web_scraper: WebScraper.create(label, title, url, onPageLoadPipelines)
     });
 }
+
+export {scraperLoader};
+export default ScraperRouteGuard;

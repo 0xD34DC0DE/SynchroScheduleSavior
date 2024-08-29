@@ -1,8 +1,9 @@
-import {scraperLoader, ScraperRouteGuard} from "../../lib/webview_scraper/components";
+import {ScraperRouteGuard} from "../../lib/webview_scraper/components";
 import {Route} from "react-router-dom";
 import {IntroductionPage, ScraperErrorPage, ExplanationPage, ScraperClosedPage} from "./pages";
 import {DataCollectionStepper, LoginStep, SemesterSelectionStep, CenteredGridLayout} from "./components";
 import SemestersDataCollectionStep from "./components/SemestersDataCollectionStep.tsx";
+import {synchroScraperLoader} from "./utils/synchro_scraper_loader.ts";
 
 const rootPath = "/data-collection";
 
@@ -16,7 +17,7 @@ const routes = (
         <Route path={"explanation"} element={<ExplanationPage startPath="../steps"/>}/>
         <Route
             path={"steps"}
-            loader={scraperLoader("synchro", "Synchro", "https://academique-dmz.synchro.umontreal.ca/")}
+            loader={synchroScraperLoader}
             element={<ScraperRouteGuard windowClosedRedirectPath="./../closed" errorElement={null}/>}
         >
             <Route
