@@ -12,10 +12,8 @@ const synchroScraperLoader = scraperLoader(
                     () => {
                         if (window._session_refresher) return;
                         window._session_refresher = setInterval(() => {
-                            pingServer(window.location.href.replace(/(['"\\])/g, "\\$&"));
-                            setupTimeout2();
-                            console.log("Session refreshed");
-                        }, 1000 * 60 * 5);
+                            fetch(sRCRequestURL).then(() => setupTimeout2());
+                        }, warningTimeoutMilliseconds - 1000 * 60);
                     },
                     []
                 )
@@ -23,8 +21,9 @@ const synchroScraperLoader = scraperLoader(
     ]
 );
 
-declare function pingServer(url: string): void;
-declare function setupTimeout2(): void;
+declare const warningTimeoutMilliseconds: number; // Session warning timeout in milliseconds
+declare const sRCRequestURL: string; // Token refresh URL
+declare function setupTimeout2(): void; // Reset session warning timeout
 declare global {
     interface Window {
         _session_refresher: ReturnType<typeof setInterval>;
