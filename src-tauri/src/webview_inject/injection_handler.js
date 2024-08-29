@@ -226,10 +226,12 @@ const __INJECTOR_ELEMENT_TRACKER__ = new ElementTracker();
 const __INJECTOR__ = (injector_args) => {
     const {initiator_label, injection_id, fn, args} = injector_args;
 
-    const emit = (result) =>
+    const emit = (result) => {
+        if ("error" in result) console.error(result.error);
         __TAURI__.window.WebviewWindow
             .getByLabel(initiator_label)
             .emit(injection_id, result);
+    }
 
     const unserializable_types = [undefined, null, NaN, Infinity, -Infinity];
     const unserializable_types_str = ["undefined", "null", "NaN", "Infinity", "-Infinity"];
