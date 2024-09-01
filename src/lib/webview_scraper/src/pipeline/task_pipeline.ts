@@ -4,7 +4,6 @@ import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import * as steps from "./steps";
 import {HTMLElementProxy, InjectedArgs, InjectedFunction, Selector, SelectorType} from "../stubs";
-import {AsyncPipelineStepsBuilder} from "./steps/deferred.ts";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
@@ -217,7 +216,7 @@ class TaskPipeline {
         return this;
     }
 
-    public defer(steps_builder: AsyncPipelineStepsBuilder<this>): this {
+    public defer(steps_builder: steps.AsyncPipelineStepsBuilder<this>): this {
         this._steps.push(
             new steps.DeferredStep(steps_builder, () => this.sub_pipeline())
         );
