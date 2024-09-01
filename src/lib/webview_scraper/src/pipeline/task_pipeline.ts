@@ -24,10 +24,16 @@ class TaskPipeline {
     private readonly _steps: PipelineStep[] = [];
     private _currently_executing_step: PipelineStep | null = null;
     private _window_close_unlisten: UnlistenFn | null = null;
+    private _stored_results?: Record<string, any>;
 
-    constructor(target: WebviewWindow, on_state_change?: OnPipelineStateChangeCallback) {
+    constructor(
+        target: WebviewWindow,
+        on_state_change?: OnPipelineStateChangeCallback,
+        stored_results?: Record<string, any>
+    ) {
         this._target = target;
         this._on_state_change = on_state_change;
+        this._stored_results = stored_results;
     }
 
     public execute(on_complete?: OnCompleteCallback): CancelFn {
@@ -92,7 +98,7 @@ class TaskPipeline {
         const on_state_change = (state: PipelineState) => {
             if (state === PipelineState.CANCELLED) this._on_state_change?.(PipelineState.CANCELLED);
         }
-        return new constructor(this._target, on_state_change);
+        return new constructor(this._target, on_state_change, this._stored_results);
     }
 
     public navigate_to(url: string, url_pattern?: steps.UrlPattern): this {
@@ -221,6 +227,41 @@ class TaskPipeline {
             new steps.DeferredStep(steps_builder, () => this.sub_pipeline())
         );
         return this
+    }
+
+    public store_result(
+        key: string,
+        sub_pipeline: (set_result: (result: any, overwrite?: boolean) => void, pipeline: this) => this
+    ): this {
+        this._steps.push(
+            new steps.Callback(() => {
+                const set_result = (result: any, overwrite = false) => {
+                    if (!this._stored_results) this._stored_results = {};
+                    if (this._stored_results[key] && !overwrite) {
+                        throw new Error(`Result with key ${key} already exists`);
+                    }
+                    this._stored_results[key] = result;
+                    console.log(`Stored result with key ${key}:`, result);
+                };
+                sub_pipeline(set_result, this.sub_pipeline()).execute();
+            })
+        );
+        return this;
+    }
+
+    public with_stored_result<R>(
+        key: string,
+        sub_pipeline: (result: R, pipeline: this) => this
+    ): this {
+        this._steps.push(
+            new steps.Callback(() => {
+                if (!this._stored_results || !this._stored_results[key]) {
+                    throw new Error(`Result with key ${key} not found`);
+                }
+                sub_pipeline(this._stored_results[key], this.sub_pipeline()).execute();
+            })
+        );
+        return this;
     }
 }
 
