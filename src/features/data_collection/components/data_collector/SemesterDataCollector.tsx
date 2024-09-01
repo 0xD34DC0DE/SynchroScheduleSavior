@@ -7,6 +7,7 @@ import {DeferredSteps} from "../../../../lib/webview_scraper/components";
 import DataCollectorBasketNavigationStep from "./DataCollectorBasketNavigationStep.tsx";
 import DataCollectorBlocksExpansionStep from "./DataCollectorBlocksExpansionStep.tsx";
 import DataCollectorCourseEnumerationStep from "./DataCollectorCourseEnumerationStep.tsx";
+import DataCollectorCourseDataCollectionStep from "./DataCollectorCourseDataCollectionStep.tsx";
 
 interface SemesterDataCollectorProps {
     setCollectedCoursesData: (courses_data: CourseData[]) => void;
@@ -69,6 +70,7 @@ const SemesterDataCollector = (
                         <DataCollectorBasketNavigationStep startUrl={start_url} semesterHref={semester.href}/>
                         <DataCollectorBlocksExpansionStep/>
                         <DataCollectorCourseEnumerationStep/>
+                        <DataCollectorCourseDataCollectionStep/>
                     </DeferredSteps>
                     <Grid item xs={1} display={"flex"} justifyContent={"center"} alignItems={"center"}>
                         <CircularProgress size={20}/>
