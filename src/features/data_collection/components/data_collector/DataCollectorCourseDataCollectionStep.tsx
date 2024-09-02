@@ -80,7 +80,7 @@ const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollec
         >
             <SemesterDataCollectorStatus
                 description={"Collecting courses data"}
-                status={`Courses data collected: ${coursesDataToCollectCount} out of ${collectedCourseDataCount}`}
+                status={`Courses data collected: ${collectedCourseDataCount }/${coursesDataToCollectCount}`}
             />
         </DataCollectorStep>
     );
