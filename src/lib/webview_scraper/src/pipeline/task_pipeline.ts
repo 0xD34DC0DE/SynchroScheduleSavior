@@ -24,7 +24,7 @@ class TaskPipeline {
     private readonly _steps: PipelineStep[] = [];
     private _currently_executing_step: PipelineStep | null = null;
     private _window_close_unlisten: UnlistenFn | null = null;
-    private _stored_results?: Record<string, any>;
+    private readonly _stored_results: Record<string, any>;
 
     constructor(
         target: WebviewWindow,
