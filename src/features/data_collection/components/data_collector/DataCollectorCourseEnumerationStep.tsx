@@ -17,6 +17,7 @@ const DataCollectorCourseEnumerationStep = ({}: DataCollectorCourseEnumerationSt
             pipelineSteps={
                 (pipeline) => pipeline
                     .store_result(
+                    .set_pipeline_name("CourseEnumerationStep")
                         "available_courses",
                         (set_result, pipeline) => pipeline
                             .for_each<HTMLDivElement>(
@@ -74,6 +75,7 @@ const nextButtonSelector = "div[id^=gh-table-pager-COURSE_LIST]>div:first-child>
 function enumerateBlockCourse(addCoursesData: (courses_data: ScraperCourseData[]) => void) {
     return (courseListDiv: HTMLElementProxy<HTMLDivElement>, foreach_sub_pipeline: SynchroPipelineExtension) =>
         foreach_sub_pipeline
+            .set_pipeline_name("ForEachBlockCourses")
             .while(
                 "post-condition",
                 next_button_condition,

@@ -23,6 +23,7 @@ const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollec
         <DataCollectorStep
             pipelineSteps={
                 (pipeline) => pipeline
+                    .set_pipeline_name("CourseDataCollectionStep")
                     .with_stored_result<ScraperCourseData[]>(
                         "available_courses",
                         (available_courses, pipeline) => {
@@ -30,6 +31,7 @@ const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollec
                             let courseScheduleData: CollectedScheduleData;
                             return available_courses.reduce(
                                 (pipeline, course_data) => pipeline
+                                    .set_pipeline_name(`CourseDataCollection_${course_data.id}`)
                                     .click_and_wait_for_loader(`#${course_data.course_link_id}`)
                                     .task(
                                         collectCourseSchedule,
@@ -50,7 +52,8 @@ const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollec
                                         const sections = courseScheduleData.sections;
                                         return sections
                                             .filter(section => section.type === "TH")
-                                            .reduce((pipeline, section) => pipeline
+                                            .reduce((pipeline, section, i) => pipeline
+                                                    .set_pipeline_name(`SectionDataCollection_${i}`)
                                                     .click_and_wait_for_loader(
                                                         (section as ScraperTheoreticalSectionData).course_detail_link_id
                                                     )

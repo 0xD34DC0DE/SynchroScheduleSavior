@@ -14,10 +14,12 @@ const DataCollectorBlocksExpansionStep = ({}: DataCollectorBlocksExpansionStepPr
         <DataCollectorStep
             pipelineSteps={
                 (pipeline) => pipeline
+                    .set_pipeline_name("BlocksExpansionStep")
                     .for_each<HTMLInputElement>(
                         "input[value^='Afficher']",
                         (button: HTMLElementProxy<HTMLInputElement>, sub_pipeline: SynchroPipelineExtension) =>
                             sub_pipeline
+                                .set_pipeline_name("ForEachBlockExpansion")
                                 .click_and_wait_for_loader(button)
                                 .callback(() => setExpandedCoursesBlocksCount(count => count + 1))
                     )

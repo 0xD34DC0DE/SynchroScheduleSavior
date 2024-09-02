@@ -4,6 +4,7 @@ import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
 import * as steps from "./steps";
 import {HTMLElementProxy, InjectedArgs, InjectedFunction, Selector, SelectorType} from "../stubs";
+import {LoggerBgColor, LoggerFgColor, NamespaceConsoleLogger} from "../logger.ts";
 
 type OnCompleteCallback = () => void;
 type CancelFn = () => void;
@@ -17,6 +18,9 @@ enum PipelineState {
 
 type OnPipelineStateChangeCallback = (state: PipelineState) => void;
 
+const debugBgColorDepth: LoggerBgColor[] = ["bgRed", "bgGreen", "bgYellow", "bgBlue", "bgMagenta", "bgCyan", "bgWhite"];
+const debugFgColorDepth: LoggerFgColor[] = ["black", "whiteBright", "black", "whiteBright", "whiteBright", "black", "black"];
+
 class TaskPipeline {
     private readonly _target: WebviewWindow;
     private _pipeline_state: PipelineState = PipelineState.IDLE;
@@ -25,6 +29,11 @@ class TaskPipeline {
     private _currently_executing_step: PipelineStep | null = null;
     private _window_close_unlisten: UnlistenFn | null = null;
     private readonly _stored_results: Record<string, any>;
+    private _parent_pipeline?: TaskPipeline;
+    private _depth = 0;
+    private _name?: string;
+    private _logger?: NamespaceConsoleLogger;
+
 
     constructor(
         target: WebviewWindow,
@@ -44,7 +53,12 @@ class TaskPipeline {
             await this._execute_steps();
             on_complete?.();
         }).catch(e => {
-            if ((e as Error | undefined)?.name !== "CancelledError") throw e;
+            if ((e as Error | undefined)?.name !== "CancelledError") {
+                this.logger.error("Error executing pipeline", e);
+                this._abort_execution(e);
+            } else {
+                this.logger.info("Pipeline execution was cancelled");
+            }
         });
 
         return () => this._cancel_execution();
@@ -75,7 +89,10 @@ class TaskPipeline {
 
     private async _execute_step(step: PipelineStep): Promise<void> {
         this._currently_executing_step = step;
+        this.logger.info(`Executing step: ${step.name}`);
+
         await step.execute(this._target).then(() => {
+            this.logger.info(`Step executed: ${step.name}`);
             this._currently_executing_step = null;
         });
     }
@@ -98,7 +115,27 @@ class TaskPipeline {
         const on_state_change = (state: PipelineState) => {
             if (state === PipelineState.CANCELLED) this._on_state_change?.(PipelineState.CANCELLED);
         }
-        return new constructor(this._target, on_state_change, this._stored_results);
+        const subPipeline = new constructor(this._target, on_state_change, this._stored_results);
+        subPipeline._parent_pipeline = this;
+        subPipeline._depth = this._depth + 1;
+        return subPipeline;
+    }
+
+    public get logger(): NamespaceConsoleLogger {
+        if (this._logger) return this._logger;
+        if (this._parent_pipeline) {
+            this._logger = this._parent_pipeline.logger.extend(
+                this._name ?? this._currently_executing_step?.name ?? "unknown",
+                debugFgColorDepth[this._depth],
+                debugBgColorDepth[this._depth]
+            );
+            return this._logger;
+        }
+        return new NamespaceConsoleLogger(
+            this._currently_executing_step?.name ?? "unknown",
+            debugFgColorDepth[this._depth],
+            debugBgColorDepth[this._depth]
+        );
     }
 
     public navigate_to(url: string, url_pattern?: steps.UrlPattern): this {
@@ -259,6 +296,15 @@ class TaskPipeline {
                     throw new Error(`Result with key ${key} not found`);
                 }
                 sub_pipeline(this._stored_results[key], this.sub_pipeline()).execute();
+            })
+        );
+        return this;
+    }
+
+    public set_pipeline_name(name: string): this {
+        this._steps.push(new steps.Callback(() => {
+                this._logger = undefined;
+                this._name = name;
             })
         );
         return this;
