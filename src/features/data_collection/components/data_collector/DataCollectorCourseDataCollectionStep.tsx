@@ -26,7 +26,7 @@ const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollec
                     .set_pipeline_name("CourseDataCollectionStep")
                     .with_stored_result<ScraperCourseData[]>(
                         "available_courses",
-                        (available_courses, pipeline) => {
+                        (pipeline, available_courses) => {
                             setCoursesDataToCollectCount(available_courses.length);
                             let courseScheduleData: CollectedScheduleData;
                             return available_courses.reduce(

@@ -140,6 +140,10 @@ class TaskPipeline {
         return subPipeline;
     }
 
+    protected execute_sub_pipeline(sub_pipeline: this, on_complete?: OnCompleteCallback) {
+        sub_pipeline.execute(on_complete);
+    }
+
     public get logger(): NamespaceConsoleLogger {
         if (this._logger) return this._logger;
         if (this._parent_pipeline) {
@@ -241,10 +245,13 @@ class TaskPipeline {
             new steps.ForEachTask<T>(
                 selector,
                 (element, on_complete) => {
-                    sub_pipeline(
-                        element,
-                        this.sub_pipeline()
-                    ).execute(on_complete);
+                    this.execute_sub_pipeline(
+                        sub_pipeline(
+                            element,
+                            this.sub_pipeline()
+                        ),
+                        on_complete
+                    );
                 }
             )
         );
@@ -267,10 +274,13 @@ class TaskPipeline {
                 condition_fn,
                 condition_args,
                 (iteration_data, on_complete) => {
-                    sub_pipeline(
-                        iteration_data,
-                        this.sub_pipeline()
-                    ).execute(on_complete);
+                    this.execute_sub_pipeline(
+                        sub_pipeline(
+                            iteration_data,
+                            this.sub_pipeline()
+                        ),
+                        on_complete
+                    );
                 },
                 config
             )
@@ -278,44 +288,60 @@ class TaskPipeline {
         return this;
     }
 
-    public defer(steps_builder: steps.AsyncPipelineStepsBuilder<this>): this {
+    public defer(steps_builder: steps.PipelineStepsBuilder<this>): this {
         this._steps.push(
-            new steps.DeferredStep(steps_builder, () => this.sub_pipeline())
+            new steps.DeferredStep(steps_builder, () => ({
+                    pipeline: this.sub_pipeline(),
+                    args: []
+                })
+            )
         );
         return this
     }
 
-    public store_result(
+    public store_result<R>(
         key: string,
-        sub_pipeline: (set_result: (result: any, overwrite?: boolean) => void, pipeline: this) => this
+        sub_pipeline: (pipeline: this, set_result: (result: NoInfer<R>, overwrite?: boolean) => void) => this
     ): this {
         this._steps.push(
-            new steps.Callback(() => {
-                const set_result = (result: any, overwrite = false) => {
-                    if (!this._stored_results) this._stored_results = {};
-                    if (this._stored_results[key] && !overwrite) {
-                        throw new Error(`Result with key ${key} already exists`);
-                    }
-                    this._stored_results[key] = result;
-                    console.log(`Stored result with key ${key}:`, result);
-                };
-                sub_pipeline(set_result, this.sub_pipeline()).execute();
-            })
+            new steps.DeferredStep(
+                sub_pipeline,
+                () => ({
+                    pipeline: this.sub_pipeline(),
+                    args: [
+                        (result: R, overwrite = false) => {
+                            if (this._stored_results[key] && !overwrite) {
+                                throw new Error(`Result with key ${key} already exists`);
+                            }
+                            this._stored_results[key] = result;
+                            this.logger.info(`Stored result with key ${key}`);
+                        }
+                    ] as const,
+                })
+            )
         );
         return this;
     }
 
     public with_stored_result<R>(
         key: string,
-        sub_pipeline: (result: R, pipeline: this) => this
+        sub_pipeline: (pipeline: this, result: NoInfer<R>) => this
     ): this {
+        const get_stored_result = () => {
+            if (!this._stored_results || !this._stored_results[key]) {
+                throw new Error(`Result with key ${key} not found`);
+            }
+            return this._stored_results[key];
+        }
+
         this._steps.push(
-            new steps.Callback(() => {
-                if (!this._stored_results || !this._stored_results[key]) {
-                    throw new Error(`Result with key ${key} not found`);
-                }
-                sub_pipeline(this._stored_results[key], this.sub_pipeline()).execute();
-            })
+            new steps.DeferredStep(
+                sub_pipeline,
+                () => ({
+                    pipeline: this.sub_pipeline(),
+                    args: [get_stored_result()] as const
+                })
+            )
         );
         return this;
     }

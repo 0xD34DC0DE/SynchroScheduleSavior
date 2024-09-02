@@ -19,7 +19,7 @@ const DataCollectorCourseEnumerationStep = ({}: DataCollectorCourseEnumerationSt
                     .set_pipeline_name("CourseEnumerationStep")
                     .store_result<ScraperCourseData[]>(
                         "available_courses",
-                        (set_result, pipeline) => pipeline
+                        (pipeline, set_result) => pipeline
                             .for_each<HTMLDivElement>(
                                 "div[id^=win0divCOURSE_LIST\\$]",
                                 enumerateBlockCourse(courses_data => {
