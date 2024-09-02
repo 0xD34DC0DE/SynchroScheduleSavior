@@ -37,7 +37,7 @@ export type SectionData<SectionTypeDataType = SectionTypeData> = {
     associated_section_group: number;
     status: "open" | "closed";
     schedule: SectionScheduleData[];
-    type: "TH" | "TP" | "LAB";
+    type: "TH" | "TP" | "LAB" | "STG" | "RPN";
 } & SectionTypeDataType;
 
 export type SectionScheduleData = {
@@ -66,8 +66,26 @@ export type LaboratorySectionData = {
     type: "LAB";
 }
 
-export type SectionTypeData = TheoreticalSectionData | PracticalSectionData | LaboratorySectionData;
-export type ScraperSectionTypeData = ScraperTheoreticalSectionData | PracticalSectionData | LaboratorySectionData;
+export type InternshipSectionData = {
+    type: "STG";
+}
+
+export type RepetitionSectionData = {
+    type: "RPN";
+}
+
+export type SectionTypeData =
+    TheoreticalSectionData |
+    PracticalSectionData |
+    LaboratorySectionData |
+    InternshipSectionData |
+    RepetitionSectionData;
+export type ScraperSectionTypeData =
+    ScraperTheoreticalSectionData |
+    PracticalSectionData |
+    LaboratorySectionData |
+    InternshipSectionData |
+    RepetitionSectionData;
 
 export type ExamScheduleData = {
     start_time: string;

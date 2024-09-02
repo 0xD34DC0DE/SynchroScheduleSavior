@@ -144,7 +144,10 @@ function collectCourseSchedule(): CollectedScheduleData {
 
         const type = sectionId.match(/([A-Z]*) \(/)?.[1];
         if (!type) throw new Error("Couldn't find section type");
-        const checkType = (type: string): type is SectionTypeData["type"] => ["TH", "TP", "LAB"].includes(type);
+
+        const checkType = (type: string): type is SectionTypeData["type"] =>
+            ["TH", "TP", "LAB", "STG", "RPN"].includes(type);
+
         if (!checkType(type)) throw new Error("Invalid section type");
 
         const associatedGroupNumber =
