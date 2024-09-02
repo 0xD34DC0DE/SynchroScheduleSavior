@@ -27,7 +27,7 @@ const DataCollectorCourseEnumerationStep = ({}: DataCollectorCourseEnumerationSt
                                     setEnumeratedCoursesCount(coursesData.current.length)
                                 })
                             )
-                            .callback(() => set_result(coursesData))
+                            .callback(() => set_result(coursesData.current))
                     )
             }
         >
