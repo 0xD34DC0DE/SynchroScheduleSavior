@@ -236,7 +236,7 @@ const __INJECTOR__ = (injector_args) => {
     const unserializable_types = [undefined, null, NaN, Infinity, -Infinity];
     const unserializable_types_str = ["undefined", "null", "NaN", "Infinity", "-Infinity"];
     const emit_result = (result) => {
-        if (typeof result == "object" && "error" in result) console.error(result.error);
+        if (typeof result == "object" && "error" in result) console.error(result.error.bind(result));
         if (unserializable_types.includes(result)) {
             const type_index = unserializable_types.indexOf(result);
             emit({value: unserializable_types_str[type_index], special: true});
