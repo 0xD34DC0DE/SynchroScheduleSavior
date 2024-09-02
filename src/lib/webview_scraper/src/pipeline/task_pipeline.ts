@@ -92,10 +92,11 @@ class TaskPipeline {
         this._currently_executing_step = step;
         this.logger.info(`Executing step: ${step.name}`);
 
-        await step.execute(this._target).then(() => {
-            this.logger.info(`Step executed: ${step.name}`);
-            this._currently_executing_step = null;
-        });
+        await step.execute(this._target);
+
+        this.logger.info(`Step executed: ${step.name}`);
+
+        this._currently_executing_step = null;
     }
 
     private _cancel_execution(): void {
