@@ -120,6 +120,9 @@ function collectCourseSchedule(): CollectedScheduleData {
     }
     const description = document.querySelector("#SSR_CRSE_OFF_VW_DESCRLONG\\$0")?.textContent ?? "ERROR";
 
+    const noScheduleWarning = document.querySelector("#DERIVED_SAA_CRS_SSS_LONGCHAR_2\\$146\\$");
+    if (noScheduleWarning) return {corequisites, prerequisites, description, sections: []};
+
     const tableBody = document.querySelector("#ACE_CLASS_TBL_VW5\\$0 > tbody");
     if (!tableBody) throw new Error("Couldn't find table body");
 
