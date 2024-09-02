@@ -55,7 +55,7 @@ function extractBlockCourses(course_block: HTMLDivElement): ScraperCourseData[] 
             const id = tr.querySelector("span[id^=CRSE_NAME]")?.textContent ?? "ERROR";
             const credits = parseInt(tr.querySelector("span[id^=CRSE_UNITS]")?.textContent ?? "ERROR");
 
-            const link = tr.querySelector("span[id^=CRSE_DESCR]");
+            const link = tr.querySelector("a[id^=CRSE_DESCR]");
             if (!link) throw new Error("Course link not found");
             const name = link.textContent ?? "ERROR";
             const course_link_id = link.id;
