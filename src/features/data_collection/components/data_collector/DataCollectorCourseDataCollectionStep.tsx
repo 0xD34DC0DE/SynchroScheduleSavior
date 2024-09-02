@@ -224,7 +224,7 @@ function collectCourseSchedule(): CollectedScheduleData {
 
 function collectExamSchedule(): ExamScheduleData[] {
     const examRows = Array.from(document.querySelectorAll("tr[id^=trCLASS_EXAM_VW\\$]"));
-    if (examRows.length === 0) throw new Error("Couldn't find exam rows");
+    if (examRows.length === 0) return [];
 
     let exams = [];
     for (const examRow of examRows) {
