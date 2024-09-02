@@ -29,6 +29,11 @@ const DataCollectorCourseEnumerationStep = ({}: DataCollectorCourseEnumerationSt
                             )
                             .callback(() => set_result(coursesData.current))
                     )
+                    .for_each<HTMLLinkElement>(
+                        expandAllButtonSelector,
+                        (expandAllButton, foreach_sub_pipeline) => foreach_sub_pipeline
+                            .click_and_wait_for_loader(expandAllButton)
+                    )
             }
         >
             <SemesterDataCollectorStatus
@@ -40,6 +45,9 @@ const DataCollectorCourseEnumerationStep = ({}: DataCollectorCourseEnumerationSt
 };
 
 export default DataCollectorCourseEnumerationStep;
+
+const expandAllButtonSelector =
+    "div[id^=gh-table-pager-COURSE_LIST\\$scroll\\$] > div.gh-table-pager-more > ul > li:nth-child(2):nth-last-child(2) > a";
 
 function extractBlockCourses(course_block: HTMLDivElement): ScraperCourseData[] {
     return Array.from(course_block.querySelectorAll("tr[id^=trCOURSE_LIST]"))
