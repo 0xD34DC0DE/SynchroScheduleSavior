@@ -37,7 +37,7 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
                 "*/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL*"
             )
             .navigate_with_click(
-                ".gh-container-footer > ul > li > a",
+                ".gh-container-footer > ul > li:last-child > a",
                 "*/SA_LEARNER_SERVICES_2.SSR_SSENRL_CART.GBL*"
             )
             .task(getSemestersData(), [], (semesters) => {
