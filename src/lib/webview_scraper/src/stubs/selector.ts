@@ -9,11 +9,11 @@ class Selector<T extends HTMLElement> {
     get [REMOTE_OBJECT_RESOLVER](): () => T {
         if (typeof this.selector === "string") {
             return makeIIFEStub((sel: string) => {
-                const element = document.querySelector(sel);
-                if (!element) throw new Error(`Element with selector ${sel} not found`);
+                const element = document.querySelector(atob(sel));
+                if (!element) throw new Error(`Element with selector ${atob(sel)} not found`);
                 if (!(element instanceof HTMLElement)) throw new Error(`Element is not an HTMLElement: ${element}`);
                 return element as T;
-            }, this.selector);
+            }, this._escapeSelector(this.selector));
         }
 
         if (hasRemoteObjectResolver(this.selector)) {
@@ -22,14 +22,19 @@ class Selector<T extends HTMLElement> {
 
         if ("element" in this.selector && "selector" in this.selector) {
             return makeIIFEStub((sel: string, element: HTMLElement) => {
-                const child = element.querySelector(sel);
-                if (!child) throw new Error(`Element with selector ${sel} not found`);
+                const child = element.querySelector(atob(sel));
+                if (!child) throw new Error(`Element with selector ${atob(sel)} not found`);
                 if (!(child instanceof HTMLElement)) throw new Error(`Element is not an HTMLElement: ${child}`);
                 return child as T;
-            }, this.selector.selector, this.selector.element)
+            }, this._escapeSelector(this.selector.selector), this.selector.element)
         }
 
         throw new Error("Invalid selector");
+    }
+
+    private _escapeSelector(selector: string): string {
+        //encode in base64 to avoid issues with special characters
+        return btoa(selector.replace(/(?<!\\)\$/g, "\\$"));
     }
 }
 
