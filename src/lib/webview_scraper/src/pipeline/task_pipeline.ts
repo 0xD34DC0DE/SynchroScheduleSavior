@@ -14,6 +14,7 @@ enum PipelineState {
     RUNNING = "running",
     DONE = "done",
     CANCELLED = "cancelled",
+    ABORTED = "aborted"
 }
 
 type OnPipelineStateChangeCallback = (state: PipelineState) => void;
@@ -99,14 +100,32 @@ class TaskPipeline {
 
     private _cancel_execution(): void {
         if (this._pipeline_state === PipelineState.CANCELLED ||
+            this._pipeline_state === PipelineState.ABORTED ||
             this._pipeline_state === PipelineState.DONE) return;
 
-        this._currently_executing_step?.cancel();
+        if (this._currently_executing_step?.is_running()) {
+            this._currently_executing_step?.cancel();
+        }
 
         this._window_close_unlisten?.();
         this._window_close_unlisten = null;
 
         this._set_pipeline_state(PipelineState.CANCELLED);
+    }
+
+    private _abort_execution(error: any): void {
+        if (this._pipeline_state === PipelineState.ABORTED ||
+            this._pipeline_state === PipelineState.CANCELLED ||
+            this._pipeline_state === PipelineState.DONE) return;
+
+        if (this._currently_executing_step?.is_running()) {
+            this._currently_executing_step?.abort(error);
+        }
+
+        this._window_close_unlisten?.();
+        this._window_close_unlisten = null;
+
+        this._set_pipeline_state(PipelineState.ABORTED);
     }
 
     protected sub_pipeline(): this {

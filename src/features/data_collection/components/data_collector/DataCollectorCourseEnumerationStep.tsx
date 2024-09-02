@@ -16,8 +16,8 @@ const DataCollectorCourseEnumerationStep = ({}: DataCollectorCourseEnumerationSt
         <DataCollectorStep
             pipelineSteps={
                 (pipeline) => pipeline
-                    .store_result(
                     .set_pipeline_name("CourseEnumerationStep")
+                    .store_result<ScraperCourseData[]>(
                         "available_courses",
                         (set_result, pipeline) => pipeline
                             .for_each<HTMLDivElement>(

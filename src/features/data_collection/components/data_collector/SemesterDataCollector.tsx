@@ -56,12 +56,12 @@ const SemesterDataCollector = (
                 },
             }}
         >
-            {pipelineState === PipelineState.CANCELLED &&
+            {(pipelineState === PipelineState.CANCELLED || pipelineState === PipelineState.ABORTED) &&
                 <Typography variant={"body2"} color={"error"}>
                     An error occurred during data collection
                 </Typography>
             }
-            {pipelineState !== PipelineState.CANCELLED &&
+            {(pipelineState !== PipelineState.CANCELLED && pipelineState !== PipelineState.ABORTED) &&
                 <>
                     <Grid item xs={4} display={"flex"} justifyContent={"center"} alignItems={"center"}>
                         <Typography variant={"h6"}>{semester.name}</Typography>

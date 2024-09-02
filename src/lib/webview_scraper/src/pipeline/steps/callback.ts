@@ -11,7 +11,11 @@ class Callback extends PipelineStep {
     }
 
     public async run(): Promise<void> {
-        this._callback();
+        try {
+            this._callback();
+        } catch (error) {
+            this.abort(error);
+        }
         this.complete();
     }
 }

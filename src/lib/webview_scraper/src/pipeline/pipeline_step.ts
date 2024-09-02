@@ -38,11 +38,20 @@ abstract class PipelineStep {
         this._reject(error);
     }
 
+    public abort(error: any) {
+        if (!this._reject) throw new Error(`(PipelineStep) Cannot abort step '${this.name}' that is not running`);
+        this._reject(error);
+    }
+
     private _cleanup() {
         this._listeners.forEach(unlisten => unlisten());
         this._listeners.length = 0;
         this._resolve = null;
         this._reject = null;
+    }
+
+    public is_running(): boolean {
+        return this._resolve !== null;
     }
 }
 
