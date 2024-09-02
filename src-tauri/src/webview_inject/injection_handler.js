@@ -15,7 +15,11 @@ class NodePathIterator {
      */
     static* #get_node_path(node) {
         const [done, segment] = NodePathIterator.#get_node_path_segment(node);
-        if (done) return segment; else yield segment;
+        if (done) {
+            return yield segment;
+        } else {
+            yield segment;
+        }
         yield* NodePathIterator.#get_node_path(node.parentElement);
     }
 
