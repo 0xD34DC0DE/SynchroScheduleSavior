@@ -142,7 +142,12 @@ class TaskPipeline {
     }
 
     protected execute_sub_pipeline(sub_pipeline: this, on_complete?: OnCompleteCallback) {
-        sub_pipeline.execute(on_complete);
+        try {
+            sub_pipeline.execute(on_complete);
+        } catch (e) {
+            this.logger.error("Error executing sub pipeline", e);
+            this._abort_execution(e);
+        }
     }
 
     public get logger(): NamespaceConsoleLogger {
