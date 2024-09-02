@@ -55,7 +55,7 @@ const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollec
                                             .reduce((pipeline, section, i) => pipeline
                                                     .set_pipeline_name(`SectionDataCollection_${i}`)
                                                     .click_and_wait_for_loader(
-                                                        (section as ScraperTheoreticalSectionData).course_detail_link_id
+                                                        `#${(section as ScraperTheoreticalSectionData).course_detail_link_id}`
                                                     )
                                                     .task(
                                                         collectExamSchedule,
