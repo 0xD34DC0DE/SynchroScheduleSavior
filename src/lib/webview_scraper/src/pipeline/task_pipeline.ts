@@ -33,7 +33,7 @@ class TaskPipeline {
     ) {
         this._target = target;
         this._on_state_change = on_state_change;
-        this._stored_results = stored_results;
+        this._stored_results = stored_results ?? {};
     }
 
     public execute(on_complete?: OnCompleteCallback): CancelFn {
