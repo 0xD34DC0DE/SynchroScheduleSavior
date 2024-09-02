@@ -201,7 +201,7 @@ function collectCourseSchedule(): CollectedScheduleData {
                 type,
                 schedule,
                 exams: [],
-                course_link_id: sectionIdLink.id,
+                course_detail_link_id: sectionIdLink.id,
             });
         } else {
             sections.push({
