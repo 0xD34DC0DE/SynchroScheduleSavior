@@ -1,4 +1,4 @@
-export type CourseBlockData = {
+export type CourseBlock = {
     id: string;
     name: string;
     required_credits: number;
@@ -6,92 +6,56 @@ export type CourseBlockData = {
     remaining_credits: number;
 }
 
-export type BaseCourseData<SectionDataType = SectionData> = {
+export type Course = {
     id: string;
     name: string;
     credits: number;
-    status: "not taken";
-    block_id?: CourseBlockData["id"];
-    prerequisites?: BaseCourseData["id"][];
-    corequisites?: BaseCourseData["id"][];
+    status: "not taken" | "taken";
+    block_id?: CourseBlock["id"];
+    exigence?: string;
     description?: string;
-    sections?: SectionDataType[];
+    sections?: Section[];
+    semester?: string;
+    grade?: string;
+    basket_course_link_id?: string;
 }
 
-export type TakenCourseData = Omit<BaseCourseData, "status"> & {
-    status: "taken";
-    semester: string;
-    grade: string;
-}
-
-export type CourseData<SectionDataType = SectionData> = BaseCourseData<SectionDataType> | TakenCourseData;
-
-type ScraperCourseLinkData = {
-    course_link_id: string;
-}
-
-export type ScraperCourseData = CourseData<ScraperSectionTypeData> & ScraperCourseLinkData;
-
-export type SectionData<SectionTypeDataType = SectionTypeData> = {
+export type Section = {
     id: string;
+    course_id?: string;
     associated_section_group: number;
-    status: "open" | "closed";
-    schedule: SectionScheduleData[];
-    type: "TH" | "TP" | "LAB" | "STG" | "RPN";
-} & SectionTypeDataType;
 
-export type SectionScheduleData = {
+    status: "open" | "closed";
+    type: string;
+    campus: string;
+
+    schedule: SectionSchedule[];
+    exams?: ExamSchedule[];
+
+    course_detail_link_id?: string;
+};
+
+export type SectionSchedule = {
     start_time: string;
     end_time: string;
+
     day: string;
+
     start_date: string;
     end_date: string;
+
     location: string;
     teacher: string;
 }
 
-export type TheoreticalSectionData = {
-    type: "TH";
-    exams: ExamScheduleData[];
-}
-export type ScraperTheoreticalSectionData = TheoreticalSectionData & {
-    course_detail_link_id: string;
-}
-
-export type PracticalSectionData = {
-    type: "TP";
-}
-
-export type LaboratorySectionData = {
-    type: "LAB";
-}
-
-export type InternshipSectionData = {
-    type: "STG";
-}
-
-export type RepetitionSectionData = {
-    type: "RPN";
-}
-
-export type SectionTypeData =
-    TheoreticalSectionData |
-    PracticalSectionData |
-    LaboratorySectionData |
-    InternshipSectionData |
-    RepetitionSectionData;
-export type ScraperSectionTypeData =
-    ScraperTheoreticalSectionData |
-    PracticalSectionData |
-    LaboratorySectionData |
-    InternshipSectionData |
-    RepetitionSectionData;
-
-export type ExamScheduleData = {
+export type ExamSchedule = {
     start_time: string;
     end_time: string;
+
     day: string;
+
     date: string;
+
     location: string;
     type: "final" | "intra";
 }

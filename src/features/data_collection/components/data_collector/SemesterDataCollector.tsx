@@ -2,7 +2,7 @@ import {CircularProgress, Grid, Typography} from "@mui/material";
 import {useEffect, useState} from "react";
 import {AsyncPipelineStepsBuilder, PipelineState, usePipelineState, useScraper} from "../../../../lib/webview_scraper";
 import {SynchroPipelineExtension} from "../../utils";
-import {CourseData} from "./types.ts";
+import {Course} from "./types.ts";
 import {DeferredSteps} from "../../../../lib/webview_scraper/components";
 import DataCollectorBasketNavigationStep from "./DataCollectorBasketNavigationStep.tsx";
 import DataCollectorBlocksExpansionStep from "./DataCollectorBlocksExpansionStep.tsx";
@@ -10,7 +10,7 @@ import DataCollectorCourseEnumerationStep from "./DataCollectorCourseEnumeration
 import DataCollectorCourseDataCollectionStep from "./DataCollectorCourseDataCollectionStep.tsx";
 
 interface SemesterDataCollectorProps {
-    setCollectedCoursesData: (courses_data: CourseData[]) => void;
+    setCollectedCourses: (courses: Course[]) => void;
     collectData: boolean;
     start_url: string;
     semester: { name: string, href: string };
@@ -19,7 +19,7 @@ interface SemesterDataCollectorProps {
 const SemesterDataCollector = (
     {
         // @ts-expect-error
-        setCollectedCoursesData,
+        setCollectedCourses,
         collectData,
         start_url,
         semester

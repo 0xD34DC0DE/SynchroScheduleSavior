@@ -1,15 +1,9 @@
 import DataCollectorStep from "./DataCollectorStep.tsx";
 import SemesterDataCollectorStatus from "./SemesterDataCollectorStatus.tsx";
-import {
-    CourseData,
-    ExamScheduleData,
-    ScraperCourseData,
-    ScraperTheoreticalSectionData,
-    SectionData,
-    SectionTypeData,
-    TheoreticalSectionData
-} from "./types.ts";
-import {useRef, useState} from "react";
+import {Course, ExamSchedule, Section,} from "./types.ts";
+import {Dispatch, MutableRefObject, SetStateAction, useRef, useState} from "react";
+import {InjectionResult} from "../../../../lib/webview_scraper/src/injection.ts";
+import {SynchroPipelineExtension} from "../../utils";
 
 interface DataCollectorCourseDataCollectionStepProps {
 }
@@ -17,61 +11,21 @@ interface DataCollectorCourseDataCollectionStepProps {
 const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollectionStepProps) => {
     const [coursesDataToCollectCount, setCoursesDataToCollectCount] = useState<number>(0);
     const [collectedCourseDataCount, setCollectedCourseDataCount] = useState<number>(0);
-    const collectedCoursesData = useRef<CourseData[]>([]);
+    const collectedCoursesData = useRef<Course[]>([]);
 
     return (
         <DataCollectorStep
             pipelineSteps={
                 (pipeline) => pipeline
                     .set_pipeline_name("CourseDataCollectionStep")
-                    .with_stored_result<ScraperCourseData[]>(
+                    .with_stored_result<Course[]>(
                         "available_courses",
                         (pipeline, available_courses) => {
                             setCoursesDataToCollectCount(available_courses.length);
-                            let courseScheduleData: CollectedScheduleData;
-                            return available_courses.reduce(
-                                (pipeline, course_data) => pipeline
-                                    .set_pipeline_name(`CourseDataCollection_${course_data.id}`)
-                                    .click_and_wait_for_loader(`#${course_data.course_link_id}`)
-                                    .task(
-                                        collectCourseSchedule,
-                                        [],
-                                        (result) => {
-                                            if ("error" in result) throw new Error(result.error);
-                                            courseScheduleData = result.value;
-                                            collectedCoursesData.current = [
-                                                ...collectedCoursesData.current,
-                                                {
-                                                    ...course_data,
-                                                    ...result.value
-                                                }
-                                            ];
-                                        }
-                                    )
-                                    .defer(async pipeline => {
-                                        const sections = courseScheduleData.sections;
-                                        return sections
-                                            .filter(section => section.type === "TH")
-                                            .reduce((pipeline, section, i) => pipeline
-                                                    .set_pipeline_name(`SectionDataCollection_${i}`)
-                                                    .click_and_wait_for_loader(
-                                                        `#${(section as ScraperTheoreticalSectionData).course_detail_link_id}`
-                                                    )
-                                                    .task(
-                                                        collectExamSchedule,
-                                                        [],
-                                                        (result) => {
-                                                            if ("error" in result) throw new Error(result.error);
-                                                            (section as SectionData & TheoreticalSectionData).exams = result.value;
-                                                        }
-                                                    )
-                                                    .click_and_wait_for_loader(courseDetailsBackButtonSelector)
-                                                ,
-                                                pipeline);
-                                    })
-                                    .click_and_wait_for_loader("#DERIVED_SAA_CRS_RETURN_PB\\$163\\$")
-                                    .callback(() => setCollectedCourseDataCount(collectedCoursesData.current.length))
-                                ,
+                            return getCourseScheduleCollectionPipeline(
+                                available_courses,
+                                collectedCoursesData,
+                                setCollectedCourseDataCount,
                                 pipeline
                             ).callback(() => console.log("Collected courses data:", collectedCoursesData.current));
                         }
@@ -80,7 +34,7 @@ const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollec
         >
             <SemesterDataCollectorStatus
                 description={"Collecting courses data"}
-                status={`Courses data collected: ${collectedCourseDataCount }/${coursesDataToCollectCount}`}
+                status={`Courses data collected: ${collectedCourseDataCount}/${coursesDataToCollectCount}`}
             />
         </DataCollectorStep>
     );
@@ -88,47 +42,83 @@ const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollec
 
 export default DataCollectorCourseDataCollectionStep;
 
+function getCourseScheduleCollectionPipeline(
+    available_courses: Course[],
+    collectedCourses: MutableRefObject<Course[]>,
+    setCollectedCoursesCount: Dispatch<SetStateAction<number>>,
+    pipeline: SynchroPipelineExtension
+) {
+    let scheduleAndDetails: CourseSchedulesAndDetails;
+
+    return available_courses.reduce(
+        (pipeline, course_data) => pipeline
+            .set_pipeline_name(`CourseSchedule_${course_data.id}`)
+            .click_and_wait_for_loader(`#${course_data.basket_course_link_id}`)
+            .task(
+                collectCourseScheduleAndDetails,
+                [],
+                (result: InjectionResult<CourseSchedulesAndDetails>) => {
+                    if ("error" in result) throw new Error(result.error);
+                    scheduleAndDetails = result.value;
+                    collectedCourses.current = [
+                        ...collectedCourses.current,
+                        {
+                            ...course_data,
+                            ...result.value
+                        }
+                    ];
+                }
+            )
+            .defer((pipeline: SynchroPipelineExtension) => {
+                return scheduleAndDetails.sections
+                    .filter(section => section.type === "TH")
+                    .reduce(addExamScheduleCollectionPipeline, pipeline);
+            })
+            .click_and_wait_for_loader(courseBasketBackButtonSelector)
+            .callback(() => setCollectedCoursesCount(collectedCourses.current.length))
+        ,
+        pipeline
+    );
+}
+
+function addExamScheduleCollectionPipeline(pipeline: SynchroPipelineExtension, section: Section, index: number) {
+    return pipeline
+        .set_pipeline_name(`ExamSchedule_${index}`)
+        .click_and_wait_for_loader(`#${section.course_detail_link_id}`)
+        .task(
+            collectExamSchedule,
+            [],
+            (result) => {
+                if ("error" in result) throw new Error(result.error);
+                section.exams = result.value;
+            }
+        )
+        .click_and_wait_for_loader(courseDetailsBackButtonSelector);
+}
+
 const courseDetailsBackButtonSelector =
     "#gh-main-content > div.gh-page-header-wrap > div.gh-page-header > div.gh-page-header-links > div > a";
 
-type CollectedScheduleData =
-    Required<Pick<ScraperCourseData, "sections" | "corequisites" | "prerequisites" | "description">>;
+const courseBasketBackButtonSelector = "#DERIVED_SAA_CRS_RETURN_PB\\$163\\$";
 
-function collectCourseSchedule(): CollectedScheduleData {
+type CourseSchedulesAndDetails = {
+    exigences: string;
+    description: string;
+    sections: Section[];
+}
 
-    let prerequisites: string[] = [];
-    let corequisites: string[] = [];
-
-    const exigences = document.querySelector("#DERIVED_CRSECAT_DESCR254A\\$0")?.textContent;
-
-    if (exigences) {
-        const corequisites_str = exigences.match(/Concomitants?: .*/)?.[0].replace(/Concomitants?: /, "") ?? null;
-        if (corequisites_str) {
-            corequisites = corequisites_str.split(" et ").map(corequisite => {
-                if (!corequisite.includes("ou")) return corequisite;
-                return corequisite.replace(/[()]/g, "").replace(" ou ", "|");
-            });
-        }
-
-        const prerequisites_str = exigences.match(/Préalables?: .*/)?.[0].replace(/Préalables?: /, "") ?? null;
-        if (prerequisites_str) {
-            prerequisites = prerequisites_str.split(" et ").map(corequisite => {
-                if (!corequisite.includes("ou")) return corequisite;
-                return corequisite.replace(/[()]/g, "").replace(" ou ", "|");
-            });
-        }
-    }
+function collectCourseScheduleAndDetails(): CourseSchedulesAndDetails {
+    const exigences = document.querySelector("#DERIVED_CRSECAT_DESCR254A\\$0")?.textContent ?? "ERROR";
     const description = document.querySelector("#SSR_CRSE_OFF_VW_DESCRLONG\\$0")?.textContent ?? "ERROR";
 
     const noScheduleWarning = document.querySelector("#DERIVED_SAA_CRS_SSS_LONGCHAR_2\\$146\\$");
-    if (noScheduleWarning) return {corequisites, prerequisites, description, sections: []};
+    if (noScheduleWarning) return {exigences, description, sections: []};
 
     const tableBody = document.querySelector("#ACE_CLASS_TBL_VW5\\$0 > tbody");
     if (!tableBody) throw new Error("Couldn't find table body");
 
     const tableRows = Array.from(tableBody.children);
     const oddRows = tableRows.filter((_, i) => (i + 1) % 2 !== 0);
-
     const groupedRows = oddRows.reduce((acc, _, i, arr) => {
         if (i % 2 === 0) acc.push(arr.slice(i, i + 2));
         return acc;
@@ -145,18 +135,13 @@ function collectCourseSchedule(): CollectedScheduleData {
         const type = sectionId.match(/([A-Z]*) \(/)?.[1];
         if (!type) throw new Error("Couldn't find section type");
 
-        const checkType = (type: string): type is SectionTypeData["type"] =>
-            ["TH", "TP", "LAB", "STG", "RPN"].includes(type);
-
-        if (!checkType(type)) throw new Error("Invalid section type");
-
         const associatedGroupNumber =
             sectionHeader.querySelector<HTMLSpanElement>("span[id^=CLASS_ASSOCIATED\\$]")?.innerText;
         if (!associatedGroupNumber) throw new Error("Couldn't find associated group number");
 
         const statusSpan = sectionHeader.querySelector("div[id^=win0divCLASS_STATUS\\$] > div > span");
         if (!statusSpan) throw new Error("Couldn't find section status");
-        const status: SectionData["status"] = statusSpan.classList.contains("fa-square") ? "closed" : "open";
+        const status: Section["status"] = statusSpan.classList.contains("fa-square") ? "closed" : "open";
 
         const scheduleRows = scheduleTable.querySelector("table[id^=CLASS_MTGPAT\\$scroll\\$] > tbody")?.children;
         if (!scheduleRows) throw new Error("Couldn't find section's schedule rows");
@@ -193,36 +178,25 @@ function collectCourseSchedule(): CollectedScheduleData {
             });
         }
 
-        if (type === "TH") {
-            sections.push({
-                id: sectionId,
-                associated_section_group: parseInt(associatedGroupNumber),
-                status,
-                type,
-                schedule,
-                exams: [],
-                course_detail_link_id: sectionIdLink.id,
-            });
-        } else {
-            sections.push({
-                id: sectionId,
-                associated_section_group: parseInt(associatedGroupNumber),
-                status,
-                type,
-                schedule
-            });
-        }
+        sections.push({
+            id: sectionId,
+            associated_section_group: parseInt(associatedGroupNumber),
+            status,
+            type,
+            //TODO:
+            campus: "Main",
+            schedule
+        });
     }
 
     return {
-        corequisites,
-        prerequisites,
+        exigences,
         description,
         sections
     };
 }
 
-function collectExamSchedule(): ExamScheduleData[] {
+function collectExamSchedule(): ExamSchedule[] {
     const examRows = Array.from(document.querySelectorAll("tr[id^=trCLASS_EXAM_VW\\$]"));
     if (examRows.length === 0) return [];
 
@@ -238,7 +212,7 @@ function collectExamSchedule(): ExamScheduleData[] {
         const description = examRow.querySelector<HTMLSpanElement>("span[id^=UMET_DERIVED_DESCR\\$]")?.innerText;
         if (!description) throw new Error("Couldn't find exam row description");
         const type = description.replace("Examen ", "");
-        if (!["final", "intra"].includes(type)) throw new Error("Invalid exam type");
+        if (!["final", "intra"].includes(type)) throw new Error(`Invalid exam type: ${type}`);
 
         const date = examRow.querySelector<HTMLSpanElement>("span[id^=UMET_DERIVED_SSR_MTG_DT_LONG\\$]")?.innerText;
         if (!date) throw new Error("Couldn't find exam row date");
@@ -248,7 +222,7 @@ function collectExamSchedule(): ExamScheduleData[] {
             end_time,
             day,
             location,
-            type: type as ExamScheduleData["type"],
+            type: type as ExamSchedule["type"],
             date
         });
     }

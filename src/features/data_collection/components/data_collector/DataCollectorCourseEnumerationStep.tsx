@@ -2,7 +2,7 @@ import DataCollectorStep from "./DataCollectorStep.tsx";
 import {HTMLElementProxy} from "../../../../lib/webview_scraper";
 import {SynchroPipelineExtension} from "../../utils";
 import SemesterDataCollectorStatus from "./SemesterDataCollectorStatus.tsx";
-import {ScraperCourseData} from "./types.ts";
+import {Course} from "./types.ts";
 import {useRef, useState} from "react";
 
 interface DataCollectorCourseEnumerationStepProps {
@@ -10,28 +10,30 @@ interface DataCollectorCourseEnumerationStepProps {
 
 const DataCollectorCourseEnumerationStep = ({}: DataCollectorCourseEnumerationStepProps) => {
     const [enumeratedCoursesCount, setEnumeratedCoursesCount] = useState(0);
-    const coursesData = useRef<ScraperCourseData[]>([]);
+    const courses_ref = useRef<Course[]>([]);
 
     return (
         <DataCollectorStep
             pipelineSteps={
                 (pipeline) => pipeline
-                    .set_pipeline_name("CourseEnumerationStep")
-                    .store_result<ScraperCourseData[]>(
+                    .set_pipeline_name("CoursesEnumeration")
+                    .store_result<Course[]>(
                         "available_courses",
                         (pipeline, set_result) => pipeline
                             .for_each<HTMLDivElement>(
                                 "div[id^=win0divCOURSE_LIST\\$]",
-                                enumerateBlockCourse(courses_data => {
-                                    coursesData.current = [...coursesData.current, ...courses_data];
-                                    setEnumeratedCoursesCount(coursesData.current.length)
+                                getCourseBlockEnumerationPipeline(courses => {
+                                    courses_ref.current = [...courses_ref.current, ...courses];
+                                    //TODO: Remove this test error once error handling is working correctly
+                                    if(courses_ref.current.length > 20) throw "Test error";
+                                    setEnumeratedCoursesCount(courses_ref.current.length)
                                 })
                             )
-                            .callback(() => set_result(coursesData.current))
+                            .callback(() => set_result(courses_ref.current))
                     )
                     .for_each<HTMLLinkElement>(
                         expandAllButtonSelector,
-                        (expandAllButton, foreach_sub_pipeline) => foreach_sub_pipeline
+                        (expandAllButton, pipeline) => pipeline
                             .click_and_wait_for_loader(expandAllButton)
                     )
             }
@@ -49,7 +51,7 @@ export default DataCollectorCourseEnumerationStep;
 const expandAllButtonSelector =
     "div[id^=gh-table-pager-COURSE_LIST\\$scroll\\$] > div.gh-table-pager-more > ul > li:nth-child(2):nth-last-child(2) > a";
 
-function extractBlockCourses(course_block: HTMLDivElement): ScraperCourseData[] {
+function extractBlockCourses(course_block: HTMLDivElement): Course[] {
     return Array.from(course_block.querySelectorAll("tr[id^=trCOURSE_LIST]"))
         .map(tr => {
             const id = tr.querySelector("span[id^=CRSE_NAME]")?.textContent ?? "ERROR";
@@ -70,7 +72,7 @@ function extractBlockCourses(course_block: HTMLDivElement): ScraperCourseData[] 
         })
 }
 
-function next_button_condition(course_block: HTMLDivElement): boolean {
+function nextButtonCondition(course_block: HTMLDivElement): boolean {
     const next_button = course_block.querySelector(
         "div[id^=gh-table-pager-COURSE_LIST\\$scroll\\$] > div.gh-table-pager.no-bottom.count-4 > ul > li:nth-child(4) > a"
     );
@@ -80,26 +82,26 @@ function next_button_condition(course_block: HTMLDivElement): boolean {
 
 const nextButtonSelector = "div[id^=gh-table-pager-COURSE_LIST]>div:first-child>ul>li:nth-child(4)>a";
 
-function enumerateBlockCourse(addCoursesData: (courses_data: ScraperCourseData[]) => void) {
-    return (courseListDiv: HTMLElementProxy<HTMLDivElement>, foreach_sub_pipeline: SynchroPipelineExtension) =>
-        foreach_sub_pipeline
-            .set_pipeline_name("ForEachBlockCourses")
+function getCourseBlockEnumerationPipeline(addCourses: (courses: Course[]) => void) {
+    return (courseListDiv: HTMLElementProxy<HTMLDivElement>, pipeline: SynchroPipelineExtension) =>
+        pipeline
+            .set_pipeline_name("CourseBlockEnumeration")
             .while(
                 "post-condition",
-                next_button_condition,
+                nextButtonCondition,
                 [courseListDiv],
-                (iteration_data, while_sub_pipeline) => {
+                (iteration_data, while_pipeline) => {
                     if (iteration_data.condition_result) {
-                        while_sub_pipeline = while_sub_pipeline
+                        while_pipeline = while_pipeline
                             .click_and_wait_for_loader({element: courseListDiv, selector: nextButtonSelector})
                     }
 
-                    return while_sub_pipeline.task(
+                    return while_pipeline.task(
                         extractBlockCourses,
                         [courseListDiv],
                         (result) => {
                             if ("error" in result) throw result.error;
-                            addCoursesData(result.value)
+                            addCourses(result.value)
                         }
                     )
                 },
