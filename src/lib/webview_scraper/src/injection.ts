@@ -73,11 +73,18 @@ class Injection<Args extends readonly [...any], Params extends readonly [...any]
 
     public async inject(
         target: WebviewWindow,
-        on_result?: OnInjectionResultCallback<Params, Args>
+        on_result?: OnInjectionResultCallback<Params, Args>,
+        on_error?: (error: any) => void
     ): Promise<UnlistenFn> {
         return target.once<RawInjectionResultFor<Params, Args>>(
             this._injection_id.toString(),
-            (event) => on_result?.(process_raw_injection_result(event.payload))
+            event => {
+                try {
+                    on_result?.(process_raw_injection_result(event.payload));
+                } catch (e) {
+                    on_error?.(e);
+                }
+            }
         ).then(async unlisten => {
             try {
                 await webview_inject(target.label, {
@@ -88,7 +95,7 @@ class Injection<Args extends readonly [...any], Params extends readonly [...any]
                 });
             } catch (e) {
                 unlisten();
-                throw e;
+                if (on_error) on_error(e); else throw e;
             }
             return unlisten;
         });

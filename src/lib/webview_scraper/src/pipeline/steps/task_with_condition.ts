@@ -56,7 +56,11 @@ class TaskWithCondition<T extends HTMLElement> extends PipelineStep {
                     this._selector,
                     this._observer_config,
                 ]
-            ).inject(target, () => this.complete())
+            ).inject(
+                target,
+                () => this.complete(),
+                this.abort.bind(this)
+            )
         );
     }
 }

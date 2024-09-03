@@ -33,13 +33,15 @@ abstract class PipelineStep {
 
     public cancel() {
         if (!this._reject) throw new Error(`(PipelineStep) Cannot cancel step '${this.name}' that is not running`);
-        const error = new Error("Pipeline step was cancelled.");
-        error.name = "CancelledError";
-        this._reject(error);
+        this._reject(new CancelledPipelineStepError("Pipeline step was cancelled."));
     }
 
     public abort(error: any) {
-        if (!this._reject) throw new Error(`(PipelineStep) Cannot abort step '${this.name}' that is not running`);
+        if (!this._reject) {
+            console.trace("Abort called on step that is not running");
+            throw new Error(`(PipelineStep) Cannot abort step '${this.name}' that is not running`);
+        }
+        console.trace("Aborting step", this.name, error);
         this._reject(error);
     }
 
@@ -55,4 +57,12 @@ abstract class PipelineStep {
     }
 }
 
+class CancelledPipelineStepError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "PipelineCancelledError";
+    }
+}
+
+export {CancelledPipelineStepError};
 export default PipelineStep;

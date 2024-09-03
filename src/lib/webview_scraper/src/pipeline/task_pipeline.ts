@@ -1,4 +1,4 @@
-import PipelineStep from "./pipeline_step.ts";
+import PipelineStep, {CancelledPipelineStepError} from "./pipeline_step.ts";
 import {InjectionResult} from "../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
@@ -30,37 +30,47 @@ class TaskPipeline {
     private _currently_executing_step: PipelineStep | null = null;
     private _window_close_unlisten: UnlistenFn | null = null;
     private readonly _stored_results: Record<string, any>;
-    private _parent_pipeline?: TaskPipeline;
-    private _depth = 0;
+    private readonly _parent_pipeline?: TaskPipeline;
+    private readonly _depth: number;
     private _name?: string;
     private _logger?: NamespaceConsoleLogger;
 
 
     constructor(
+        parent_pipeline: TaskPipeline,
+    )
+    constructor(
         target: WebviewWindow,
         on_state_change?: OnPipelineStateChangeCallback,
-        stored_results?: Record<string, any>
+    )
+    constructor(
+        target_or_pipeline: WebviewWindow | TaskPipeline,
+        on_state_change?: OnPipelineStateChangeCallback
     ) {
-        this._target = target;
-        this._on_state_change = on_state_change;
-        this._stored_results = stored_results ?? {};
+        if (target_or_pipeline instanceof TaskPipeline) {
+            this._target = target_or_pipeline._target;
+            this._stored_results = target_or_pipeline._stored_results;
+            this._parent_pipeline = target_or_pipeline;
+            this._depth = target_or_pipeline._depth + 1;
+        } else {
+            this._target = target_or_pipeline;
+            this._stored_results = {};
+            this._depth = 0;
+            this._on_state_change = on_state_change;
+        }
     }
 
-    public execute(on_complete?: OnCompleteCallback): CancelFn {
+    public execute(
+        on_complete?: OnCompleteCallback,
+        on_error?: (error: any) => void
+    ): CancelFn {
         this._target.once("tauri://destroyed", () => {
             this._cancel_execution();
         }).then(async unlisten => {
             this._window_close_unlisten = unlisten;
             await this._execute_steps();
             on_complete?.();
-        }).catch(e => {
-            if ((e as Error | undefined)?.name !== "CancelledError") {
-                this.logger.error("Error executing pipeline", e);
-                this._abort_execution(e);
-            } else {
-                this.logger.info("Pipeline execution was cancelled");
-            }
-        });
+        }).catch(on_error);
 
         return () => this._cancel_execution();
     }
@@ -77,10 +87,7 @@ class TaskPipeline {
             await this._execute_step(step);
         }
 
-        this._window_close_unlisten?.();
-        this._window_close_unlisten = null;
-
-        this._set_pipeline_state(PipelineState.DONE);
+        this._finish(PipelineState.DONE);
     }
 
     private _set_pipeline_state(state: PipelineState): void {
@@ -92,7 +99,16 @@ class TaskPipeline {
         this._currently_executing_step = step;
         this.logger.info(`Executing step: ${step.name}`);
 
-        await step.execute(this._target);
+        try {
+            await step.execute(this._target);
+        } catch (e) {
+            if (e instanceof CancelledPipelineStepError) {
+                this._cancel_execution();
+            } else {
+                this._abort_execution(e);
+            }
+            return;
+        }
 
         this.logger.info(`Step executed: ${step.name}`);
 
@@ -100,54 +116,49 @@ class TaskPipeline {
     }
 
     private _cancel_execution(): void {
-        if (this._pipeline_state === PipelineState.CANCELLED ||
-            this._pipeline_state === PipelineState.ABORTED ||
-            this._pipeline_state === PipelineState.DONE) return;
+        if (this._is_stopped()) return;
 
         if (this._currently_executing_step?.is_running()) {
             this._currently_executing_step?.cancel();
         }
 
-        this._window_close_unlisten?.();
-        this._window_close_unlisten = null;
-
-        this._set_pipeline_state(PipelineState.CANCELLED);
+        this._finish(PipelineState.CANCELLED);
     }
 
     private _abort_execution(error: any): void {
-        if (this._pipeline_state === PipelineState.ABORTED ||
-            this._pipeline_state === PipelineState.CANCELLED ||
-            this._pipeline_state === PipelineState.DONE) return;
+        if (this._is_stopped()) return;
 
         if (this._currently_executing_step?.is_running()) {
             this._currently_executing_step?.abort(error);
         }
 
+        if (error) this.logger.error(error);
+
+        this._parent_pipeline?._abort_execution(undefined);
+
+        this._finish(PipelineState.ABORTED);
+    }
+
+    private _is_stopped(): boolean {
+        return [PipelineState.CANCELLED, PipelineState.ABORTED, PipelineState.DONE].includes(this._pipeline_state);
+    }
+
+    private _finish(final_state: PipelineState): void {
         this._window_close_unlisten?.();
         this._window_close_unlisten = null;
-
-        this._set_pipeline_state(PipelineState.ABORTED);
+        this._set_pipeline_state(final_state);
     }
 
     protected sub_pipeline(): this {
-        const constructor = Object.getPrototypeOf(this).constructor;
-        // Only bubble up the CANCELLED state to prevent excessive state updates
-        const on_state_change = (state: PipelineState) => {
-            if (state === PipelineState.CANCELLED) this._on_state_change?.(PipelineState.CANCELLED);
-        }
-        const subPipeline = new constructor(this._target, on_state_change, this._stored_results);
-        subPipeline._parent_pipeline = this;
-        subPipeline._depth = this._depth + 1;
-        return subPipeline;
+        return new (Object.getPrototypeOf(this).constructor)(this);
     }
 
-    protected execute_sub_pipeline(sub_pipeline: this, on_complete?: OnCompleteCallback) {
-        try {
-            sub_pipeline.execute(on_complete);
-        } catch (e) {
-            this.logger.error("Error executing sub pipeline", e);
-            this._abort_execution(e);
-        }
+    protected execute_sub_pipeline(
+        sub_pipeline: this,
+        on_complete?: OnCompleteCallback,
+        on_error?: (error: any) => void
+    ): void {
+        sub_pipeline.execute(on_complete, on_error);
     }
 
     public get logger(): NamespaceConsoleLogger {
@@ -250,13 +261,14 @@ class TaskPipeline {
         this._steps.push(
             new steps.ForEachTask<T>(
                 selector,
-                (element, on_complete) => {
+                (element, on_complete, on_error) => {
                     this.execute_sub_pipeline(
                         sub_pipeline(
                             element,
                             this.sub_pipeline()
                         ),
-                        on_complete
+                        on_complete,
+                        on_error
                     );
                 }
             )
@@ -279,13 +291,14 @@ class TaskPipeline {
                 condition_type,
                 condition_fn,
                 condition_args,
-                (iteration_data, on_complete) => {
+                (iteration_data, on_complete, on_error) => {
                     this.execute_sub_pipeline(
                         sub_pipeline(
                             iteration_data,
                             this.sub_pipeline()
                         ),
-                        on_complete
+                        on_complete,
+                        on_error
                     );
                 },
                 config

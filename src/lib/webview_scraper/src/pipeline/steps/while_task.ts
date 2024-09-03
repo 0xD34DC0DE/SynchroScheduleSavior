@@ -33,19 +33,24 @@ class WhileTask<ConditionParams extends [...any], ConditionArgs extends [...any]
         const evaluate_condition = () => new Promise<void>((resolve, reject) => {
             this.add_listener(
                 new Injection(this._condition_fn, this._condition_args)
-                    .inject(target, result => {
-                        if ("error" in result) {
-                            reject(result.error);
-                            return;
-                        }
-                        condition_satisfied = result.value === true;
-                        resolve();
-                    })
+                    .inject(
+                        target,
+                        result => {
+                            if ("error" in result) {
+                                reject(result.error);
+                                return;
+                            }
+                            condition_satisfied = result.value === true;
+                            resolve();
+                        },
+                        this.abort.bind(this)
+                    )
             );
         });
 
         let iterations = 0;
         while (condition_satisfied !== false) {
+            console.log("WhileTask iteration", iterations);
             if (iterations === this._config.max_iterations) {
                 throw new Error("Max iterations reached");
             }
@@ -57,11 +62,17 @@ class WhileTask<ConditionParams extends [...any], ConditionArgs extends [...any]
 
             await new Promise<void>((resolve, reject) => {
                 try {
-                    this._fn({iteration: iterations, condition_result: condition_satisfied}, resolve);
+                    this._fn({iteration: iterations, condition_result: condition_satisfied}, resolve, (e) => {
+                        console.log("WhileTask rejected", e);
+                        reject(e);
+                    });
                 } catch (e) {
+                    console.log("WhileTask iteration error", e);
                     reject(e);
                 }
             });
+
+            console.log("WhileTask fn complete");
 
             if (this._condition_type === "post-condition") {
                 await evaluate_condition();
@@ -85,7 +96,11 @@ type IterationData = {
     condition_result?: boolean;
 }
 
-type WhileCallback = (iteration_data: IterationData, on_complete: () => void) => void;
+type WhileCallback = (
+    iteration_data: IterationData,
+    on_complete: () => void,
+    on_error: (error: any) => void
+) => void;
 
 export type {ConditionType, WhileTaskConfig, IterationData, WhileCallback};
 export default WhileTask;

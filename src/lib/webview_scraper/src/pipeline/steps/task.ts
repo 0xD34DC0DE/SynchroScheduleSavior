@@ -1,7 +1,7 @@
 import PipelineStep from "../pipeline_step.ts";
 import Injection, {InjectionResultCallbackFor} from "../../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
-import {InjectedFunction, InjectedArgs} from "../../stubs/remote_object.ts";
+import {InjectedFunction, InjectedArgs} from "../../stubs";
 
 
 class Task<Args extends [...any], Params extends [...any]> extends PipelineStep {
@@ -30,10 +30,14 @@ class Task<Args extends [...any], Params extends [...any]> extends PipelineStep 
         );
 
         await this.add_listener(
-            injection.inject(target, (result) => {
-                this._on_result(result);
-                this.complete();
-            })
+            injection.inject(
+                target,
+                (result) => {
+                    this._on_result(result);
+                    this.complete();
+                },
+                this.abort.bind(this)
+            )
         );
     }
 }

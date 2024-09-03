@@ -35,7 +35,7 @@ class Navigate extends PipelineStep {
             [this._url],
         );
 
-        await this.add_listener(injection.inject(target));
+        await this.add_listener(injection.inject(target, undefined, this.abort.bind(this)));
     }
 }
 

@@ -40,15 +40,17 @@ class ForEachTask<T extends HTMLElement> extends PipelineStep {
                 async (result) => {
                     if ("error" in result) throw new Error(result.error);
                     for (let element_id of result.value) {
-                        await new Promise<void>(resolve => {
+                        await new Promise<void>((resolve, reject) => {
                             this._fn(
                                 makeHTMLElementProxy(element_id),
                                 resolve,
+                                reject,
                             );
                         });
                     }
                     this.complete();
-                }
+                },
+                this.abort.bind(this)
             )
         );
     }
@@ -56,4 +58,8 @@ class ForEachTask<T extends HTMLElement> extends PipelineStep {
 
 export default ForEachTask;
 
-type ForEachCallback<T extends HTMLElement> = (element: HTMLElementProxy<T>, on_complete: () => void) => void;
+type ForEachCallback<T extends HTMLElement> = (
+    element: HTMLElementProxy<T>,
+    on_complete: () => void,
+    on_error: (error: any) => void,
+) => void;
