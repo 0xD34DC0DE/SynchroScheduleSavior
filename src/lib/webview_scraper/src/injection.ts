@@ -1,6 +1,6 @@
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
-import {InjectedArgs, InjectedFunction} from "./stubs/remote_object.ts";
+import {InjectedArgs, InjectedFunction} from "./stubs";
 import {webview_inject} from "./commands.ts";
 import {uniqueEventId} from "./utils.ts";
 import toEJSON from "./ejson.ts";

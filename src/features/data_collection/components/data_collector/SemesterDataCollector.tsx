@@ -1,6 +1,6 @@
 import {CircularProgress, Grid, Typography} from "@mui/material";
 import {useEffect, useState} from "react";
-import {AsyncPipelineStepsBuilder, PipelineState, usePipelineState, useScraper} from "../../../../lib/webview_scraper";
+import {PipelineState, PipelineStepsBuilder, usePipelineState, useScraper} from "../../../../lib/webview_scraper";
 import {SynchroPipelineExtension} from "../../utils";
 import {Course} from "./types.ts";
 import {DeferredSteps} from "../../../../lib/webview_scraper/components";
@@ -27,7 +27,7 @@ const SemesterDataCollector = (
 ) => {
     const scraper = useScraper();
     const [pipelineState, setPipelineState] = usePipelineState();
-    const [pipelineBuilder, setStepsBuilder] = useState<AsyncPipelineStepsBuilder<SynchroPipelineExtension>>();
+    const [pipelineBuilder, setStepsBuilder] = useState<PipelineStepsBuilder<SynchroPipelineExtension>>();
 
     useEffect(() => {
         if (!collectData) return;

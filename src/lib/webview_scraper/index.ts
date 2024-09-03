@@ -5,5 +5,5 @@ export {type SelectorType, Selector} from "./src/stubs/selector.ts";
 export {type HTMLElementProxy} from "./src/stubs/html_element.ts";
 export {InitiatorWindow, TargetWindow} from "./src/stubs/window.ts";
 export {default as TaskPipeline, type OnPipelineStateChangeCallback} from "./src/pipeline/task_pipeline.ts";
-export type {PipelineStepsBuilder, AsyncPipelineStepsBuilder} from "./src/pipeline/steps/deferred.ts";
+export type {PipelineStepsBuilder} from "./src/pipeline/steps/deferred.ts";
 export {scraperLoader} from "./components";

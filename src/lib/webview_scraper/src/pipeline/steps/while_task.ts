@@ -1,7 +1,7 @@
 import PipelineStep from "../pipeline_step.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
 import Injection from "../../injection.ts";
-import {InjectedArgs, InjectedFunction} from "../../stubs/remote_object.ts";
+import {InjectedArgs, InjectedFunction} from "../../stubs";
 
 
 class WhileTask<ConditionParams extends [...any], ConditionArgs extends [...any]> extends PipelineStep {

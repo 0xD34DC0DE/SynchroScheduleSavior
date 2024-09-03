@@ -9,11 +9,11 @@ import {
     useRef,
     useState
 } from "react";
-import {AsyncPipelineStepsBuilder, PipelineStepsBuilder, TaskPipeline} from "../index.ts";
+import {PipelineStepsBuilder, TaskPipeline} from "../index.ts";
 import DeferredStepsContextType from "../contexts/DeferredStepsContext.ts";
 
 interface DeferredStepsProps<T extends TaskPipeline> {
-    onStepsBuilderReady: Dispatch<SetStateAction<AsyncPipelineStepsBuilder<T> | undefined>>;
+    onStepsBuilderReady: Dispatch<SetStateAction<PipelineStepsBuilder<T> | undefined>>;
     children: ReactNode | ReactNode[];
 }
 
@@ -37,10 +37,16 @@ const DeferredSteps = <T extends TaskPipeline>(
     useEffect(() => {
         if (registeredStepBuilders.length !== childrenCount) return;
 
-        const stepsBuilder = async (pipeline: T) => registeredStepBuilders.reduce(
-            (pipeline, {builder}) => builder(pipeline),
-            pipeline
-        );
+        const stepsBuilder = async (pipeline: T) => {
+            for (const {builder} of registeredStepBuilders) {
+                let pipelineWithSteps = builder(pipeline);
+                if (pipelineWithSteps instanceof Promise) {
+                    pipelineWithSteps = await pipelineWithSteps;
+                }
+                pipeline = pipelineWithSteps;
+            }
+            return pipeline;
+        };
 
         onStepsBuilderReady(() => stepsBuilder);
     }, [childrenCount, onStepsBuilderReady, registeredStepBuilders]);

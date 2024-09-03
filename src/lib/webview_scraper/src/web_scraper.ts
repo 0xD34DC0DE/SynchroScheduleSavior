@@ -79,9 +79,12 @@ class WebScraper {
 
                 if (!url_patten_matcher.match(event.payload.url)) continue;
 
-                pipeline.pipelineSteps(new TaskPipeline(this._target)).execute(() => {
-                    console.log("Pipeline done for", event.payload.url);
-                });
+                Promise.resolve(pipeline.pipelineSteps(new TaskPipeline(this._target)))
+                    .then(pipeline =>
+                        pipeline.execute(() => {
+                            console.log("Pipeline done for", event.payload.url);
+                        })
+                    );
             }
         });
     }

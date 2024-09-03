@@ -6,10 +6,10 @@ import {DeferredStepsContext} from "../components/DeferredSteps.tsx";
 const addExecutionStepUpdates = <T extends TaskPipeline>(
     pipelineStepsBuilder: PipelineStepsBuilder<T>,
     setIsRunning: Dispatch<SetStateAction<boolean>>
-): PipelineStepsBuilder<T> => (pipeline: T) => {
+): PipelineStepsBuilder<T> => async (pipeline: T) => {
     pipeline = pipeline.callback(() => setIsRunning(true));
-    return pipelineStepsBuilder(pipeline).callback(() => setIsRunning(false));
-};
+    return (await pipelineStepsBuilder(pipeline)).callback(() => setIsRunning(false));
+}
 
 const useDeferredStepsContext = <T extends TaskPipeline>(): DeferredStepsContextType<T> => {
     const context = useContext(DeferredStepsContext);
