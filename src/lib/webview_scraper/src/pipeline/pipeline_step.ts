@@ -37,11 +37,7 @@ abstract class PipelineStep {
     }
 
     public abort(error: any) {
-        if (!this._reject) {
-            console.trace("Abort called on step that is not running");
-            throw new Error(`(PipelineStep) Cannot abort step '${this.name}' that is not running`);
-        }
-        console.trace("Aborting step", this.name, error);
+        if (!this._reject) throw new Error(`(PipelineStep) Cannot abort step '${this.name}' that is not running`);
         this._reject(error);
     }
 

@@ -12,7 +12,7 @@ interface LoginStepProps {
 }
 
 const LoginStep = ({}: LoginStepProps) => {
-    const [pipelineState, setPipelineState] = usePipelineState();
+    const [pipelineState, pipelineError, setPipelineState, setPipelineError] = usePipelineState();
     const [loginDetected, setLoginDetected] = useState(false);
     const scraper = useScraper();
     const setStepCompleted = useSetStepState();
@@ -23,7 +23,7 @@ const LoginStep = ({}: LoginStepProps) => {
 
     useEffect(() => {
         return scraper
-            .begin(setPipelineState)
+            .begin(setPipelineState, setPipelineError)
             .wait_for_url("*/NUI_FRAMEWORK.PT_LANDINGPAGE.GBL?")
             .task(show_login_modal, [InitiatorWindow, login_modal_html])
             .callback(() => setLoginDetected(true))
@@ -51,19 +51,24 @@ const LoginStep = ({}: LoginStepProps) => {
                 </Stack>
                 <Box my={4} display={"flex"} flexDirection={"column"} alignItems={"center"}>
 
-                    {loginDetected &&
+                    {pipelineState === PipelineState.DONE && loginDetected &&
                         <>
                             <Typography variant={"body2"}>Login successful!</Typography>
                             <LinearProgress sx={{width: "100%"}} variant={"determinate"} value={100} color={"success"}/>
                         </>
                     }
-                    {!loginDetected &&
+                    {pipelineState === PipelineState.RUNNING && !loginDetected &&
                         <>
                             <Typography variant={"body2"}>Waiting for login...</Typography>
                             <LinearProgress sx={{width: "100%"}}/>
                         </>
                     }
-
+                    {pipelineState === PipelineState.ABORTED &&
+                        <Typography variant={"body2"} color={"error"}>
+                            An error occurred during login:
+                            {pipelineError?.toString() ?? "Unknown error"}
+                        </Typography>
+                    }
                 </Box>
             </Step>
         </Grid>

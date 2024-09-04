@@ -18,6 +18,7 @@ enum PipelineState {
 }
 
 type OnPipelineStateChangeCallback = (state: PipelineState) => void;
+type OnPipelineErrorCallback = (error: any) => void;
 
 const debugBgColorDepth: LoggerBgColor[] = ["bgRed", "bgGreen", "bgYellow", "bgBlue", "bgMagenta", "bgCyan", "bgWhite"];
 const debugFgColorDepth: LoggerFgColor[] = ["black", "whiteBright", "black", "whiteBright", "whiteBright", "black", "black"];
@@ -26,6 +27,7 @@ class TaskPipeline {
     private readonly _target: WebviewWindow;
     private _pipeline_state: PipelineState = PipelineState.IDLE;
     private readonly _on_state_change?: OnPipelineStateChangeCallback;
+    private readonly _on_error?: OnPipelineErrorCallback;
     private readonly _steps: PipelineStep[] = [];
     private _currently_executing_step: PipelineStep | null = null;
     private _window_close_unlisten: UnlistenFn | null = null;
@@ -42,21 +44,25 @@ class TaskPipeline {
     constructor(
         target: WebviewWindow,
         on_state_change?: OnPipelineStateChangeCallback,
+        on_error?: OnPipelineErrorCallback
     )
     constructor(
         target_or_pipeline: WebviewWindow | TaskPipeline,
-        on_state_change?: OnPipelineStateChangeCallback
+        on_state_change?: OnPipelineStateChangeCallback,
+        on_error?: OnPipelineErrorCallback
     ) {
         if (target_or_pipeline instanceof TaskPipeline) {
             this._target = target_or_pipeline._target;
             this._stored_results = target_or_pipeline._stored_results;
             this._parent_pipeline = target_or_pipeline;
             this._depth = target_or_pipeline._depth + 1;
+            this._on_error = target_or_pipeline._on_error;
         } else {
             this._target = target_or_pipeline;
             this._stored_results = {};
             this._depth = 0;
             this._on_state_change = on_state_change;
+            this._on_error = on_error;
         }
     }
 
@@ -131,7 +137,10 @@ class TaskPipeline {
             this._currently_executing_step?.abort(error);
         }
 
-        if (error) this.logger.error(error);
+        if (error) {
+            this.logger.error(error);
+            this._on_error?.(error);
+        }
 
         this._parent_pipeline?._abort_execution(undefined);
 
@@ -376,5 +385,5 @@ class TaskPipeline {
 type TaskPipelineExtension<T extends TaskPipeline> = new (...args: ConstructorParameters<typeof TaskPipeline>) => T;
 
 export {PipelineState};
-export type {OnPipelineStateChangeCallback, TaskPipelineExtension};
+export type {OnPipelineStateChangeCallback, OnPipelineErrorCallback, TaskPipelineExtension};
 export default TaskPipeline;

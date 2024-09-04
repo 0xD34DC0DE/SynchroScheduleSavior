@@ -14,9 +14,8 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
     const setStepCompleted = useSetStepState();
     const [_, setStepData] = useStepData<SemesterData>();
     const scraper = useScraper();
-    const [pipelineState, setPipelineState] = usePipelineState();
+    const [pipelineState, pipelineError, setPipelineState, setPipelineError] = usePipelineState();
     const [semestersData, setSemestersData] = useState<SemesterData | null>(null);
-    const [error, setError] = useState<string | null>(null);
     const [selectedSemesters, setSelectedSemesters] = useState<string[]>([]);
 
     useEffect(() => {
@@ -31,7 +30,7 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
 
     useEffect(() => {
         return scraper
-            .begin(setPipelineState)
+            .begin(setPipelineState, setPipelineError)
             .navigate_to(
                 "/psc/acprpr9/EMPLOYEE/SA/c/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL",
                 "*/SA_LEARNER_SERVICES.SSS_STUDENT_CENTER.GBL*"
@@ -41,14 +40,11 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
                 "*/SA_LEARNER_SERVICES_2.SSR_SSENRL_CART.GBL*"
             )
             .task(getSemestersData(), [], (semesters) => {
-                if ("error" in semesters) {
-                    setError(semesters.error);
-                } else {
-                    setSemestersData(semesters.value);
-                }
+                if ("error" in semesters) throw new Error(semesters.error);
+                setSemestersData(semesters.value);
             })
             .execute();
-    }, [scraper, setPipelineState, setSemestersData, setError]);
+    }, [scraper, setPipelineState, setPipelineError, setSemestersData]);
 
     return (
         <Grid item xs={8} sm={6} md={5}>
@@ -75,11 +71,11 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
                             setSelectedSemesters={setSelectedSemesters}
                         />
                     }
-                    {pipelineState === PipelineState.DONE && error !== null &&
-                        <>
-                            <Typography variant={"body2"}>An error occurred while looking for semesters</Typography>
-                            <Typography variant={"body2"} color={"error"}>{error}</Typography>
-                        </>
+                    {pipelineState === PipelineState.ABORTED &&
+                        <Typography variant={"body2"} color={"error"}>
+                            An error occurred while looking for semesters:
+                            {pipelineError?.toString() ?? "Unknown error"}
+                        </Typography>
                     }
                 </Box>
             </Step>

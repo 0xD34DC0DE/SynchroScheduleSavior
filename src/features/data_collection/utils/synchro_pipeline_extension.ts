@@ -1,4 +1,10 @@
-import {OnPipelineStateChangeCallback, Selector, SelectorType, TaskPipeline} from "../../../lib/webview_scraper";
+import {
+    OnPipelineErrorCallback,
+    OnPipelineStateChangeCallback,
+    Selector,
+    SelectorType,
+    TaskPipeline
+} from "../../../lib/webview_scraper";
 import {WebviewWindow} from "@tauri-apps/api/window";
 
 class SynchroPipelineExtension extends TaskPipeline {
@@ -11,8 +17,11 @@ class SynchroPipelineExtension extends TaskPipeline {
             !(mutation.target as HTMLElement).classList.contains("show");
     };
 
-    constructor(target: WebviewWindow, on_state_change?: OnPipelineStateChangeCallback) {
-        super(target, on_state_change);
+    constructor(
+        target: WebviewWindow,
+        on_state_change?: OnPipelineStateChangeCallback,
+        on_error?: OnPipelineErrorCallback) {
+        super(target, on_state_change, on_error);
     }
 
     public click_and_wait_for_loader<T extends HTMLElement>(selector: SelectorType<T>): this {

@@ -24,8 +24,6 @@ const DataCollectorCourseEnumerationStep = ({}: DataCollectorCourseEnumerationSt
                                 "div[id^=win0divCOURSE_LIST\\$]",
                                 getCourseBlockEnumerationPipeline(courses => {
                                     courses_ref.current = [...courses_ref.current, ...courses];
-                                    //TODO: Remove this test error once error handling is working correctly
-                                    if(courses_ref.current.length > 20) throw "Test error";
                                     setEnumeratedCoursesCount(courses_ref.current.length)
                                 })
                             )

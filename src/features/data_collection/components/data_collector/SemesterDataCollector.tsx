@@ -26,7 +26,7 @@ const SemesterDataCollector = (
     }: SemesterDataCollectorProps
 ) => {
     const scraper = useScraper();
-    const [pipelineState, setPipelineState] = usePipelineState();
+    const [pipelineState, pipelineError, setPipelineState, setPipelineError] = usePipelineState();
     const [pipelineBuilder, setStepsBuilder] = useState<PipelineStepsBuilder<SynchroPipelineExtension>>();
 
     useEffect(() => {
@@ -35,7 +35,7 @@ const SemesterDataCollector = (
         if (!pipelineBuilder) return;
 
         return scraper
-            .begin(setPipelineState, SynchroPipelineExtension)
+            .begin(setPipelineState, setPipelineError, SynchroPipelineExtension)
             .defer(pipelineBuilder)
             .execute();
     }, [undefined, collectData, pipelineBuilder]);
@@ -58,7 +58,8 @@ const SemesterDataCollector = (
         >
             {(pipelineState === PipelineState.CANCELLED || pipelineState === PipelineState.ABORTED) &&
                 <Typography variant={"body2"} color={"error"}>
-                    An error occurred during data collection
+                    An error occurred during data collection:
+                    {pipelineError?.toString() ?? "Unknown error"}
                 </Typography>
             }
             {(pipelineState !== PipelineState.CANCELLED && pipelineState !== PipelineState.ABORTED) &&
