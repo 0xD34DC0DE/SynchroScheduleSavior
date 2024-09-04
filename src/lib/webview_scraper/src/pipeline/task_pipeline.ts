@@ -333,7 +333,6 @@ class TaskPipeline {
                                 throw new Error(`Result with key ${key} already exists`);
                             }
                             this._stored_results[key] = result;
-                            this.logger.info(`Stored result with key ${key}`);
                         }
                     ] as const,
                 })

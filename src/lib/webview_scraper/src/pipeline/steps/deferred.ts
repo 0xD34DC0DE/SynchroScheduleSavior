@@ -22,7 +22,9 @@ class DeferredStep<T extends TaskPipeline, Args extends [...any]> extends Pipeli
             console.log("DeferredStep.run", pipeline, args);
             let pipeline_with_steps = await this._steps_builder(pipeline, ...args);
             console.log("Got pipeline with steps", pipeline_with_steps);
-            pipeline_with_steps.execute(() => this.complete(), (e) => {
+            pipeline_with_steps.execute(() => {
+                if (this.is_running()) this.complete();
+            }, (e) => {
                 if (this.is_running()) this.abort(e)
             });
             console.log("Pipeline with steps executed");

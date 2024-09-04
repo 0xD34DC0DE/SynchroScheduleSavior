@@ -40,6 +40,8 @@ class ForEachTask<T extends HTMLElement> extends PipelineStep {
                 async (result) => {
                     if ("error" in result) throw new Error(result.error);
                     for (let element_id of result.value) {
+                        if (!this.is_running()) break;
+
                         await new Promise<void>((resolve, reject) => {
                             this._fn(
                                 makeHTMLElementProxy(element_id),
@@ -48,7 +50,7 @@ class ForEachTask<T extends HTMLElement> extends PipelineStep {
                             );
                         });
                     }
-                    this.complete();
+                    if (this.is_running()) this.complete();
                 },
                 this.abort.bind(this)
             )

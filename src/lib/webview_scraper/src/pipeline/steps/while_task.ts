@@ -50,38 +50,35 @@ class WhileTask<ConditionParams extends [...any], ConditionArgs extends [...any]
 
         let iterations = 0;
         while (condition_satisfied !== false) {
-            console.log("WhileTask iteration", iterations);
+            if (!this.is_running()) break;
+
             if (iterations === this._config.max_iterations) {
                 throw new Error("Max iterations reached");
             }
 
             if (this._condition_type === "pre-condition") {
+                if (!this.is_running()) break;
                 await evaluate_condition();
                 if (!condition_satisfied) break;
             }
 
+            if (!this.is_running()) break;
             await new Promise<void>((resolve, reject) => {
                 try {
-                    this._fn({iteration: iterations, condition_result: condition_satisfied}, resolve, (e) => {
-                        console.log("WhileTask rejected", e);
-                        reject(e);
-                    });
+                    this._fn({iteration: iterations, condition_result: condition_satisfied}, resolve, reject);
                 } catch (e) {
-                    console.log("WhileTask iteration error", e);
                     reject(e);
                 }
             });
 
-            console.log("WhileTask fn complete");
-
             if (this._condition_type === "post-condition") {
+                if (!this.is_running()) break;
                 await evaluate_condition();
             }
 
             iterations++;
         }
-
-        this.complete();
+        if (this.is_running()) this.complete();
     }
 }
 
