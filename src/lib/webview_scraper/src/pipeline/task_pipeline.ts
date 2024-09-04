@@ -86,8 +86,7 @@ class TaskPipeline {
             if (this._pipeline_state !== PipelineState.RUNNING) return;
             await this._execute_step(step);
         }
-
-        this._finish(PipelineState.DONE);
+        if (!this._is_stopped()) this._finish(PipelineState.DONE);
     }
 
     private _set_pipeline_state(state: PipelineState): void {
