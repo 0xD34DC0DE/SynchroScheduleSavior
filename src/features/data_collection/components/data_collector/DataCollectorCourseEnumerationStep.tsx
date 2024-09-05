@@ -58,15 +58,15 @@ function extractBlockCourses(course_block: HTMLDivElement): Course[] {
             const link = tr.querySelector("a[id^=CRSE_DESCR]");
             if (!link) throw new Error("Course link not found");
             const name = link.textContent ?? "ERROR";
-            const course_link_id = link.id;
+            const basket_course_link_id = link.id;
 
             const isTaken = tr.querySelector("span[data-gh-replace*=CREDIT_TAKEN_ICN]") !== null;
             if (isTaken) {
                 const semester = tr.querySelector("span[id^=CRSE_WHEN]")?.textContent ?? "ERROR";
                 const grade = tr.querySelector("span[id^=SAA_ACRSE_AVLVW_CRSE_GRADE_OFF]")?.textContent ?? "ERROR";
-                return {id, name, credits, course_link_id, status: "taken", semester, grade};
+                return {id, name, credits, basket_course_link_id, status: "taken", semester, grade};
             }
-            return {id, name, credits, course_link_id, status: "not taken"};
+            return {id, name, credits, basket_course_link_id, status: "not taken"};
         })
 }
 

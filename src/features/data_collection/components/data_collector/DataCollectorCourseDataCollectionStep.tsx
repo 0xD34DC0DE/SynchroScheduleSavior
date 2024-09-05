@@ -180,6 +180,7 @@ function collectCourseScheduleAndDetails(): CourseSchedulesAndDetails {
 
         sections.push({
             id: sectionId,
+            course_detail_link_id: sectionIdLink.id,
             associated_section_group: parseInt(associatedGroupNumber),
             status,
             type,
