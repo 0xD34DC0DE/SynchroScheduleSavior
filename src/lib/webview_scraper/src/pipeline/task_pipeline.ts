@@ -380,6 +380,28 @@ class TaskPipeline {
         );
         return this;
     }
+
+    public if_element_exists<T extends HTMLElement>(
+        selector: string,
+        sub_pipeline: (element: HTMLElementProxy<T>, pipeline: this) => this
+    ): this {
+        this._steps.push(
+            new steps.WithSelector<T>(
+                selector,
+                (element, on_complete, on_error) => {
+                    this.execute_sub_pipeline(
+                        sub_pipeline(
+                            element,
+                            this.sub_pipeline()
+                        ),
+                        on_complete,
+                        on_error
+                    );
+                }
+            )
+        );
+        return this;
+    }
 }
 
 type TaskPipelineExtension<T extends TaskPipeline> = new (...args: ConstructorParameters<typeof TaskPipeline>) => T;

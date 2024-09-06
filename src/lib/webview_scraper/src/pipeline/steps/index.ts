@@ -13,3 +13,4 @@ export type {
 } from "./while_task";
 export {default as DeferredStep, type PipelineStepsBuilder} from "./deferred";
 export type {UrlPattern} from "./types.ts";
+export {default as WithSelector} from "./with_selector";

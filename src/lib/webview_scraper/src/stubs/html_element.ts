@@ -19,6 +19,7 @@ const makeHTMLElementProxy = <T extends HTMLElement>(
 }
 
 export type {HTMLElementProxy};
+export {makeHTMLElementProxy};
 export default makeHTMLElementProxy;
 
 if (import.meta.vitest) {
