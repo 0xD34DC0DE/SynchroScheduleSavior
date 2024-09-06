@@ -12,10 +12,10 @@ interface SemesterSelectionStepProps {
 
 const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
     const setStepCompleted = useSetStepState();
-    const [_, setStepData] = useStepData<SemesterData>();
+    const [_, setStepData] = useStepData<AvailableSemesters>();
     const scraper = useScraper();
     const [pipelineState, pipelineError, setPipelineState, setPipelineError] = usePipelineState();
-    const [semestersData, setSemestersData] = useState<SemesterData | null>(null);
+    const [semestersData, setSemestersData] = useState<AvailableSemesters | null>(null);
     const [selectedSemesters, setSelectedSemesters] = useState<string[]>([]);
 
     useEffect(() => {
@@ -83,7 +83,7 @@ const SemesterSelectionStep = ({}: SemesterSelectionStepProps) => {
     );
 };
 
-type SemesterData = {
+type AvailableSemesters = {
     url: string,
     semesters: { name: string, href: string }[]
 }
@@ -106,5 +106,5 @@ const getSemestersData = () => {
     };
 }
 
-export type {SemesterData};
+export type {AvailableSemesters};
 export default SemesterSelectionStep;

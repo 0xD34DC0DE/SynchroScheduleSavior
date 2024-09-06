@@ -18,7 +18,6 @@ interface SemesterDataCollectorProps {
 
 const SemesterDataCollector = (
     {
-        // @ts-expect-error
         setCollectedCourses,
         collectData,
         start_url,
@@ -71,7 +70,7 @@ const SemesterDataCollector = (
                         <DataCollectorBasketNavigationStep startUrl={start_url} semesterHref={semester.href}/>
                         <DataCollectorBlocksExpansionStep/>
                         <DataCollectorCourseEnumerationStep/>
-                        <DataCollectorCourseDataCollectionStep/>
+                        <DataCollectorCourseDataCollectionStep setCollectedCourses={setCollectedCourses}/>
                     </DeferredSteps>
                     <Grid item xs={1} display={"flex"} justifyContent={"center"} alignItems={"center"}>
                         <CircularProgress size={20}/>

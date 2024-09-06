@@ -2,13 +2,14 @@ import DataCollectorStep from "./DataCollectorStep.tsx";
 import SemesterDataCollectorStatus from "./SemesterDataCollectorStatus.tsx";
 import {Course, ExamSchedule, Section,} from "./types.ts";
 import {Dispatch, MutableRefObject, SetStateAction, useRef, useState} from "react";
-import {InjectionResult} from "../../../../lib/webview_scraper/src/injection.ts";
+import {InjectionResult} from "../../../../lib/webview_scraper";
 import {SynchroPipelineExtension} from "../../utils";
 
 interface DataCollectorCourseDataCollectionStepProps {
+    setCollectedCourses: (courses: Course[]) => void;
 }
 
-const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollectionStepProps) => {
+const DataCollectorCourseDataCollectionStep = ({setCollectedCourses}: DataCollectorCourseDataCollectionStepProps) => {
     const [coursesDataToCollectCount, setCoursesDataToCollectCount] = useState<number>(0);
     const [collectedCourseDataCount, setCollectedCourseDataCount] = useState<number>(0);
     const collectedCoursesData = useRef<Course[]>([]);
@@ -27,7 +28,7 @@ const DataCollectorCourseDataCollectionStep = ({}: DataCollectorCourseDataCollec
                                 collectedCoursesData,
                                 setCollectedCourseDataCount,
                                 pipeline
-                            ).callback(() => console.log("Collected courses data:", collectedCoursesData.current));
+                            ).callback(() => setCollectedCourses(collectedCoursesData.current));
                         }
                     )
             }

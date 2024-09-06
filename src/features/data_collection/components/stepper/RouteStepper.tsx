@@ -61,9 +61,9 @@ const useSetStepState = () => {
     return stepperContext.stepCompleteStateRef.current[1];
 }
 
-const useStepData = <T,>(): [T, Dispatch<SetStateAction<T>>] => {
+const useStepData = <Previous, Current = Previous>(): [Previous, Dispatch<SetStateAction<Current>>] => {
     const stepperContext = useOutletContext<RouteStepperContextType>();
-    return stepperContext.stepDataStateRef.current as [T, Dispatch<SetStateAction<T>>];
+    return stepperContext.stepDataStateRef.current as [Previous, Dispatch<SetStateAction<Current>>];
 }
 
 export {useStepState, useSetStepState, useStepData};

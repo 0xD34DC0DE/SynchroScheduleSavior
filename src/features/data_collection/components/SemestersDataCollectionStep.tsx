@@ -2,21 +2,29 @@ import {Grid, Stack, Typography} from "@mui/material";
 import Step from "./stepper/Step.tsx";
 import Box from "@mui/material/Box";
 import {useSetStepState, useStepData} from "./stepper/RouteStepper.tsx";
-import {SemesterData} from "./SemesterSelectionStep.tsx";
+import {AvailableSemesters} from "./SemesterSelectionStep.tsx";
 import {SemesterDataCollector} from "./data_collector";
-import {useState} from "react";
+import {useRef, useState} from "react";
+import {Course} from "./data_collector/types.ts";
 
 interface SemestersDataCollectionStepProps {
 }
 
 const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
-    //@ts-expect-error
     const setStepCompleted = useSetStepState();
+    const [previousStepData, setStepData] = useStepData<AvailableSemesters, Course[]>();
+    const [runningCollector, setRunningCollector] = useState(0);
+    const collectedCourses = useRef<Course[]>([]);
 
-    const [previousStepData, _] = useStepData<SemesterData>();
+    const onCourseCollected = (courses: Course[]) => {
+        setRunningCollector(runningCollector + 1);
+        collectedCourses.current = [...collectedCourses.current, ...courses];
 
-    // @ts-expect-error
-    const [runningCollector, setRunningCollector] = useState(previousStepData.semesters[0]);
+        if (runningCollector + 1 === previousStepData.semesters.length) {
+            setStepData(collectedCourses.current);
+            setStepCompleted(true);
+        }
+    }
 
     return (
         <Grid item xs={8} sm={6} md={5}>
@@ -31,13 +39,11 @@ const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
                 </Stack>
                 <Box my={4} display={"flex"} flexDirection={"column"} alignItems={"center"}>
                     <Grid container justifyContent={"center"}>
-                        {previousStepData.semesters.map(semester => (
+                        {previousStepData.semesters.map((semester, i) => (
                             <SemesterDataCollector
                                 key={semester.name}
-                                setCollectedCourses={() => {
-
-                                }}
-                                collectData={runningCollector.name === semester.name}
+                                setCollectedCourses={onCourseCollected}
+                                collectData={i === runningCollector}
                                 semester={semester}
                                 start_url={previousStepData.url}
                             />

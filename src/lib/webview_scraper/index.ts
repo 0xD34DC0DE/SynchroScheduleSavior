@@ -10,3 +10,4 @@ export {
 export type {PipelineStepsBuilder} from "./src/pipeline/steps/deferred.ts";
 export {scraperLoader} from "./components";
 export {CancelledPipelineStepError} from "./src/pipeline/pipeline_step.ts";
+export {type InjectionResult} from "./src/injection";
