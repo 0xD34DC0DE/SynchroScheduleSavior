@@ -21,6 +21,13 @@ const DataCollectorBlocksExpansionStep = ({}: DataCollectorBlocksExpansionStepPr
                             sub_pipeline
                                 .set_pipeline_name("ForEachBlockExpansion")
                                 .click_and_wait_for_loader(button)
+                                .if_element_exists(
+                                    expandAllButtonSelector,
+                                    (button: HTMLElementProxy<HTMLLinkElement>, sub_pipeline: SynchroPipelineExtension) =>
+                                        sub_pipeline
+                                            .set_pipeline_name("ExpandAllButton")
+                                            .click_and_wait_for_loader(button)
+                                )
                                 .callback(() => setExpandedCoursesBlocksCount(count => count + 1))
                     )
             }
@@ -32,5 +39,8 @@ const DataCollectorBlocksExpansionStep = ({}: DataCollectorBlocksExpansionStepPr
         </DataCollectorStep>
     );
 };
+
+const expandAllButtonSelector =
+    "div[id^=gh-table-pager-COURSE_LIST\\$scroll\\$] > div.gh-table-pager-more > ul > li:nth-child(2):nth-last-child(2) > a";
 
 export default DataCollectorBlocksExpansionStep;

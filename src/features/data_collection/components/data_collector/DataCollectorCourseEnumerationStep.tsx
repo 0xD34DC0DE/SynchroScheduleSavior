@@ -29,11 +29,6 @@ const DataCollectorCourseEnumerationStep = ({}: DataCollectorCourseEnumerationSt
                             )
                             .callback(() => set_result(courses_ref.current))
                     )
-                    .for_each<HTMLLinkElement>(
-                        expandAllButtonSelector,
-                        (expandAllButton, pipeline) => pipeline
-                            .click_and_wait_for_loader(expandAllButton)
-                    )
             }
         >
             <SemesterDataCollectorStatus
@@ -45,9 +40,6 @@ const DataCollectorCourseEnumerationStep = ({}: DataCollectorCourseEnumerationSt
 };
 
 export default DataCollectorCourseEnumerationStep;
-
-const expandAllButtonSelector =
-    "div[id^=gh-table-pager-COURSE_LIST\\$scroll\\$] > div.gh-table-pager-more > ul > li:nth-child(2):nth-last-child(2) > a";
 
 function extractBlockCourses(course_block: HTMLDivElement): Course[] {
     return Array.from(course_block.querySelectorAll("tr[id^=trCOURSE_LIST]"))
@@ -70,39 +62,16 @@ function extractBlockCourses(course_block: HTMLDivElement): Course[] {
         })
 }
 
-function nextButtonCondition(course_block: HTMLDivElement): boolean {
-    const next_button = course_block.querySelector(
-        "div[id^=gh-table-pager-COURSE_LIST\\$scroll\\$] > div.gh-table-pager.no-bottom.count-4 > ul > li:nth-child(4) > a"
-    );
-    if (!next_button) throw new Error("Course block next button not found");
-    return !next_button.classList.contains("ui-disabled");
-}
-
-const nextButtonSelector = "div[id^=gh-table-pager-COURSE_LIST]>div:first-child>ul>li:nth-child(4)>a";
-
 function getCourseBlockEnumerationPipeline(addCourses: (courses: Course[]) => void) {
     return (courseListDiv: HTMLElementProxy<HTMLDivElement>, pipeline: SynchroPipelineExtension) =>
         pipeline
             .set_pipeline_name("CourseBlockEnumeration")
-            .while(
-                "post-condition",
-                nextButtonCondition,
+            .task(
+                extractBlockCourses,
                 [courseListDiv],
-                (iteration_data, while_pipeline) => {
-                    if (iteration_data.condition_result) {
-                        while_pipeline = while_pipeline
-                            .click_and_wait_for_loader({element: courseListDiv, selector: nextButtonSelector})
-                    }
-
-                    return while_pipeline.task(
-                        extractBlockCourses,
-                        [courseListDiv],
-                        (result) => {
-                            if ("error" in result) throw result.error;
-                            addCourses(result.value)
-                        }
-                    )
-                },
-                {max_iterations: 10}
+                (result) => {
+                    if ("error" in result) throw result.error;
+                    addCourses(result.value)
+                }
             );
 }
