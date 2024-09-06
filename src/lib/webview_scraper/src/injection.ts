@@ -11,7 +11,7 @@ type Ok<T> = { value: T; };
 type Err = { error: string; };
 type Unserializable = {
     value: UnserializableValueTag;
-    unserializable: true;
+    special: true;
 };
 
 type InjectionResult<T> = Ok<T> | Err;
@@ -36,7 +36,7 @@ const resolve_unserializable_type = <T>(result: Unserializable): Ok<T> => {
 }
 
 const process_raw_injection_result = <T>(result: RawInjectionResult<T>): InjectionResult<T> => {
-    if ("unserializable" in result) return resolve_unserializable_type(result);
+    if ("special" in result) return resolve_unserializable_type(result);
     return result;
 }
 
