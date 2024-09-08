@@ -1,34 +1,36 @@
 import DataCollectorStep from "./DataCollectorStep.tsx";
 import SemesterDataCollectorStatus from "./SemesterDataCollectorStatus.tsx";
-import {Course, ExamSchedule, Section,} from "./types.ts";
-import {Dispatch, MutableRefObject, SetStateAction, useRef, useState} from "react";
+import {CourseBlock, ExamSchedule, Section} from "./types.ts";
+import {Dispatch, SetStateAction, useState} from "react";
 import {InjectionResult} from "../../../../lib/webview_scraper";
 import {SynchroPipelineExtension} from "../../utils";
 
 interface DataCollectorCourseDataCollectionStepProps {
-    setCollectedCourses: (courses: Course[]) => void;
+    setCollectedCourseBlocks: (courseBlocks: CourseBlock[]) => void;
 }
 
-const DataCollectorCourseDataCollectionStep = ({setCollectedCourses}: DataCollectorCourseDataCollectionStepProps) => {
+const DataCollectorCourseDataCollectionStep = ({setCollectedCourseBlocks}: DataCollectorCourseDataCollectionStepProps) => {
     const [coursesDataToCollectCount, setCoursesDataToCollectCount] = useState<number>(0);
     const [collectedCourseDataCount, setCollectedCourseDataCount] = useState<number>(0);
-    const collectedCoursesData = useRef<Course[]>([]);
 
     return (
         <DataCollectorStep
             pipelineSteps={
                 (pipeline) => pipeline
                     .set_pipeline_name("CourseDataCollectionStep")
-                    .with_stored_result<Course[]>(
-                        "available_courses",
-                        (pipeline, available_courses) => {
-                            setCoursesDataToCollectCount(available_courses.length);
+                    .with_stored_result<CourseBlock[]>(
+                        "course_blocks",
+                        (pipeline, course_blocks) => {
+                            const courseCount = course_blocks.reduce(
+                                (acc, block) => acc + block.courses.length, 0
+                            );
+                            setCoursesDataToCollectCount(courseCount);
+
                             return getCourseScheduleCollectionPipeline(
-                                available_courses,
-                                collectedCoursesData,
+                                course_blocks,
                                 setCollectedCourseDataCount,
                                 pipeline
-                            ).callback(() => setCollectedCourses(collectedCoursesData.current));
+                            ).callback(() => setCollectedCourseBlocks(course_blocks));
                         }
                     )
             }
@@ -44,42 +46,45 @@ const DataCollectorCourseDataCollectionStep = ({setCollectedCourses}: DataCollec
 export default DataCollectorCourseDataCollectionStep;
 
 function getCourseScheduleCollectionPipeline(
-    available_courses: Course[],
-    collectedCourses: MutableRefObject<Course[]>,
+    courseBlocks: CourseBlock[],
     setCollectedCoursesCount: Dispatch<SetStateAction<number>>,
     pipeline: SynchroPipelineExtension
 ) {
     let scheduleAndDetails: CourseSchedulesAndDetails;
 
-    return available_courses.reduce(
-        (pipeline, course_data) => pipeline
-            .set_pipeline_name(`CourseSchedule_${course_data.id}`)
-            .click_and_wait_for_loader(`#${course_data.basket_course_link_id}`)
-            .task(
-                collectCourseScheduleAndDetails,
-                [],
-                (result: InjectionResult<CourseSchedulesAndDetails>) => {
-                    if ("error" in result) throw new Error(result.error);
-                    scheduleAndDetails = result.value;
-                    collectedCourses.current = [
-                        ...collectedCourses.current,
-                        {
-                            ...course_data,
-                            ...result.value
-                        }
-                    ];
-                }
-            )
-            .defer((pipeline: SynchroPipelineExtension) => {
-                return scheduleAndDetails.sections
-                    .filter(section => section.type === "TH")
-                    .reduce(addExamScheduleCollectionPipeline, pipeline);
-            })
-            .click_and_wait_for_loader(courseBasketBackButtonSelector)
-            .callback(() => setCollectedCoursesCount(collectedCourses.current.length))
-        ,
-        pipeline
-    );
+    return courseBlocks.flatMap(block => block.courses)
+        .reduce(
+            (pipeline, course) => pipeline
+                .set_pipeline_name(`CourseSchedule_${course.id}`)
+                .click_and_wait_for_loader(`#${course.basket_course_link_id}`)
+                .task(
+                    collectCourseScheduleAndDetails,
+                    [],
+                    (result: InjectionResult<CourseSchedulesAndDetails>) => {
+                        if ("error" in result) throw new Error(result.error);
+                        scheduleAndDetails = result.value;
+                        const courseBlock = courseBlocks.find(block => block.id === course.block_id);
+                        if (!courseBlock) throw new Error(`Couldn't find course block with id: ${course.block_id}`);
+
+                        courseBlock.courses = [
+                            ...courseBlock.courses,
+                            {
+                                ...course,
+                                ...result.value
+                            }
+                        ];
+                    }
+                )
+                .defer((pipeline: SynchroPipelineExtension) => {
+                    return scheduleAndDetails.sections
+                        .filter(section => section.type === "TH")
+                        .reduce(addExamScheduleCollectionPipeline, pipeline);
+                })
+                .click_and_wait_for_loader(courseBasketBackButtonSelector)
+                .callback(() => setCollectedCoursesCount(count => count + 1))
+            ,
+            pipeline
+        );
 }
 
 function addExamScheduleCollectionPipeline(pipeline: SynchroPipelineExtension, section: Section, index: number) {

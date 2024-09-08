@@ -5,23 +5,24 @@ import {useSetStepState, useStepData} from "./stepper/RouteStepper.tsx";
 import {AvailableSemesters} from "./SemesterSelectionStep.tsx";
 import {SemesterDataCollector} from "./data_collector";
 import {useRef, useState} from "react";
-import {Course} from "./data_collector/types.ts";
+import {CourseBlock} from "./data_collector/types.ts";
 
 interface SemestersDataCollectionStepProps {
 }
 
 const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
     const setStepCompleted = useSetStepState();
-    const [previousStepData, setStepData] = useStepData<AvailableSemesters, Course[]>();
+    const [previousStepData, setStepData] = useStepData<AvailableSemesters, CourseBlock[]>();
+    const availableSemesters = useRef(previousStepData);
     const [runningCollector, setRunningCollector] = useState(0);
-    const collectedCourses = useRef<Course[]>([]);
+    const collectedCourseBlock = useRef<CourseBlock[]>([]);
 
-    const onCourseCollected = (courses: Course[]) => {
+    const onCourseBlockCollected = (courseBlock: CourseBlock[]) => {
         setRunningCollector(runningCollector + 1);
-        collectedCourses.current = [...collectedCourses.current, ...courses];
+        collectedCourseBlock.current = [...collectedCourseBlock.current, ...courseBlock];
 
-        if (runningCollector + 1 === previousStepData.semesters.length) {
-            setStepData(collectedCourses.current);
+        if (runningCollector + 1 === availableSemesters.current.semesters.length) {
+            setStepData(collectedCourseBlock.current);
             setStepCompleted(true);
         }
     }
@@ -39,13 +40,13 @@ const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
                 </Stack>
                 <Box my={4} display={"flex"} flexDirection={"column"} alignItems={"center"}>
                     <Grid container justifyContent={"center"}>
-                        {previousStepData.semesters.map((semester, i) => (
+                        {availableSemesters.current.semesters.map((semester, i) => (
                             <SemesterDataCollector
                                 key={semester.name}
-                                setCollectedCourses={onCourseCollected}
+                                setCollectedCourseBlocks={onCourseBlockCollected}
                                 collectData={i === runningCollector}
                                 semester={semester}
-                                start_url={previousStepData.url}
+                                start_url={availableSemesters.current.url}
                             />
                         ))}
                     </Grid>

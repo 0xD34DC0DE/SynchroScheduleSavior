@@ -1,22 +1,26 @@
 export type CourseBlock = {
     id: string;
     name: string;
-    required_credits: number;
-    obtained_credits: number;
-    remaining_credits: number;
+    credits_requirements: string;
+    courses: Course[];
+}
+
+export type ObtainedCourse = {
+    id: string;
+    name: string;
+    grade: string;
+    credits: number;
+    block_id: CourseBlock["id"];
 }
 
 export type Course = {
     id: string;
+    block_id: CourseBlock["id"];
     name: string;
     credits: number;
-    status: "not taken" | "taken";
-    block_id?: CourseBlock["id"];
     exigence?: string;
     description?: string;
     sections?: Section[];
-    semester?: string;
-    grade?: string;
     basket_course_link_id?: string;
 }
 

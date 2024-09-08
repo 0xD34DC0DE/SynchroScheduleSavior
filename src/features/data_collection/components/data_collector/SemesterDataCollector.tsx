@@ -1,8 +1,9 @@
 import {CircularProgress, Grid, Typography} from "@mui/material";
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {useEffect, useState} from "react";
 import {PipelineState, PipelineStepsBuilder, usePipelineState, useScraper} from "../../../../lib/webview_scraper";
 import {SynchroPipelineExtension} from "../../utils";
-import {Course} from "./types.ts";
+import {CourseBlock} from "./types.ts";
 import {DeferredSteps} from "../../../../lib/webview_scraper/components";
 import DataCollectorBasketNavigationStep from "./DataCollectorBasketNavigationStep.tsx";
 import DataCollectorBlocksExpansionStep from "./DataCollectorBlocksExpansionStep.tsx";
@@ -10,7 +11,7 @@ import DataCollectorCourseEnumerationStep from "./DataCollectorCourseEnumeration
 import DataCollectorCourseDataCollectionStep from "./DataCollectorCourseDataCollectionStep.tsx";
 
 interface SemesterDataCollectorProps {
-    setCollectedCourses: (courses: Course[]) => void;
+    setCollectedCourseBlocks: (courseBlock: CourseBlock[]) => void;
     collectData: boolean;
     start_url: string;
     semester: { name: string, href: string };
@@ -18,7 +19,7 @@ interface SemesterDataCollectorProps {
 
 const SemesterDataCollector = (
     {
-        setCollectedCourses,
+        setCollectedCourseBlocks,
         collectData,
         start_url,
         semester
@@ -70,10 +71,19 @@ const SemesterDataCollector = (
                         <DataCollectorBasketNavigationStep startUrl={start_url} semesterHref={semester.href}/>
                         <DataCollectorBlocksExpansionStep/>
                         <DataCollectorCourseEnumerationStep/>
-                        <DataCollectorCourseDataCollectionStep setCollectedCourses={setCollectedCourses}/>
+                        <DataCollectorCourseDataCollectionStep setCollectedCourseBlocks={setCollectedCourseBlocks}/>
                     </DeferredSteps>
+                    {pipelineState === PipelineState.DONE &&
+                        <Grid item xs={6} display={"flex"} justifyContent={"center"} alignItems={"center"}>
+                            <Typography variant={"body2"} color={"success"}>
+                                Data collected successfully!
+                            </Typography>
+                        </Grid>
+                    }
                     <Grid item xs={1} display={"flex"} justifyContent={"center"} alignItems={"center"}>
-                        <CircularProgress size={20}/>
+                        {pipelineState === PipelineState.RUNNING && <CircularProgress size={20}/>}
+                        {pipelineState === PipelineState.DONE &&
+                            <CheckCircleIcon fontSize={"large"} color={"success"}/>}
                     </Grid>
                 </>
             }
