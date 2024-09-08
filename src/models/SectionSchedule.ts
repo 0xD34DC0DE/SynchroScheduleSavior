@@ -1,16 +1,19 @@
-import TimeOfDay from "./TimeOfDay.ts";
 import DayOfWeek from "./DayOfWeek.ts";
-import DateRanges from "./DateRanges.ts";
+import DateRange from "./DateRanges.ts";
+import TimeOfDayRange from "./TimeOfDayRange.ts";
 
 class SectionSchedule {
     constructor(
-        public readonly startTime: TimeOfDay,
-        public readonly endTime: TimeOfDay,
+        public readonly timeRange: TimeOfDayRange,
+        public readonly dateRange: DateRange,
         public readonly day: DayOfWeek,
-        public readonly dateRanges: DateRanges,
         public readonly location: string,
         public readonly teacher: string
     ) {
+    }
+
+    public conflictsWith(other: SectionSchedule): boolean {
+        return this.day === other.day && this.timeRange.overlapsWith(other.timeRange);
     }
 }
 

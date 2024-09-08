@@ -1,8 +1,11 @@
 import Course from "./Course.ts";
 
-type Semester = {
-    term: `${string} ${number}`;
-    courses: Record<string, Course>;
+class Semester {
+    constructor(
+        public readonly term: `${string} ${number}`,
+        public readonly courses: Record<string, Course>
+    ) {
+    }
 }
 
 export default Semester;
