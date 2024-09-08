@@ -1,7 +1,8 @@
+import CourseId from "./CourseId.ts";
 
 type Course = {
-    id: string,
-    name: string,
+    id: CourseId;
+    name: string;
 }
 
 export default Course;
