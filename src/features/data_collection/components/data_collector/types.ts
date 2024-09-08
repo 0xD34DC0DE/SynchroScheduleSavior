@@ -5,12 +5,12 @@ export type CourseBlock = {
     courses: Course[];
 }
 
-export type ObtainedCourse = {
+export type FollowedCourse = {
     id: string;
-    name: string;
     grade: string;
-    credits: number;
-    block_id: CourseBlock["id"];
+    status: string;
+    designation: string;
+    semester: string;
 }
 
 export type Course = {
