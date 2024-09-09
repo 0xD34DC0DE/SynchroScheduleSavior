@@ -1,10 +1,11 @@
 import {useSetStepState, useStepData} from "./stepper/RouteStepper.tsx";
-import {CourseBlock, FollowedCourse} from "./data_collector/types.ts";
+import {Course, CourseBlock, FollowedCourse, Section} from "./data_collector/types.ts";
 import {CircularProgress, Grid, Stack, Typography} from "@mui/material";
 import Step from "./stepper/Step.tsx";
 import {InjectionResult, PipelineState, usePipelineState, useScraper} from "../../../lib/webview_scraper";
 import {useEffect} from "react";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import * as model from "../../../models";
 
 interface DataFinalizationStepProps {
 
@@ -93,6 +94,82 @@ const getFollowedCourses = (): FollowedCourse[] => {
         });
 }
 
-const postprocessCourseBlocks = (courseBlocks: CourseBlock[], followedCourses: FollowedCourse[]) => {
 
+const postprocessCourseBlocks = (courseBlocks: CourseBlock[], followedCourses: FollowedCourse[]) => {
+    const processedCourseBlocks = getCourseBlocks(courseBlocks);
+    const processedCoursed = getCourses(courseBlocks);
+}
+
+const getCourseId = (courseId: string) => {
+    const subject = courseId.substring(0, 3);
+    const number = parseInt(courseId.substring(3));
+    return new model.CourseId(subject, number);
+};
+
+const getCourses = (courseBlocks: CourseBlock[]) => {
+    return courseBlocks.flatMap(courseBlock => {
+        return courseBlock.courses.map(course => {
+            const courseId = getCourseId(course.id);
+            const credits = course.credits;
+            const exigences = getCourseExigences(course.exigence);
+            const description = course.description;
+            const sections = getSections(course.sections);
+            return new model.Course(courseId, course.name, credits, exigences, description, sections);
+        });
+    });
+};
+
+const getSections = (sections?: Section[]) => {
+    if (!sections) return [];
+    return sections.map(section => {
+        const schedule = getSchedule(section.schedule);
+        const exams = getExams(section.exams);
+        return new model.Section(
+            section.id,
+            section.associated_section_group,
+            section.status,
+            section.type,
+            section.campus,
+            schedule,
+            exams
+        );
+    });
+}
+
+const getCourseExigences = (exigences?: string) => {
+    if (!exigences) return new model.CourseExigences([], []);
+    if (exigences.includes("compétence")) return new model.CourseExigences([], []); //TODO
+    if (exigences.includes("crédits")) return new model.CourseExigences([], []); //TODO
+
+    const parts = exigences.replace(/Concomitants?: /, "").replace(/Préalables?: /, "").split(" et ");
+    const requisites = parts.map(part => {
+        if (part.includes(" ou ")) {
+            const orParts = part.replace(/[()]/, "").split(" ou ");
+            return new model.RequisiteAny(
+                orParts.map(getCourseId).map(courseId => new model.CourseRequisite(courseId))
+            );
+        }
+        return new model.CourseRequisite(getCourseId(part));
+    });
+
+    if (exigences.includes("Concomitant")) {
+        return new model.CourseExigences([], requisites);
+    }
+
+    return new model.CourseExigences(requisites, []);
+}
+
+const getCourseBlocks = (courseBlocks: CourseBlock[]) => {
+    return courseBlocks.map(courseBlock => {
+        const coursesId = courseBlock.courses.map(course => getCourseId(course.id));
+        const creditsRequirements = getCreditRequirements(courseBlock.credits_requirements);
+        return new model.CourseBlock(courseBlock.id, courseBlock.name, creditsRequirements, coursesId);
+    });
+};
+
+const getCreditRequirements = (creditsRequirements: string) => {
+    const parts = creditsRequirements.split(",");
+    const requiredCredits = parseFloat(parts[0].split(":")[1]);
+    const obtainedCredits = parseFloat(parts[1]);
+    return new model.CreditsRequirements(requiredCredits, obtainedCredits);
 }
