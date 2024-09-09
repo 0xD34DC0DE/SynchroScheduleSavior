@@ -26,6 +26,9 @@ dependencies:
   chalk:
     specifier: ^5.3.0
     version: 5.3.0
+  dexie:
+    specifier: ^4.0.8
+    version: 4.0.8
   react:
     specifier: ^18.3.1
     version: 18.3.1
@@ -4015,6 +4018,10 @@ packages:
     requiresBuild: true
     dev: false
     optional: true
+
+  /dexie@4.0.8:
+    resolution: {integrity: sha512-1G6cJevS17KMDK847V3OHvK2zei899GwpDiqfEXHP1ASvme6eWJmAp9AU4s1son2TeGkWmC0g3y8ezOBPnalgQ==}
+    dev: false
 
   /diff-sequences@29.6.3:
     resolution: {integrity: sha512-EjePK1srD3P08o2j4f0ExnylqRs5B9tJjcp9t1krH2qRi8CCdsYfwe9JgSLurFBWwq4uOlipzfk5fHNvwFKr8Q==}

@@ -18,6 +18,7 @@
     "@tauri-apps/api": "^1.5.5",
     "axios": "^1.6.8",
     "chalk": "^5.3.0",
+    "dexie": "^4.0.8",
     "react": "^18.3.1",
     "react-devtools": "^5.3.1",
     "react-dom": "^18.3.1",
