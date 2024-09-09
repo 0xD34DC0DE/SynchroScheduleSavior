@@ -1,16 +1,17 @@
 import TimeOfDay from "./TimeOfDay.ts";
 import DayOfWeek from "./DayOfWeek.ts";
 
-class ExamSchedule {
+class SectionSchedule {
     constructor(
         public readonly startTime: TimeOfDay,
         public readonly endTime: TimeOfDay,
         public readonly day: DayOfWeek,
-        public readonly date: Date,
+        public readonly startDate: Date,
+        public readonly endDate: Date,
         public readonly location: string,
-        public readonly type: "final" | "midterm"
+        public readonly teacher: string
     ) {
     }
 }
 
-export default ExamSchedule;
+export default SectionSchedule;
