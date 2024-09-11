@@ -4,6 +4,7 @@ import {IntroductionPage, ScraperErrorPage, ExplanationPage, ScraperClosedPage} 
 import {DataCollectionStepper, LoginStep, SemesterSelectionStep, CenteredGridLayout} from "./components";
 import SemestersDataCollectionStep from "./components/SemestersDataCollectionStep.tsx";
 import {synchroScraperLoader} from "./utils/synchro_scraper_loader.ts";
+import DataFinalizationStep from "./components/DataFinalizationStep.tsx";
 
 const rootPath = "/data-collection";
 
@@ -27,6 +28,7 @@ const routes = (
                 <Route index element={<LoginStep/>}/>
                 <Route path={"semester-selection"} element={<SemesterSelectionStep/>}/>
                 <Route path={"semester-data-collection"} element={<SemestersDataCollectionStep/>}/>
+                <Route path={"finalization"} element={<DataFinalizationStep/>}/>
             </Route>
         </Route>
         <Route path={"closed"} element={<ScraperClosedPage/>}/>
