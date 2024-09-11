@@ -1,10 +1,12 @@
 import CourseId from "./CourseId.ts";
 import Section from "./Section.ts";
 import CourseExigences from "./CourseExigences.ts";
+import CourseBlock from "./CourseBlock.ts";
 
 class Course {
     constructor(
         public readonly id: CourseId,
+        public readonly blockId: CourseBlock["id"],
         public readonly name: string,
         public readonly credits: number,
         public readonly exigences: CourseExigences,
@@ -25,7 +27,7 @@ class Course {
         );
     }
 
-    public getMatchingCorequisites(courses: Course | Course[]): Course[] {
+    public getMatchingCoRequisites(courses: Course | Course[]): Course[] {
         return this.exigences.getMatchingCorequisites(courses);
     }
 

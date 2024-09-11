@@ -8,8 +8,8 @@ class Section {
         public readonly type: string,
         public readonly campus: string,
         public readonly schedule: SectionSchedule[],
-        public readonly midtermExam: ExamSchedule,
-        public readonly finalExam: ExamSchedule,
+        public readonly midtermExam: ExamSchedule | null,
+        public readonly finalExam: ExamSchedule | null,
         public readonly subSections: Record<Section["id"], Section>
     ) {
     }
@@ -23,8 +23,10 @@ class Section {
     }
 
     public hasExamConflictWith(other: Section): boolean {
-        return this.midtermExam.conflictsWith(other.midtermExam) ||
-            this.finalExam.conflictsWith(other.finalExam);
+        if (this.midtermExam && other.midtermExam && this.midtermExam.conflictsWith(other.midtermExam)) {
+            return true;
+        }
+        return !!(this.finalExam && other.finalExam && this.finalExam.conflictsWith(other.finalExam));
     }
 
     public getCompatibleSubSections(other: Section): Section[] {

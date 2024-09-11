@@ -1,5 +1,5 @@
 import DayOfWeek from "./DayOfWeek.ts";
-import DateRange from "./DateRanges.ts";
+import DateRange from "./DateRange.ts";
 import TimeOfDayRange from "./TimeOfDayRange.ts";
 
 class SectionSchedule {
