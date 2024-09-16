@@ -1,16 +1,16 @@
-import {Grid} from "@mui/material";
+import {Grid2, Grid2Props} from "@mui/material";
 import {ReactNode} from "react";
-import {GridProps} from "@mui/material/Grid/Grid";
 
 interface GridLayoutProps {
     children?: ReactNode;
-    justifyContent?: GridProps["justifyContent"];
-    alignItems?: GridProps["alignItems"];
+    justifyContent?: Grid2Props["justifyContent"];
+    alignItems?: Grid2Props["alignItems"];
+    direction?: Grid2Props["direction"];
 }
 
 const GridLayout = ({children, justifyContent, alignItems}: GridLayoutProps) => {
     return (
-        <Grid
+        <Grid2
             sx={{
                 flexGrow: 1,
                 height: "100vh",
@@ -21,7 +21,7 @@ const GridLayout = ({children, justifyContent, alignItems}: GridLayoutProps) => 
             alignItems={alignItems}
         >
             {children}
-        </Grid>
+        </Grid2>
     );
 };
 
