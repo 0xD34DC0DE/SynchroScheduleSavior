@@ -1,20 +1,45 @@
 import DayOfWeek from "./DayOfWeek.ts";
-import DateRange from "./DateRange.ts";
-import TimeOfDayRange from "./TimeOfDayRange.ts";
+import DateRangeEntity, {DateRange} from "./DateRange.ts";
+import TimeOfDayRangeEntity, {TimeOfDayRange} from "./TimeOfDayRange.ts";
+import {Entity, serializeEntity} from "./types.ts";
 
-class SectionSchedule {
-    constructor(
-        public readonly timeRange: TimeOfDayRange,
-        public readonly dateRange: DateRange,
-        public readonly day: DayOfWeek,
-        public readonly location: string,
-        public readonly teacher: string
-    ) {
+interface SectionSchedule {
+    readonly timeRange: TimeOfDayRange;
+    readonly dateRange: DateRange;
+    readonly day: DayOfWeek;
+    readonly location: string;
+    readonly teacher: string;
+}
+
+class SectionScheduleEntity implements SectionSchedule, Entity {
+    public readonly timeRange: TimeOfDayRangeEntity;
+    public readonly dateRange: DateRangeEntity;
+    public readonly day: DayOfWeek;
+    public readonly location: string;
+    public readonly teacher: string;
+
+    constructor(input: SectionSchedule) {
+        this.timeRange = new TimeOfDayRangeEntity(input.timeRange);
+        this.dateRange = new DateRangeEntity(input.dateRange);
+        this.day = input.day;
+        this.location = input.location;
+        this.teacher = input.teacher;
     }
 
-    public conflictsWith(other: SectionSchedule): boolean {
+    serialize() {
+        return {
+            timeRange: () => serializeEntity(this.timeRange),
+            dateRange: () => serializeEntity(this.dateRange),
+            day: () => this.day,
+            location: () => this.location,
+            teacher: () => this.teacher
+        };
+    }
+
+    public conflictsWith(other: SectionScheduleEntity): boolean {
         return this.day === other.day && this.timeRange.overlapsWith(other.timeRange);
     }
 }
 
-export default SectionSchedule;
+export type {SectionSchedule};
+export default SectionScheduleEntity;

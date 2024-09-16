@@ -15,6 +15,7 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.15.17",
     "@mui/material": "^5.15.17",
+    "@pvermeer/dexie-class-addon": "^1.0.5",
     "@tauri-apps/api": "^1.5.5",
     "axios": "^1.6.8",
     "chalk": "^5.3.0",

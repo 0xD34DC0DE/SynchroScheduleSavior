@@ -17,6 +17,9 @@ dependencies:
   '@mui/material':
     specifier: ^5.15.17
     version: 5.15.17(@emotion/react@11.11.4)(@emotion/styled@11.11.5)(@types/react@18.3.1)(react-dom@18.3.1)(react@18.3.1)
+  '@pvermeer/dexie-class-addon':
+    specifier: ^1.0.5
+    version: 1.0.5(dexie@4.0.8)
   '@tauri-apps/api':
     specifier: ^1.5.5
     version: 1.5.5
@@ -2194,6 +2197,15 @@ packages:
 
   /@popperjs/core@2.11.8:
     resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
+    dev: false
+
+  /@pvermeer/dexie-class-addon@1.0.5(dexie@4.0.8):
+    resolution: {integrity: sha512-3L1ayatbR5+HCuoeieL+ywpRwbPythIbGJrp23RsDAOVXj9gO2pQ8jpmqVj/4lFgJc6wuT1gkhqdVhRvY9gaFA==}
+    peerDependencies:
+      dexie: ^3.0.0
+    dependencies:
+      dexie: 4.0.8
+      tslib: 2.6.2
     dev: false
 
   /@react-native-community/cli-clean@13.6.6:
