@@ -1,86 +1,93 @@
 use std::time::Duration;
+
 use anyhow::{anyhow, Result};
-use serde_json::Value;
-use tauri::Window;
+use tauri::{Runtime, Window};
 use tokio::sync::oneshot;
 use tokio::time::timeout;
 
-pub async fn inject(target: Window,
-                    initiator: Window,
-                    injection_id: String,
-                    js_function: String,
-                    args: Option<Vec<Value>>,
-                    context_classes: Option<Vec<String>>) -> Result<()> {
-    Injector::new(&target)
-        .inject(
-            initiator,
-            injection_id,
-            js_function.as_ref(),
-            args,
-            context_classes
-        ).await
+use super::ejson::EJSON;
+use super::injector_call::InjectorCall;
+
+pub struct InjectionArgs {
+    pub id: u64,
+    pub js_function: EJSON,
+    pub function_args: EJSON,
 }
 
-
-struct Injector<'a> {
-    window: &'a Window,
-}
-
-impl<'a> Injector<'a> {
-    pub fn new(window: &'a Window) -> Self {
+impl InjectionArgs {
+    pub fn new(id: u64, js_function: EJSON, function_args: EJSON) -> Self {
         Self {
-            window
+            id,
+            js_function,
+            function_args,
         }
     }
+}
 
-    pub async fn inject(&mut self,
-                        initiator: Window,
-                        injection_id: String,
-                        js_fn: &str,
-                        args: Option<Vec<Value>>,
-                        context_classes: Option<Vec<String>>
-    ) -> Result<()> {
-        let js =
-            format!("__INJECTOR__('{}', '{}', {}, {}, {})",
-                    initiator.label(),
-                    injection_id,
-                    js_fn,
-                    Self::make_args_array(args),
-                    Self::make_context_builder(context_classes)
-            );
+pub struct InjectorA<'a, R: Runtime> {
+    initiator: &'a Window<R>,
+    args: Option<InjectionArgs>,
+}
+
+impl<'a, R: Runtime> InjectorA<'a, R> {
+    pub(crate) async fn inject(self, target: Window<R>) -> Result<()> {
+        let args = self.args.ok_or_else(|| anyhow!("missing args"))?;
+
+        let injector_call = InjectorCall::new(
+            self.initiator.label(),
+            args.id.to_string(),
+            args.js_function,
+            args.function_args,
+        );
+
+        let js = injector_call.to_js()?;
 
         let (rx, tx) = oneshot::channel::<Option<()>>();
 
-        let _event_handler = self.window.once(injection_id, move |event| {
-            rx.send(event.payload().map(|_| ())).expect("Couldn't send injection done signal");
+        let _event_handler = target.once(args.id.to_string(), move |event| {
+            if rx.is_closed() {
+                eprintln!("Couldn't send injection done signal: receiver closed");
+                return;
+            }
+            rx.send(event.payload().map(|_| ())).expect("Sender was open, but failed to send");
         });
 
-        println!("Injecting: {}", js);
-        self.window.eval(js.as_ref())?;
+        println!(
+            "Injecting: {}",
+            js.replace("\\n", "\n")
+                .replace("\\t", "\t")
+                .replace("\\r", "\r")
+                .replace("\\\"", "\"")
+        );
+        
+        target.eval(&js)?;
 
-        match timeout(Duration::from_secs(5), tx).await {
+        match timeout(Duration::from_secs(15), tx).await {
             Err(_) => Err(anyhow!("Injection timed out")),
             Ok(Err(e)) => Err(anyhow!("Injection failed: {}", e)),
             Ok(Ok(None)) => Err(anyhow!("Injection failed: empty response")),
-            Ok(Ok(Some(_))) => Ok(()),
+            Ok(Ok(Some(_))) => {
+                println!("Injection done, id: {}", args.id);
+                Ok(())
+            },
         }
     }
 
-    fn make_args_array(args: Option<Vec<Value>>) -> String {
-        format!("[{}]",
-                args.unwrap_or_default()
-                    .iter()
-                    .map(|v| v.to_string())
-                    .collect::<Vec<String>>()
-                    .join(", ")
-        )
+    pub(crate) fn with_args(mut self, call_args: impl Into<InjectionArgs>) -> Self {
+        self.args = Some(call_args.into());
+        self
     }
-    fn make_context_builder(context_classes: Option<Vec<String>>) -> String {
-        match context_classes {
-            None => return "() => null".to_string(),
-            Some(classes) => {
-                format!("(initiator_label) => new ([{}].at(-1))", classes.join(", "))
-            }
+}
+
+pub trait AsInjector<'a, R: Runtime> {
+    fn as_injector(&'a self) -> InjectorA<'a, R>;
+}
+
+impl<'a, R: Runtime> AsInjector<'a, R> for Window<R> {
+    fn as_injector(&'a self) -> InjectorA<'a, R> {
+        InjectorA {
+            initiator: &self,
+            args: None,
         }
     }
 }

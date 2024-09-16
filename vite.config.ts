@@ -1,10 +1,29 @@
+/// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [react()],
-
+  plugins: [
+    react(),
+    {
+      name: 'html-transform',
+      transformIndexHtml(html: string) {
+        // Add a script tag in the head section
+        return html.replace(
+          /(<head>)/,
+          `$1\n<script src="http://localhost:8097"></script>`,
+        );
+      },
+    }
+  ],
+  test: {
+    includeSource: ['src/**/*.ts'],
+  },
+  define: {
+    // Define a global variable that can be used to conditionally import test files
+    'import.meta.vitest': undefined
+  },
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent vite from obscuring rust errors

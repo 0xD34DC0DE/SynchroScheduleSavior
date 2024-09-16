@@ -1,15 +1,19 @@
 import PipelineStep from "../pipeline_step.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
-import UrlPattern from "url-pattern";
+import {default as UrlPatternMatcher} from "url-pattern";
+import {UrlPattern} from "./types.ts";
 
 class UrlWait extends PipelineStep {
-    private readonly url_pattern: UrlPattern;
+    private readonly url_pattern: UrlPatternMatcher;
 
     public readonly name: string = "UrlWait";
 
-    constructor(url_pattern: string) {
+    constructor(url_pattern: UrlPattern) {
         super();
-        this.url_pattern = new UrlPattern(url_pattern);
+        if (url_pattern instanceof RegExp)
+            this.url_pattern = new UrlPatternMatcher(url_pattern);
+        else
+            this.url_pattern = new UrlPatternMatcher(url_pattern);
     }
 
     public async run(target: WebviewWindow): Promise<void> {

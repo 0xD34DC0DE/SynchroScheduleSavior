@@ -7,7 +7,7 @@ interface ScraperLoadingErrorProps {
 }
 
 const ScraperLoadingError = ({}: ScraperLoadingErrorProps) => {
-    const error = useAsyncError() as string;
+    const error = useAsyncError() as Error;
 
     return (
         <Paper>
@@ -21,7 +21,7 @@ const ScraperLoadingError = ({}: ScraperLoadingErrorProps) => {
                     <Typography pb={0.5}>Reason:</Typography>
                     <Paper>
                         <Box p={1} sx={{backdropFilter: "contrast(90%)"}}>
-                            <Typography>{error}</Typography>
+                            <Typography>{error.message}</Typography>
                         </Box>
                     </Paper>
                 </Box>

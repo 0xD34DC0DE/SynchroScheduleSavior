@@ -2,15 +2,15 @@ import PipelineStep from "../pipeline_step.ts";
 import {getCurrent, WebviewWindow} from "@tauri-apps/api/window";
 
 class EventWait extends PipelineStep {
-    private readonly _mode: "all" | "any";
-    private readonly _target: "current" | "target";
+    private readonly _mode: EventWaitMode;
+    private readonly _target: EventWaitTarget;
     private readonly _event_names: string[];
     private readonly _on_complete?: () => void;
 
     public readonly name: string = "EventWait";
 
-    constructor(target_window: "current" | "target",
-                mode: "all" | "any",
+    constructor(target_window: EventWaitTarget,
+                mode: EventWaitMode,
                 event_names: string[],
                 on_complete?: () => void) {
         if (event_names.length === 0) throw new Error("EventWait requires at least one event name");
@@ -39,4 +39,8 @@ class EventWait extends PipelineStep {
     }
 }
 
+type EventWaitMode = "all" | "any";
+type EventWaitTarget = "current" | "target";
+
+export type {EventWaitMode, EventWaitTarget};
 export default EventWait;

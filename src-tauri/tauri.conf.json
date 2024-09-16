@@ -20,7 +20,8 @@
       "window": {
         "all": false,
         "close": true,
-        "setFocus": true
+        "setFocus": true,
+        "show": true
       }
     },
     "bundle": {
@@ -59,8 +60,8 @@
         "fullscreen": false,
         "resizable": true,
         "title": "SynchroScheduleSavior",
-        "width": 800,
-        "height": 600
+        "width": 1280,
+        "height": 720
       }
     ]
   }

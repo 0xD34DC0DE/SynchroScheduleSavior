@@ -1,8 +1,9 @@
 import {WebviewWindow} from "@tauri-apps/api/window";
 import {UnlistenFn} from "@tauri-apps/api/event";
+import {InjectedArgs, InjectedFunction} from "./stubs";
 import {webview_inject} from "./commands.ts";
-import Context from "./context";
-
+import {uniqueEventId} from "./utils.ts";
+import toEJSON from "./ejson.ts";
 
 type UnserializableValueTag = "undefined" | "null" | "NaN" | "Infinity" | "-Infinity";
 
@@ -10,18 +11,11 @@ type Ok<T> = { value: T; };
 type Err = { error: string; };
 type Unserializable = {
     value: UnserializableValueTag;
-    unserializable: true;
+    special: true;
 };
 
 type InjectionResult<T> = Ok<T> | Err;
 type RawInjectionResult<T> = Unserializable | InjectionResult<T>;
-
-type ParametersWithoutContext<F> = F extends (ctx: Context, ...args: infer P) => any ? P : never;
-
-type TaskWithContextFn<
-    Ctx extends Context,
-    F extends (...args: any) => any
-> = F extends ((ctx: Ctx, ...args: ParametersWithoutContext<F>) => ReturnType<F>) ? F : never;
 
 const resolved_values: Record<UnserializableValueTag, any> = {
     "undefined": undefined,
@@ -42,62 +36,71 @@ const resolve_unserializable_type = <T>(result: Unserializable): Ok<T> => {
 }
 
 const process_raw_injection_result = <T>(result: RawInjectionResult<T>): InjectionResult<T> => {
-    if ("unserializable" in result) return resolve_unserializable_type(result);
+    if ("special" in result) return resolve_unserializable_type(result);
     return result;
 }
 
-class Injection<Ctx extends Context, F extends (...args: any[]) => any> {
+type InjectionResultCallbackFor<Fn extends (...args: any[]) => ReturnType<Fn>> =
+    (result: InjectionResult<ReturnType<Fn>>) => void;
+
+type OnInjectionResultCallback<Params extends readonly [...any], Args extends readonly [...any]> =
+    InjectionResultCallbackFor<InjectedFunction<Params, Args>>;
+
+type RawInjectionResultFor<Params extends readonly [...any], Args extends readonly [...any]> =
+    RawInjectionResult<ReturnType<InjectedFunction<Params, Args>>>;
+
+class Injection<Args extends readonly [...any], Params extends readonly [...any]> {
     private readonly _injection_id: number;
+    private readonly js_function: InjectedFunction<Params, Args>;
+    private readonly args: [...any];
+
+    private readonly options?: {
+        allow_parallel?: boolean;
+    };
 
     constructor(
-        js_function: F,
-        args: Parameters<F>,
+        js_function: InjectedFunction<Params, Args>,
+        args: InjectedArgs<Args, Params>,
         options?: {
-            allow_parallel?: boolean
-        }
-    );
-    constructor(
-        js_function: TaskWithContextFn<Ctx, F>,
-        args: ParametersWithoutContext<F>,
-        options: {
-            context_prototypes: Function[];
-            allow_parallel?: boolean;
-        }
-    );
-    constructor(
-        private readonly js_function: F | TaskWithContextFn<Ctx, F>,
-        private readonly args: Parameters<F> | ParametersWithoutContext<F>,
-        private readonly options?: {
-            context_prototypes?: Function[];
             allow_parallel?: boolean;
         }
     ) {
-        this._injection_id = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+        this.options = options;
+        this.args = args;
+        this.js_function = js_function;
+        this._injection_id = uniqueEventId();
     }
 
     public async inject(
         target: WebviewWindow,
-        on_result?: (result: InjectionResult<ReturnType<F>>) => void,
+        on_result?: OnInjectionResultCallback<Params, Args>,
+        on_error?: (error: any) => void
     ): Promise<UnlistenFn> {
-        return target.once<RawInjectionResult<ReturnType<F>>>(
+        return target.once<RawInjectionResultFor<Params, Args>>(
             this._injection_id.toString(),
-            (event) => on_result?.(process_raw_injection_result(event.payload))
+            event => {
+                try {
+                    on_result?.(process_raw_injection_result(event.payload));
+                } catch (e) {
+                    on_error?.(e);
+                }
+            }
         ).then(async unlisten => {
             try {
-                await webview_inject(target.label,
-                    this._injection_id,
-                    this.js_function.toString(),
-                    this.args,
-                    this.options?.allow_parallel ?? false,
-                    this.options?.context_prototypes);
+                await webview_inject(target.label, {
+                    injection_id: this._injection_id,
+                    js_function: toEJSON(this.js_function),
+                    function_args: toEJSON(this.args),
+                    allow_parallel: this.options?.allow_parallel ?? false,
+                });
             } catch (e) {
                 unlisten();
-                throw e;
+                if (on_error) on_error(e); else throw e;
             }
             return unlisten;
         });
     }
 }
 
-export type {InjectionResult, ParametersWithoutContext, TaskWithContextFn};
+export type {InjectionResult, InjectionResultCallbackFor};
 export default Injection;

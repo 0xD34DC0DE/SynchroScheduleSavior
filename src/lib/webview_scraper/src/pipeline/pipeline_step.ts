@@ -19,9 +19,6 @@ abstract class PipelineStep {
             this._resolve = resolve;
             this._reject = reject;
             await this.run(target, ...args);
-        }).catch((error) => {
-            console.error(`(PipelineStep) Error in step '${this.name}':`, error);
-            throw error;
         }).finally(() => this._cleanup());
     }
 
@@ -36,7 +33,12 @@ abstract class PipelineStep {
 
     public cancel() {
         if (!this._reject) throw new Error(`(PipelineStep) Cannot cancel step '${this.name}' that is not running`);
-        this._reject(new Error("Cancelled"));
+        this._reject(new CancelledPipelineStepError("Pipeline step was cancelled."));
+    }
+
+    public abort(error: any) {
+        if (!this._reject) throw new Error(`(PipelineStep) Cannot abort step '${this.name}' that is not running`);
+        this._reject(error);
     }
 
     private _cleanup() {
@@ -45,6 +47,18 @@ abstract class PipelineStep {
         this._resolve = null;
         this._reject = null;
     }
+
+    public is_running(): boolean {
+        return this._resolve !== null;
+    }
 }
 
+class CancelledPipelineStepError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "PipelineCancelledError";
+    }
+}
+
+export {CancelledPipelineStepError};
 export default PipelineStep;

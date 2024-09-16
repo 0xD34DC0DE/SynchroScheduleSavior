@@ -1,21 +1,25 @@
 import PipelineStep from "../pipeline_step.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
-import UrlPattern from "url-pattern";
+import {default as UrlPatternMatcher} from "url-pattern";
 import Injection from "../../injection.ts";
+import {UrlPattern} from "./types.ts";
 
 class Navigate extends PipelineStep {
     private readonly _url: string;
-    private readonly _url_pattern: UrlPattern;
+    private readonly _url_pattern: UrlPatternMatcher;
 
     public readonly name: string = "Navigate";
 
     constructor(
         url: string,
-        url_pattern?: string
+        url_pattern?: UrlPattern
     ) {
         super();
         this._url = url;
-        this._url_pattern = new UrlPattern(url_pattern || url);
+        if (url_pattern instanceof RegExp)
+            this._url_pattern = new UrlPatternMatcher(url_pattern);
+        else
+            this._url_pattern = new UrlPatternMatcher(url_pattern || url);
     }
 
     public async run(target: WebviewWindow): Promise<void> {
@@ -31,7 +35,7 @@ class Navigate extends PipelineStep {
             [this._url],
         );
 
-        await this.add_listener(injection.inject(target));
+        await this.add_listener(injection.inject(target, undefined, this.abort.bind(this)));
     }
 }
 

@@ -1,18 +1,20 @@
 import PipelineStep from "../pipeline_step.ts";
-import Injection, {InjectionResult} from "../../injection.ts";
+import Injection, {InjectionResultCallbackFor} from "../../injection.ts";
 import {WebviewWindow} from "@tauri-apps/api/window";
+import {InjectedFunction, InjectedArgs} from "../../stubs";
 
-class Task<F extends (...args: Parameters<F>) => ReturnType<F>> extends PipelineStep {
-    private readonly _fn: F;
-    private readonly _args: Parameters<F>;
-    private readonly _on_result: (result: InjectionResult<ReturnType<F>>) => void;
+
+class Task<Args extends [...any], Params extends [...any]> extends PipelineStep {
+    private readonly _fn: InjectedFunction<Params, Args>;
+    private readonly _args: InjectedArgs<Args, Params>;
+    private readonly _on_result: InjectionResultCallbackFor<InjectedFunction<Params, Args>>;
 
     public readonly name: string = "Task";
 
     constructor(
-        injected_fn: F,
-        args: Parameters<F>,
-        on_result: (result: InjectionResult<ReturnType<F>>) => void = () => {
+        injected_fn: InjectedFunction<Params, Args>,
+        args: InjectedArgs<Args, Params>,
+        on_result: InjectionResultCallbackFor<InjectedFunction<Params, Args>> = () => {
         },
     ) {
         super();
@@ -28,10 +30,14 @@ class Task<F extends (...args: Parameters<F>) => ReturnType<F>> extends Pipeline
         );
 
         await this.add_listener(
-            injection.inject(target, (result) => {
-                this._on_result(result);
-                this.complete();
-            })
+            injection.inject(
+                target,
+                (result) => {
+                    this._on_result(result);
+                    this.complete();
+                },
+                this.abort.bind(this)
+            )
         );
     }
 }
