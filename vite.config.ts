@@ -8,7 +8,7 @@ export default defineConfig(async () => ({
     react(),
     {
       name: 'html-transform',
-      transformIndexHtml(html) {
+      transformIndexHtml(html: string) {
         // Add a script tag in the head section
         return html.replace(
           /(<head>)/,
