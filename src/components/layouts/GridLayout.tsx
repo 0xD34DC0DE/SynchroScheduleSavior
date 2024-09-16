@@ -8,17 +8,19 @@ interface GridLayoutProps {
     direction?: Grid2Props["direction"];
 }
 
-const GridLayout = ({children, justifyContent, alignItems}: GridLayoutProps) => {
+const GridLayout = ({children, justifyContent, alignItems, direction}: GridLayoutProps) => {
     return (
         <Grid2
             sx={{
                 flexGrow: 1,
                 height: "100vh",
                 bgcolor: "lightgoldenrodyellow",
+                display: "flex",
             }}
             container
             justifyContent={justifyContent}
             alignItems={alignItems}
+            direction={direction}
         >
             {children}
         </Grid2>

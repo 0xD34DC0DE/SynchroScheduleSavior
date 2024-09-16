@@ -12,8 +12,8 @@ const ForwardedLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>((props: But
     return <Link {...props} ref={ref}/>;
 });
 
-const ButtonLink = (props: ButtonLinkProps) => {
-    return <Button component={ForwardedLink} {...props} />;
-};
+const ButtonLink = forwardRef((props: ButtonLinkProps, ref) => {
+    return <Button component={ForwardedLink} {...props} ref={ref}/>;
+});
 
 export default ButtonLink;
