@@ -11,13 +11,11 @@ interface GridLayoutProps {
 const GridLayout = ({children, justifyContent, alignItems, direction}: GridLayoutProps) => {
     return (
         <Grid2
-            sx={{
-                flexGrow: 1,
-                height: "100vh",
-                bgcolor: "lightgoldenrodyellow",
-                display: "flex",
-            }}
             container
+            height={"100vh"}
+            bgcolor={"lightgoldenrodyellow"}
+            display={"flex"}
+            flexWrap={"nowrap"}
             justifyContent={justifyContent}
             alignItems={alignItems}
             direction={direction}

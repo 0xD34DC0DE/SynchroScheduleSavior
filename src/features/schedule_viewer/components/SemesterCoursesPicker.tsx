@@ -13,9 +13,9 @@ const SemesterCoursesPicker = ({term}: SemesterCoursesPickerProps) => {
     );
 
     return (
-        <FormControl component={Stack} variant={"standard"} sx={{ flexGrow: 1, overflowY: 'auto', height: '100%' }}>
-            <FormLabel id={"semester-courses-picker-label"} sx={{pt: 1, pl: 1}}>Courses</FormLabel>
-            <FormGroup sx={{p: 1, pt: 0}}>
+        <FormControl component={Stack} variant={"standard"} flex={1}>
+            <FormLabel id={"semester-courses-picker-label"} sx={{pt: 1}}>Courses</FormLabel>
+            <FormGroup sx={{pt: 0, overflowY: "scroll", flex: "1 1 0", flexWrap: "nowrap"}}>
                 {Object.entries(semester?.courses ?? {}).map(([courseId]) => (
                     <FormControlLabel
                         key={courseId}

@@ -24,11 +24,7 @@ const ScheduleViewerPage = ({}: ScheduleViewerPageProps) => {
                     <Tab label={"Exams"} value={"exams"} component={ButtonLink} to={"exams"}/>
                 </Tabs>
             </Grid2>
-            <Grid2
-                container
-                size={12}
-                sx={{ flexGrow: 1, display: "flex", flexDirection: "column", height: "100%" }}
-            >
+            <Grid2 container size={12} flex={"1 1 auto"}>
                 <Outlet/>
             </Grid2>
         </GridLayout>

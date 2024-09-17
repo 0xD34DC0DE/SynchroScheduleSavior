@@ -18,7 +18,7 @@ const CoursesPicker = ({}: CoursesPickerProps) => {
     }, [terms]);
 
     return (
-        <Paper component={Stack} p={1} sx={{ flexGrow: 1, display: "flex", flexDirection: "column", height: "100%" }}>
+        <Paper component={Stack} p={2} spacing={1} flex={1}>
             <FormControl fullWidth>
                 <InputLabel id={"term-select-label"}>Term</InputLabel>
                 <Select

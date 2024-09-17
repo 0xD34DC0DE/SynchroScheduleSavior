@@ -7,7 +7,14 @@ interface CenteredLayoutProps {
 
 const CenteredLayout = ({children}: CenteredLayoutProps) => {
     return (
-        <Box height="100vh" display="flex" alignItems="center" justifyContent="center" bgcolor="lightgoldenrodyellow">
+        <Box
+            height="100vh"
+            display="flex"
+            flexWrap="nowrap"
+            alignItems="center"
+            justifyContent="center"
+            bgcolor="lightgoldenrodyellow"
+        >
             {children}
         </Box>
     );
