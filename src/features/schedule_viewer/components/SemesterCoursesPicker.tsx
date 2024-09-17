@@ -7,7 +7,10 @@ interface SemesterCoursesPickerProps {
 }
 
 const SemesterCoursesPicker = ({term}: SemesterCoursesPickerProps) => {
-    const semester = useLiveQuery(() => db.semesters.where("term").equals(term).first());
+    const semester = useLiveQuery(
+        () => db.semesters.where("term").equals(term).first(),
+        [term]
+    );
 
     return (
         <FormControl component={Stack} variant={"standard"} sx={{ flexGrow: 1, overflowY: 'auto', height: '100%' }}>
