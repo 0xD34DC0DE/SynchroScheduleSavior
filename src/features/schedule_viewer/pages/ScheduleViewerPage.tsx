@@ -10,12 +10,16 @@ interface ScheduleViewerPageProps {
 const ScheduleViewerPage = ({}: ScheduleViewerPageProps) => {
     const location = useLocation();
 
-    const tab = location.pathname.split("/").pop();
+    const tab = () => {
+        const segments = location.pathname.split("/").pop();
+        if (segments === "courses" || segments === "exams") return segments;
+        return "courses";
+    }
 
     return (
         <GridLayout direction={"column"}>
             <Grid2 size={12} p={1}>
-                <Tabs value={tab} centered sx={{width: "100%"}}>
+                <Tabs value={tab()} centered sx={{width: "100%"}}>
                     <Tab label={"Courses"} value={"courses"} component={ButtonLink} to={"courses"}/>
                     <Tab label={"Exams"} value={"exams"} component={ButtonLink} to={"exams"}/>
                 </Tabs>
