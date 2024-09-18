@@ -1,5 +1,5 @@
 import {FormControl, InputLabel, MenuItem, Paper, Select, Stack} from "@mui/material";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import SemesterCoursesPicker from "./SemesterCoursesPicker.tsx";
 import CoursesOptions from "./CoursesOptions.tsx";
 import {useAsyncValue} from "react-router-dom";
@@ -12,17 +12,13 @@ interface CoursesPickerProps {
 const CoursesPicker = ({}: CoursesPickerProps) => {
     const semesters = useAsyncValue() as SemesterEntity[];
 
-    const availableTerms = semesters.map((semester) => semester.term);
-    const [selectedTerm, setSelectedTerm] = useState<string>(availableTerms?.[0] ?? "");
+    const [selectedTerm, setSelectedTerm] = useState<string>("");
 
-    const selectedSemester = semesters?.find((semester) => semester.term === availableTerms?.[0]);
+    const availableTerms = semesters.map((semester) => semester.term);
+    const selectedSemester = semesters.find((semester) => semester.term === selectedTerm);
 
     const courses = Object.values(selectedSemester?.courses ?? {});
     const [filteredCourses, setFilteredCourses] = useState(courses);
-
-    useEffect(() => {
-        setSelectedTerm(availableTerms?.[0] ?? "");
-    }, [availableTerms]);
 
     return (
         <Paper component={Stack} p={2} spacing={1} flex={1}>

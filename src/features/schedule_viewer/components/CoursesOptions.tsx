@@ -4,7 +4,7 @@ import {CourseEntity, type CourseId} from "../../../models";
 import CoursesSubjectsPicker from "./CoursesSubjectsPicker.tsx";
 
 interface CoursesOptionsProps {
-    courses?: CourseEntity[];
+    courses: CourseEntity[];
     onCoursesChange?: (courses: CourseEntity[]) => void;
 }
 
@@ -21,7 +21,7 @@ const CoursesOptions = ({courses, onCoursesChange}: CoursesOptionsProps) => {
     };
 
     const handleSubjectsChange = (subjects: Record<CourseId["subject"], boolean>) => {
-        const selectedCourses = courses?.filter((course) => subjects[course.id.subject]);
+        const selectedCourses = courses.filter((course) => subjects[course.id.subject]);
         setSelectedSubjects(prev => ({...prev, ...subjects}));
         onCoursesChange?.(selectedCourses ?? []);
     }
@@ -59,7 +59,6 @@ const CoursesOptions = ({courses, onCoursesChange}: CoursesOptionsProps) => {
 
 export default CoursesOptions;
 
-const initSubjects = (courses?: CourseEntity[]): Record<CourseId["subject"], boolean> => {
-    if (!courses) return {};
+const initSubjects = (courses: CourseEntity[]): Record<CourseId["subject"], boolean> => {
     return courses.reduce((acc, course) => ({...acc, [course.id.subject]: true}), {});
 };
