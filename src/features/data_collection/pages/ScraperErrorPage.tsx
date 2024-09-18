@@ -1,4 +1,4 @@
-import {Grid, Paper, Typography} from "@mui/material";
+import {Grid2, Paper, Typography} from "@mui/material";
 import {useRouteError} from "react-router-dom";
 import Box from "@mui/material/Box";
 import GridLayout from "../../../components/layouts/GridLayout.tsx";
@@ -13,7 +13,7 @@ const ScraperErrorPage = ({}: ScraperErrorPageProps) => {
 
     return (
         <GridLayout justifyContent={"center"} alignItems={"center"}>
-            <Grid item xs={7}>
+            <Grid2 size={7}>
                 <Paper elevation={2}>
                     <Box p={2}>
                         <Box display={"flex"} alignItems={"center"}>
@@ -29,7 +29,7 @@ const ScraperErrorPage = ({}: ScraperErrorPageProps) => {
                         <Box bgcolor={(theme) => theme.palette.error.light} mt={1} p={1} borderRadius={1}>
                             <Typography
                                 variant={"body1"}
-                                color={(theme) => theme.palette.getContrastText(theme.palette.error.light)}
+                                sx={{color: theme => theme.palette.getContrastText(theme.palette.error.light)}}
                             >
                                 {error?.message ?? error?.cause ?? "Unknown error"}
                             </Typography>
@@ -39,7 +39,7 @@ const ScraperErrorPage = ({}: ScraperErrorPageProps) => {
                         <Box bgcolor={(theme) => theme.palette.error.light} mt={1} p={1} borderRadius={1}>
                             <Typography
                                 variant={"body2"}
-                                color={(theme) => theme.palette.getContrastText(theme.palette.error.light)}
+                                sx={{color: theme => theme.palette.getContrastText(theme.palette.error.light)}}
                             >
                                 {error?.stack?.split("\n").map((line, index)  =>
                                     <>{index !== 0 && <><br/>&emsp;</>}{line}</>
@@ -48,7 +48,7 @@ const ScraperErrorPage = ({}: ScraperErrorPageProps) => {
                         </Box>
                     </Box>
                 </Paper>
-            </Grid>
+            </Grid2>
         </GridLayout>
     );
 };
