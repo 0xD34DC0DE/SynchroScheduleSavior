@@ -3,7 +3,7 @@ import {AttendedCourseEntity, CourseBlockEntity, SemesterEntity} from "../models
 import {classMap} from "@pvermeer/dexie-class-addon";
 
 
-class CoursesDatabase extends Dexie  {
+class CoursesDatabase extends Dexie {
     public readonly semesters!: Table<SemesterEntity, string>;
     public readonly attendedCourses!: Table<AttendedCourseEntity, string>;
     public readonly courseBlocks!: Table<CourseBlockEntity, string>;
@@ -19,11 +19,9 @@ class CoursesDatabase extends Dexie  {
             courseBlocks: "id",
         });
 
-        this.open().then(() => {
-            this.courseBlocks.mapToClass(CourseBlockEntity);
-            this.semesters.mapToClass(SemesterEntity);
-            this.attendedCourses.mapToClass(AttendedCourseEntity);
-        });
+        this.courseBlocks.mapToClass(CourseBlockEntity);
+        this.semesters.mapToClass(SemesterEntity);
+        this.attendedCourses.mapToClass(AttendedCourseEntity);
     }
 }
 
