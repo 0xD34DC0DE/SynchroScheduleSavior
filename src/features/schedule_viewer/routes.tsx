@@ -4,7 +4,7 @@ import {CoursesScheduleViewerPage, ExamsScheduleViewerPage, ScheduleViewerPage} 
 const rootPath = "/schedule-viewer";
 
 const routes = (
-    <Route path={rootPath} element={<ScheduleViewerPage/>}>
+    <Route path={rootPath} element={<ScheduleViewerPage/>} loader={ScheduleViewerPage.loader}>
         <Route index element={<Navigate to={"courses"} replace/>}/>
         <Route path={"courses"} element={<CoursesScheduleViewerPage/>}/>
         <Route path={"exams"} element={<ExamsScheduleViewerPage/>}/>

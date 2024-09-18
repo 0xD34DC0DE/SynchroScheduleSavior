@@ -1,7 +1,11 @@
 import GridLayout from "../../../components/layouts/GridLayout.tsx";
 import {Grid2, Tab, Tabs} from "@mui/material";
-import {Outlet, useLocation} from "react-router-dom";
+import {Await, defer, Outlet, useLoaderData} from "react-router-dom";
 import {ButtonLink} from "../../../components/navigation";
+import {db} from "../../../utils";
+import {SemesterEntity} from "../../../models";
+import {Suspense} from "react";
+import ScheduleViewerLoadError from "../components/ScheduleViewerLoadError.tsx";
 
 interface ScheduleViewerPageProps {
 
@@ -15,6 +19,7 @@ const ScheduleViewerPage = ({}: ScheduleViewerPageProps) => {
         if (segments === "courses" || segments === "exams") return segments;
         return "courses";
     }
+    const data = useLoaderData() as ScheduleViewerPageLoaderData;
 
     return (
         <GridLayout direction={"column"}>
@@ -25,10 +30,24 @@ const ScheduleViewerPage = ({}: ScheduleViewerPageProps) => {
                 </Tabs>
             </Grid2>
             <Grid2 container size={12} flex={"1 1 auto"}>
-                <Outlet/>
+                <Suspense
+                    fallback={<Grid2 size={12} p={2} justifyContent={"center"}>Loading...</Grid2>}
+                >
+                    <Await resolve={data.semesters} errorElement={<ScheduleViewerLoadError/>}>
+                        <Outlet/>
+                    </Await>
+                </Suspense>
             </Grid2>
         </GridLayout>
     );
 };
+
+ScheduleViewerPage.loader = async () => {
+    console.log("Loading semesters...");
+    const semesters = (async () => await db.semesters.toArray())();
+    return defer({semesters} satisfies ScheduleViewerPageLoaderData);
+}
+
+type ScheduleViewerPageLoaderData = {semesters: Promise<SemesterEntity[]>}
 
 export default ScheduleViewerPage;
