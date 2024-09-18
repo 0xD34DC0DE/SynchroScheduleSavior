@@ -38,7 +38,6 @@ const ScheduleViewerPage = ({}: ScheduleViewerPageProps) => {
 };
 
 ScheduleViewerPage.loader = async () => {
-    console.log("Loading semesters...");
     const semesters = (async () => await db.semesters.toArray())();
     return defer({semesters} satisfies ScheduleViewerPageLoaderData);
 }
