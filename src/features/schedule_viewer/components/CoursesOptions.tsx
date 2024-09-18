@@ -1,16 +1,23 @@
 import {Button, Grid2, Popover, Stack} from "@mui/material";
-import React, {useState} from "react";
-import {CourseEntity, type CourseId} from "../../../models";
+import React, {Dispatch, SetStateAction, useState} from "react";
+import {CourseEntity, type CourseId, SemesterEntity} from "../../../models";
 import CoursesSubjectsPicker from "./CoursesSubjectsPicker.tsx";
+import {useAsyncValue, useSearchParams} from "react-router-dom";
 
 interface CoursesOptionsProps {
-    courses: CourseEntity[];
-    onCoursesChange?: (courses: CourseEntity[]) => void;
+    setCourseFilter: Dispatch<SetStateAction<(course: CourseEntity) => boolean>>;
 }
 
-const CoursesOptions = ({courses, onCoursesChange}: CoursesOptionsProps) => {
+const CoursesOptions = ({setCourseFilter}: CoursesOptionsProps) => {
+    const [searchParams] = useSearchParams();
+
+    const semesters = useAsyncValue() as SemesterEntity[];
+    const semesterCourses = Object.values(
+        semesters.find((semester) => semester.term === searchParams.get("term"))?.courses ?? {}
+    );
+
     const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-    const [selectedSubjects, setSelectedSubjects] = useState<Record<CourseId["subject"], boolean>>(initSubjects(courses));
+    const [selectedSubjects, setSelectedSubjects] = useState<Record<CourseId["subject"], boolean>>(initSubjects(semesterCourses));
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -21,9 +28,8 @@ const CoursesOptions = ({courses, onCoursesChange}: CoursesOptionsProps) => {
     };
 
     const handleSubjectsChange = (subjects: Record<CourseId["subject"], boolean>) => {
-        const selectedCourses = courses.filter((course) => subjects[course.id.subject]);
         setSelectedSubjects(prev => ({...prev, ...subjects}));
-        onCoursesChange?.(selectedCourses ?? []);
+        setCourseFilter(() => (course: CourseEntity) => subjects[course.id.subject]);
     }
 
     return (
