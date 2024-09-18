@@ -1,4 +1,4 @@
-import {Box, Checkbox, FormControl, FormControlLabel, FormGroup, FormLabel, Paper} from "@mui/material";
+import {Box, Checkbox, Divider, FormControl, FormControlLabel, FormGroup, FormLabel, Paper} from "@mui/material";
 import {type CourseId} from "../../../models";
 
 interface CoursesSubjectsPickerProps {
@@ -11,11 +11,30 @@ const CoursesSubjectsPicker = ({subjectsState, onSubjectsChange}: CoursesSubject
         onSubjectsChange?.({...subjectsState, [subject]: !subjectsState[subject]});
     };
 
+    const allSelected = Object.values(subjectsState).every((state) => state);
+
+    const handleSelectAll = () => {
+        onSubjectsChange?.(Object.fromEntries(Object.keys(subjectsState).map((subject) => [subject, !allSelected])));
+    }
+
     return (
         <Paper variant={"outlined"}>
             <Box p={1}>
                 <FormControl>
-                    <FormLabel sx={{pt: 1}}>Subjects</FormLabel>
+                    <FormLabel sx={{pb: 1}}>Subjects</FormLabel>
+                    <Divider/>
+                    <FormControlLabel
+                        key={"all"}
+                        control={
+                            <Checkbox
+                                checked={allSelected}
+                                size={"small"}
+                                onChange={handleSelectAll}
+                            />
+                        }
+                        label={"All"}
+                    />
+                    <Divider/>
                     <FormGroup>
                         {
                             Object.entries(subjectsState).map(([subject, state]) =>
