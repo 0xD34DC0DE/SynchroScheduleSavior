@@ -10,9 +10,9 @@ interface ScheduleViewerOutletProps {
 }
 
 const ScheduleViewerOutlet = ({}: ScheduleViewerOutletProps) => {
-    const [courses, setCourses] = useState<CourseEntity[]>([]);
+    const [displayedCourses, setDisplayedCourses] = useState<CourseEntity[]>([]);
     const data = useLoaderData() as ScheduleViewerPageLoaderData;
-    const context = {courses, setCourses} satisfies ScheduleViewerOutletContext;
+    const context = {displayedCourses, setDisplayedCourses} satisfies ScheduleViewerOutletContext;
 
     return (
         <Suspense
@@ -26,8 +26,8 @@ const ScheduleViewerOutlet = ({}: ScheduleViewerOutletProps) => {
 };
 
 type ScheduleViewerOutletContext = {
-    courses: CourseEntity[];
-    setCourses: Dispatch<SetStateAction<CourseEntity[]>>;
+    displayedCourses: CourseEntity[];
+    setDisplayedCourses: Dispatch<SetStateAction<CourseEntity[]>>;
 }
 
 export type {ScheduleViewerOutletContext};
