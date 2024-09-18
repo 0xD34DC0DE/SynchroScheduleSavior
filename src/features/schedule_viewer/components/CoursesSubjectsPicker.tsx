@@ -14,7 +14,9 @@ const CoursesSubjectsPicker = ({subjectsState, onSubjectsChange}: CoursesSubject
     const allSelected = Object.values(subjectsState).every((state) => state);
 
     const handleSelectAll = () => {
-        onSubjectsChange?.(Object.fromEntries(Object.keys(subjectsState).map((subject) => [subject, !allSelected])));
+        onSubjectsChange?.(
+            Object.fromEntries(Object.keys(subjectsState).map((subject) => [subject, !allSelected]))
+        );
     }
 
     return (
