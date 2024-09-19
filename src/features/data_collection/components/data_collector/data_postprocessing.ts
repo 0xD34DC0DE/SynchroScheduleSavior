@@ -92,7 +92,7 @@ const getDayOfWeek = (day: string): model.DayOfWeek => {
 
     const lut: Record<string, model.DayOfWeek> = {
         "Lun": DayOfWeek.Monday,
-        "Mar": DayOfWeek.Tuesday,
+        "Ma": DayOfWeek.Tuesday,
         "Mer": DayOfWeek.Wednesday,
         "J": DayOfWeek.Thursday,
         "V": DayOfWeek.Friday,
