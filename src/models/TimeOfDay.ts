@@ -12,7 +12,6 @@ class TimeOfDayEntity implements TimeOfDay, Entity {
     public readonly minute: number;
 
     constructor(input: TimeOfDay) {
-        if (input.hour < 0 || input.hour > 23) throw new Error("Invalid hour");
         this.toBeDetermined = input.toBeDetermined;
 
         if (input.toBeDetermined) {
@@ -21,9 +20,10 @@ class TimeOfDayEntity implements TimeOfDay, Entity {
             return;
         }
 
+        if (isNaN(input.hour) || input.hour < 0 || input.hour > 23) throw new Error(`Invalid hour ${input.hour}`);
         this.hour = input.hour;
 
-        if (input.minute < 0 || input.minute > 59) throw new Error("Invalid minute");
+        if (isNaN(input.minute) || input.minute < 0 || input.minute > 59) throw new Error(`Invalid minute ${input.minute}`);
         this.minute = input.minute;
     }
 
