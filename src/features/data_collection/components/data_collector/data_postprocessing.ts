@@ -166,8 +166,10 @@ const getSections = (sections?: Section[]): model.Section[] => {
         .filter(section => section.type !== "TH")
         .forEach(section => {
             const sections = getSection(section);
-            const subSections = subSectionGroups[section.associated_section_group] ?? [];
-            subSections.push(sections);
+            if (subSectionGroups[section.associated_section_group] === undefined) {
+                subSectionGroups[section.associated_section_group] = [];
+            }
+            subSectionGroups[section.associated_section_group].push(sections);
         });
 
     return sections
