@@ -99,7 +99,9 @@ const getDayOfWeek = (day: string): model.DayOfWeek => {
         "S": DayOfWeek.Saturday,
         "D": DayOfWeek.Sunday
     };
-    return lut[day];
+    const dayOfWeek = lut[day];
+    if (dayOfWeek === undefined) throw new Error(`Unknown day ${day}`);
+    return dayOfWeek;
 }
 
 const getSchedule = (schedules: SectionSchedule[]): model.SectionSchedule[] => {
