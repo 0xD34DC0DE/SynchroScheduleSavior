@@ -79,9 +79,15 @@ const postProcessCourses = (term: string, courseBlocks: CourseBlock[]): Semester
 const getTimeOfDay = (time: string): model.TimeOfDay => {
     const [hour, minute] = time.split(":").map(parseInt);
     return {hour, minute} satisfies model.TimeOfDay;
+    if (time.includes("À communiquer") || time === "") {
+        return {hour: 0, minute: 0, toBeDetermined: true} satisfies model.TimeOfDay;
+    }
+
 }
 
 const getDayOfWeek = (day: string): model.DayOfWeek => {
+    if (day === "À communiquer") return DayOfWeek.ToBeDetermined;
+
     const lut: Record<string, model.DayOfWeek> = {
         "Lun": DayOfWeek.Monday,
         "Mar": DayOfWeek.Tuesday,

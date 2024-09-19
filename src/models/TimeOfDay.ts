@@ -1,16 +1,26 @@
 import {Entity} from "./types.ts";
 
 interface TimeOfDay {
+    readonly toBeDetermined: boolean;
     readonly hour: number;
     readonly minute: number;
 }
 
 class TimeOfDayEntity implements TimeOfDay, Entity {
+    public readonly toBeDetermined: boolean;
     public readonly hour: number;
     public readonly minute: number;
 
     constructor(input: TimeOfDay) {
         if (input.hour < 0 || input.hour > 23) throw new Error("Invalid hour");
+        this.toBeDetermined = input.toBeDetermined;
+
+        if (input.toBeDetermined) {
+            this.hour = 0;
+            this.minute = 0;
+            return;
+        }
+
         this.hour = input.hour;
 
         if (input.minute < 0 || input.minute > 59) throw new Error("Invalid minute");
@@ -19,6 +29,7 @@ class TimeOfDayEntity implements TimeOfDay, Entity {
 
     serialize(){
         return {
+            toBeDetermined: () => this.toBeDetermined,
             hour: () => this.hour,
             minute: () => this.minute
         };
