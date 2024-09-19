@@ -35,11 +35,17 @@ const DataFinalizationStep = ({}: DataFinalizationStepProps) => {
 
                 db.attendedCourses.bulkPut(processedFollowedCourses).then(async () => {
                     for (const [semester, courseBlocks] of Object.entries(previousStepData)) {
-                        const processedCourseBlocks = postProcessCourseBlocks(courseBlocks);
-                        const semesterEntity = postProcessCourses(semester, courseBlocks);
+                        try {
+                            const processedCourseBlocks = postProcessCourseBlocks(courseBlocks);
+                            const semesterEntity = postProcessCourses(semester, courseBlocks);
 
-                        await db.courseBlocks.bulkPut(processedCourseBlocks);
-                        await db.semesters.put(semesterEntity);
+                            await db.courseBlocks.bulkPut(processedCourseBlocks);
+                            await db.semesters.put(semesterEntity);
+                        } catch (e) {
+                            console.error("Error processing semester", e);
+                            throw e;
+                        }
+
                     }
 
                     setPipelineState(PipelineState.DONE);
