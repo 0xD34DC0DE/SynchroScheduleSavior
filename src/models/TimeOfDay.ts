@@ -46,6 +46,10 @@ class TimeOfDayEntity implements TimeOfDay, Entity {
         if (this.hour > other.hour) return false;
         return this.minute < other.minute;
     }
+
+    public isSame(other: TimeOfDayEntity): boolean {
+        return this.hour === other.hour && this.minute === other.minute;
+    }
 }
 
 export type {TimeOfDay};

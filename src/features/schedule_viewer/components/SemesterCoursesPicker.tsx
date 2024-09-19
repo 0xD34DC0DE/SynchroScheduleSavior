@@ -1,6 +1,6 @@
 import {Checkbox, FormControl, FormControlLabel, FormGroup, FormLabel, Stack} from "@mui/material";
 import {CourseEntity} from "../../../models";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {useOutletContext} from "react-router-dom";
 import {ScheduleViewerOutletContext} from "./ScheduleViewerOutlet.tsx";
 
@@ -13,6 +13,10 @@ const SemesterCoursesPicker = ({courses}: SemesterCoursesPickerProps) => {
         Object.fromEntries(courses.map((course) => [course.id.toString(), true]))
     );
     const {setDisplayedCourses} = useOutletContext<ScheduleViewerOutletContext>();
+
+    useEffect(() => {
+        setDisplayedCourses(() => courses.filter((course) => selectedCourses[course.id.toString()]));
+    }, [courses, selectedCourses]);
 
     return (
         <FormControl component={Stack} variant={"standard"} flex={1}>
@@ -31,9 +35,6 @@ const SemesterCoursesPicker = ({courses}: SemesterCoursesPickerProps) => {
                                             onChange={
                                                 () => {
                                                     setSelectedCourses(prev => ({...prev, [courseId]: !prev[courseId]}));
-                                                    setDisplayedCourses(() =>
-                                                        courses.filter((course) => course.id.toString() !== courseId)
-                                                    );
                                                 }
                                             }
                                         />
