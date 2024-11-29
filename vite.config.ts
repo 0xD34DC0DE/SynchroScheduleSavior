@@ -6,16 +6,16 @@ import react from "@vitejs/plugin-react";
 export default defineConfig(async () => ({
   plugins: [
     react(),
-    {
-      name: 'html-transform',
-      transformIndexHtml(html: string) {
-        // Add a script tag in the head section
-        return html.replace(
-          /(<head>)/,
-          `$1\n<script src="http://localhost:8097"></script>`,
-        );
-      },
-    }
+    // {
+    //   name: 'html-transform',
+    //   transformIndexHtml(html: string) {
+    //     // Add a script tag in the head section
+    //     return html.replace(
+    //       /(<head>)/,
+    //       `$1\n<script src="http://localhost:8097"></script>`,
+    //     );
+    //   },
+    // }
   ],
   test: {
     includeSource: ['src/**/*.ts'],
