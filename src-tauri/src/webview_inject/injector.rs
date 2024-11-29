@@ -62,7 +62,7 @@ impl<'a, R: Runtime> InjectorA<'a, R> {
         
         target.eval(&js)?;
 
-        match timeout(Duration::from_secs(15), tx).await {
+        match timeout(Duration::from_secs(30), tx).await {
             Err(_) => Err(anyhow!("Injection timed out")),
             Ok(Err(e)) => Err(anyhow!("Injection failed: {}", e)),
             Ok(Ok(None)) => Err(anyhow!("Injection failed: empty response")),

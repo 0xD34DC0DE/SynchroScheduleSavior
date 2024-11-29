@@ -47,7 +47,7 @@ class TaskWithCondition<T extends HTMLElement> extends PipelineStep {
                             }
                         }).observe(observer_target, observer_configs);
 
-                        setTimeout(() => reject(new Error("Observer timed out")), 10000);
+                        setTimeout(() => reject(new Error("Observer timed out")), 30000);
                     })
                 },
                 [
