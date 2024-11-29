@@ -3,6 +3,7 @@ import {Grid2, Typography} from "@mui/material";
 import {useOutletContext} from "react-router-dom";
 import {ScheduleViewerOutletContext} from "./ScheduleViewerOutlet.tsx";
 import Box from "@mui/material/Box";
+import { stringHashToHTMLColor, textColorContrast } from "../utils/color.ts";
 
 interface CalendarColumnProps {
     schedules: SectionScheduleEntity[];
@@ -30,26 +31,6 @@ const CalendarColumn = ({schedules}: CalendarColumnProps) => {
         });
         return acc;
     }, {} as Record<string, SectionScheduleEntity[]>);
-
-    const courseColor = (str: string) => {
-        let hash = 0;
-        str.repeat(2).split('').forEach(char => {
-            hash = char.charCodeAt(0) + ((hash << 5) - hash)
-        })
-        let colour = '#'
-        for (let i = 0; i < 3; i++) {
-            const value = (hash >> (i * 8)) & 0xff
-            colour += value.toString(16).padStart(2, '0')
-        }
-        return colour
-    }
-    const getContrastYIQ = (hexcolor: string) => {
-        const r = parseInt(hexcolor.substring(1, 3), 16);
-        const g = parseInt(hexcolor.substring(3, 5), 16);
-        const b = parseInt(hexcolor.substring(5, 7), 16);
-        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-        return (yiq >= 128) ? 'black' : 'white';
-    }
 
     const timeOfDayRangeToString = (timeRange: TimeOfDayRangeEntity) => {
         return `${timeRange.start.hour}:${timeRange.start.minute} - ${timeRange.end.hour}:${timeRange.end.minute}`;
@@ -83,9 +64,11 @@ const CalendarColumn = ({schedules}: CalendarColumnProps) => {
 
     const schedulesParams = Object.entries(schedulesByCourse).flatMap(([courseName, schedules], i): ScheduleParam[] => {
         return schedules.map((schedule, j) => {
+                const courseColor = stringHashToHTMLColor(courseName, 0.8);
+
                 return {
-                    bgColor: courseColor(courseName),
-                    color: getContrastYIQ(courseColor(courseName)),
+                    bgColor: courseColor,
+                    color: textColorContrast(courseColor),
                     key: i * 100 + j,
                     time: timeOfDayRangeToString(schedule.timeRange),
                     courseName,
@@ -164,7 +147,7 @@ const CalendarColumn = ({schedules}: CalendarColumnProps) => {
                     return (
                         <Box
                             key={scheduleParam[0].key}
-                            bgcolor={scheduleParam[0].bgColor + "80"}
+                            bgcolor={scheduleParam[0].bgColor}
                             color={scheduleParam[0].color}
                             position={"absolute"}
                             top={scheduleParam[0].start + "%"}
