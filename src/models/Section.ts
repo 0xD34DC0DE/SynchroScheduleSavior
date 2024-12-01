@@ -11,6 +11,7 @@ interface Section {
     readonly midtermExam: ExamSchedule | null;
     readonly finalExam: ExamSchedule | null;
     readonly subSections: Record<Section["id"], Section>;
+    readonly sectionGroup: string;
 }
 
 class SectionEntity implements Section, IndexableEntity<"id"> {
@@ -22,6 +23,7 @@ class SectionEntity implements Section, IndexableEntity<"id"> {
     readonly midtermExam: ExamScheduleEntity | null;
     readonly finalExam: ExamScheduleEntity | null;
     readonly subSections: Record<number, SectionEntity>;
+    readonly sectionGroup: string;
 
     constructor(input: Section) {
         this.id = input.id;
@@ -36,6 +38,7 @@ class SectionEntity implements Section, IndexableEntity<"id"> {
                 ([key, value]) => [parseInt(key), new SectionEntity(value)]
             )
         );
+        this.sectionGroup = input.sectionGroup;
     }
 
     serialize() {
@@ -51,7 +54,8 @@ class SectionEntity implements Section, IndexableEntity<"id"> {
             schedule: () => this.schedule.map(schedule => serializeEntity(schedule)),
             midtermExam: () => this.midtermExam ? serializeEntity(this.midtermExam) : null,
             finalExam: () => this.finalExam ? serializeEntity(this.finalExam) : null,
-            subSections: () => subSections
+            subSections: () => subSections,
+            sectionGroup: () => this.sectionGroup
         };
     }
 

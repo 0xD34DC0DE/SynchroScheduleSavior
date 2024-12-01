@@ -1,4 +1,4 @@
-import DayOfWeek from "./DayOfWeek.ts";
+import type {DayOfWeekType} from "./DayOfWeek.ts";
 import DateRangeEntity, {DateRange} from "./DateRange.ts";
 import TimeOfDayRangeEntity, {TimeOfDayRange} from "./TimeOfDayRange.ts";
 import {Entity, serializeEntity} from "./types.ts";
@@ -6,7 +6,7 @@ import {Entity, serializeEntity} from "./types.ts";
 interface SectionSchedule {
     readonly timeRange: TimeOfDayRange;
     readonly dateRange: DateRange;
-    readonly day: DayOfWeek;
+    readonly day: DayOfWeekType;
     readonly location: string;
     readonly teacher: string;
 }
@@ -14,7 +14,7 @@ interface SectionSchedule {
 class SectionScheduleEntity implements SectionSchedule, Entity {
     public readonly timeRange: TimeOfDayRangeEntity;
     public readonly dateRange: DateRangeEntity;
-    public readonly day: DayOfWeek;
+    public readonly day: DayOfWeekType;
     public readonly location: string;
     public readonly teacher: string;
 

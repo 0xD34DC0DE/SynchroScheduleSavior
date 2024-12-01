@@ -1,10 +1,10 @@
-import type DayOfWeek from "./DayOfWeek.ts";
+import type {DayOfWeekType} from "./DayOfWeek.ts";
 import TimeOfDayRangeEntity, {TimeOfDayRange} from "./TimeOfDayRange.ts";
 import {Entity, serializeEntity} from "./types.ts";
 
 interface ExamSchedule {
     readonly timeRange: TimeOfDayRange,
-    readonly day: DayOfWeek,
+    readonly day: DayOfWeekType,
     readonly time: number,
     readonly location: string,
     readonly type: "final" | "midterm"
@@ -12,7 +12,7 @@ interface ExamSchedule {
 
 class ExamScheduleEntity implements ExamSchedule, Entity {
     public readonly timeRange: TimeOfDayRangeEntity;
-    public readonly day: DayOfWeek;
+    public readonly day: DayOfWeekType;
     public readonly time: number;
     public readonly date: Date;
     public readonly location: string;

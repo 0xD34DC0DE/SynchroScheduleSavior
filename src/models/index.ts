@@ -4,7 +4,7 @@ export {default as CourseExigencesEntity, type CourseExigences} from "./CourseEx
 export {default as CourseIdEntity, type CourseId} from "./CourseId.ts";
 export {default as CreditsRequirementsEntity, type CreditsRequirements} from "./CreditsRequirements.ts";
 export {default as DateRangeEntity, type DateRange} from "./DateRange.ts";
-export {default as DayOfWeek} from "./DayOfWeek.ts";
+export {default as DayOfWeek, DayOfWeekKeys, type DayOfWeekType} from "./DayOfWeek.ts";
 export {default as ExamScheduleEntity, type ExamSchedule} from "./ExamSchedule.ts";
 export {default as RequisiteEntity, type Requisite} from "./Requisite.ts";
 export {default as SectionEntity, type Section} from "./Section.ts";

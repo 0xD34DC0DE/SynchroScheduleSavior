@@ -1,8 +1,8 @@
 import {Checkbox, FormControl, FormControlLabel, FormGroup, FormLabel, Stack} from "@mui/material";
 import {CourseEntity} from "../../../models";
-import {useEffect, useState} from "react";
-import {useOutletContext} from "react-router-dom";
-import {ScheduleViewerOutletContext} from "./ScheduleViewerOutlet.tsx";
+import {useState} from "react";
+import {useCalendarContext} from "../context/CalendarContext.tsx";
+import {CourseIdFilter} from "../models/CourseAttributeFilter.ts";
 
 interface SemesterCoursesPickerProps {
     courses: CourseEntity[];
@@ -12,11 +12,7 @@ const SemesterCoursesPicker = ({courses}: SemesterCoursesPickerProps) => {
     const [selectedCourses, setSelectedCourses] = useState<Record<string, boolean>>(
         Object.fromEntries(courses.map((course) => [course.id.toString(), true]))
     );
-    const {setDisplayedCourses} = useOutletContext<ScheduleViewerOutletContext>();
-
-    useEffect(() => {
-        setDisplayedCourses(() => courses.filter((course) => selectedCourses[course.id.toString()]));
-    }, [courses, selectedCourses]);
+    const {addFilter, removeFilter} = useCalendarContext();
 
     return (
         <FormControl component={Stack} variant={"standard"} flex={1}>
@@ -35,6 +31,11 @@ const SemesterCoursesPicker = ({courses}: SemesterCoursesPickerProps) => {
                                             onChange={
                                                 () => {
                                                     setSelectedCourses(prev => ({...prev, [courseId]: !prev[courseId]}));
+                                                    if (selectedCourses[courseId]) {
+                                                        removeFilter(new CourseIdFilter(course.id));
+                                                    } else {
+                                                        addFilter(new CourseIdFilter(course.id));
+                                                    }
                                                 }
                                             }
                                         />

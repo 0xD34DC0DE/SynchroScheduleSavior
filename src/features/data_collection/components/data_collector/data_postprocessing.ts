@@ -87,10 +87,10 @@ const getTimeOfDay = (time: string): model.TimeOfDay => {
     return {hour, minute, toBeDetermined: false} satisfies model.TimeOfDay;
 }
 
-const getDayOfWeek = (day: string): model.DayOfWeek => {
-    if (day === "À communiquer") return DayOfWeek.ToBeDetermined;
+const getDayOfWeek = (day: string): model.DayOfWeekType => {
+    if (day === "À communiquer") return "ToBeDetermined";
 
-    const lut: Record<string, model.DayOfWeek> = {
+    const lut: Record<string, model.DayOfWeekType> = {
         "Lun": DayOfWeek.Monday,
         "Ma": DayOfWeek.Tuesday,
         "Mer": DayOfWeek.Wednesday,
@@ -163,7 +163,8 @@ function getSection(section: Section, subSections = {}): model.Section {
         schedule,
         midtermExam,
         finalExam,
-        subSections
+        subSections,
+        sectionGroup: section.associated_section_group.toString()
     };
 }
 
