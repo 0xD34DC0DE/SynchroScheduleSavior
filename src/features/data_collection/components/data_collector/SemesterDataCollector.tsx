@@ -3,7 +3,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {useEffect, useState} from "react";
 import {PipelineState, PipelineStepsBuilder, usePipelineState, useScraper} from "../../../../lib/webview_scraper";
 import {SynchroPipelineExtension} from "../../utils";
-import {CourseBlock} from "./types.ts";
+import {SemesterData} from "./types.ts";
 import {DeferredSteps} from "../../../../lib/webview_scraper/components";
 import DataCollectorBasketNavigationStep from "./DataCollectorBasketNavigationStep.tsx";
 import DataCollectorBlocksExpansionStep from "./DataCollectorBlocksExpansionStep.tsx";
@@ -11,7 +11,7 @@ import DataCollectorCourseEnumerationStep from "./DataCollectorCourseEnumeration
 import DataCollectorCourseDataCollectionStep from "./DataCollectorCourseDataCollectionStep.tsx";
 
 interface SemesterDataCollectorProps {
-    setCollectedCourseBlocks: (courseBlock: CourseBlock[]) => void;
+    setCollectedSemesterData: (semesterData: SemesterData) => void;
     collectData: boolean;
     start_url: string;
     semester: { name: string, href: string };
@@ -19,7 +19,7 @@ interface SemesterDataCollectorProps {
 
 const SemesterDataCollector = (
     {
-        setCollectedCourseBlocks,
+        setCollectedSemesterData,
         collectData,
         start_url,
         semester
@@ -71,7 +71,7 @@ const SemesterDataCollector = (
                         <DataCollectorBasketNavigationStep startUrl={start_url} semesterHref={semester.href}/>
                         <DataCollectorBlocksExpansionStep/>
                         <DataCollectorCourseEnumerationStep/>
-                        <DataCollectorCourseDataCollectionStep setCollectedCourseBlocks={setCollectedCourseBlocks}/>
+                        <DataCollectorCourseDataCollectionStep setCollectedSemesterData={setCollectedSemesterData}/>
                     </DeferredSteps>
                     {pipelineState === PipelineState.DONE &&
                         <Grid item xs={6} display={"flex"} justifyContent={"center"} alignItems={"center"}>

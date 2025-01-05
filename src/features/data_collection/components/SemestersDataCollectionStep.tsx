@@ -5,28 +5,30 @@ import {useSetStepState, useStepData} from "./stepper/RouteStepper.tsx";
 import {AvailableSemesters} from "./SemesterSelectionStep.tsx";
 import {SemesterDataCollector} from "./data_collector";
 import {useRef, useState} from "react";
-import {CourseBlock} from "./data_collector/types.ts";
+import {CourseBlock, SemestersData} from "./data_collector/types.ts";
 
 interface SemestersDataCollectionStepProps {
 }
 
+
+
 const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
     const setStepCompleted = useSetStepState();
-    const [previousStepData, setStepData] = useStepData<AvailableSemesters, { [semester: string]: CourseBlock[] }>();
+    const [previousStepData, setStepData] = useStepData<AvailableSemesters, SemestersData>();
     const availableSemesters = useRef(previousStepData);
     const [runningCollector, setRunningCollector] = useState(0);
-    const collectedCourseBlock = useRef<{ [semester: string]: CourseBlock[] }>({});
+    const collectedSemesters = useRef<SemestersData>({});
 
-    const onCourseBlockCollected = (semester: string, courseBlock: CourseBlock[]) => {
+    const onSemesterDataCollected = (semester: string, semesterData: SemestersData) => {
         setRunningCollector(runningCollector + 1);
 
-        collectedCourseBlock.current = {
-            ...collectedCourseBlock.current,
-            [semester]: courseBlock
+        collectedSemesters.current = {
+            ...collectedSemesters.current,
+            [semester]: semesterData
         };
 
         if (runningCollector + 1 === availableSemesters.current.semesters.length) {
-            setStepData(collectedCourseBlock.current);
+            setStepData(collectedSemesters.current);
             setStepCompleted(true);
         }
     }
@@ -47,7 +49,7 @@ const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
                         {availableSemesters.current.semesters.map((semester, i) => (
                             <SemesterDataCollector
                                 key={semester.name}
-                                setCollectedCourseBlocks={onCourseBlockCollected.bind(null, semester.name)}
+                                setCollectedSemesterData={onSemesterDataCollected.bind(null, semester.name)}
                                 collectData={i === runningCollector}
                                 semester={semester}
                                 start_url={availableSemesters.current.url}

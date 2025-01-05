@@ -1,65 +1,72 @@
+
+export type SemestersData = {
+    [semester: string]: SemestersData
+};
+
+export type SemesterData = {
+    course_blocks: CourseBlock[];
+    courses: Course[];
+}
+
 export type CourseBlock = {
     id: string;
     name: string;
     credits_requirements: string;
-    courses: Course[];
-}
+    block_courses_id: Course["id"][];
 
-export type FollowedCourse = {
-    id: string;
-    grade: string;
-    status: string;
-    designation: string;
-    semester: string;
+    metadata: {
+        courses_link_id: {[key: Course["id"]]: string};
+    }
 }
 
 export type Course = {
     id: string;
-    block_id: CourseBlock["id"];
     name: string;
+    description: string;
     credits: number;
-    exigence?: string;
-    description?: string;
-    sections?: Section[];
-    basket_course_link_id?: string;
+    exigences: string;
+    time_slots: CourseTimeSlot[];
+    sections: CourseSection[];
+    sections_exams: CourseExam[];
+
+    metadata: {
+        exams_link_id: {[section_letter: CourseExam["section_letter"]]: string};
+    }
 }
 
-export type Section = {
-    id: string;
-    course_id?: string;
-    associated_section_group: number;
-
-    status: "open" | "closed";
-    type: string;
-    campus: string;
-
-    schedule: SectionSchedule[];
-    exams?: ExamSchedule[];
-
-    course_detail_link_id?: string;
-};
-
-export type SectionSchedule = {
+export type CourseTimeSlot = {
+    section_id: string;
+    day_of_week: string;
     start_time: string;
     end_time: string;
-
-    day: string;
-
-    start_date: string;
-    end_date: string;
-
     location: string;
     teacher: string;
+    start_date: string;
+    end_date: string;
 }
 
-export type ExamSchedule = {
+export type CourseSection = {
+    id: string;
+    is_open: boolean;
+    type: string;
+}
+
+export type CourseExam = {
+    section_letter: string;
+    day_of_week: string;
     start_time: string;
     end_time: string;
-
-    day: string;
-
-    date: string;
-
+    type: string;
     location: string;
-    type: "final" | "intra";
+    date: string;
+}
+
+export type FollowedCourse = {
+    id: Course["id"];
+    name: Course["name"];
+    designation: string;
+    semester: string;
+    grade: string;
+    credits: Course["credits"];
+    status: string;
 }

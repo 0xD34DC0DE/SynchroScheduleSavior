@@ -93,8 +93,11 @@ const getFollowedCourses = (): FollowedCourse[] => {
 
     return Array.from(rows)
         .map(row => {
-            const courseId = row.querySelector("span[id^=CRSE_NAME\\$]")?.textContent;
+            const courseId = row.querySelector("span[id^=CRSE_NAME\\$]")?.textContent?.replace(/\s/g, "");
             if (!courseId) throw new Error("Couldn't find course history row's course id");
+
+            const name = row.querySelector("a[id^=CRSE_LINK\\$]")?.textContent;
+            if (!name) throw new Error("Couldn't find course history row's name");
 
             const designation = row.querySelector("span[id^=CRSE_DESIG_DESCR\\$]")?.textContent;
             if (!designation) throw new Error("Couldn't find course history row's designation");
@@ -107,10 +110,14 @@ const getFollowedCourses = (): FollowedCourse[] => {
             const grade = gradeSpan.textContent;
             if (!grade && grade !== "") throw new Error("Couldn't find course history row's grade text");
 
+            const creditsText = row.querySelector("span[id^=CRSE_UNITS\\$]")?.textContent;
+            if (!creditsText) throw new Error("Couldn't find course history row's credits");
+            const credits = parseFloat(creditsText);
+
             const status = row.querySelector("div[id^=win0divCRSE_STATUS\\$] span.sr-only")?.textContent;
             if (!status) throw new Error("Couldn't find course history row's status");
 
-            return {id: courseId, designation, semester, grade, status} satisfies FollowedCourse;
+            return {id: courseId, name, designation, semester, grade, credits, status} satisfies FollowedCourse;
         });
 }
 
