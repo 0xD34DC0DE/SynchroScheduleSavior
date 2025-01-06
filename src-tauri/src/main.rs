@@ -4,12 +4,12 @@
 
 use std::sync::Arc;
 
+use crate::api::create_schema;
+use crate::webview_inject::{AsInjector, InjectableWindowBuilder, InjectionRequest};
 use anyhow::{anyhow, Result};
 use tauri::{AppHandle, Manager, State, Window};
 use tokio::sync::Semaphore;
 use url::Url;
-use crate::api::create_schema;
-use crate::webview_inject::{InjectionRequest, InjectableWindowBuilder, AsInjector};
 
 mod webview_inject;
 mod api;
@@ -101,7 +101,6 @@ fn main() {
             window_exists
         ])
         .manage(InjectorState(Arc::new(Semaphore::new(MAX_PARALLEL_INJECTIONS as usize))))
-        .plugin(tauri_plugin_sql::Builder::default().build())
         .plugin(tauri_plugin_graphql::init(create_schema()))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
