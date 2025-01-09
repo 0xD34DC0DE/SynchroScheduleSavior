@@ -1,25 +1,29 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-
+use std::path::Path;
 use std::sync::Arc;
 
-use crate::api::create_schema;
 use crate::webview_inject::{AsInjector, InjectableWindowBuilder, InjectionRequest};
 use anyhow::{anyhow, Result};
 use tauri::{AppHandle, Manager, State, Window};
 use tokio::sync::Semaphore;
 use url::Url;
 
-mod webview_inject;
 mod api;
+mod webview_inject;
 
 const MAX_PARALLEL_INJECTIONS: u32 = 8;
 
 struct InjectorState(Arc<Semaphore>);
 
 #[tauri::command]
-async fn open_webview(window_label: String, title: String, url: String, handle: AppHandle) -> Result<(), String> {
+async fn open_webview(
+    window_label: String,
+    title: String,
+    url: String,
+    handle: AppHandle,
+) -> Result<(), String> {
     if handle.get_window(window_label.as_str()).is_some() {
         return Err(anyhow!("Window '{}' already exists", window_label).to_string());
     }
@@ -30,14 +34,15 @@ async fn open_webview(window_label: String, title: String, url: String, handle: 
         &handle,
         window_label.as_str(),
         tauri::WindowUrl::External(url),
-    ).map_err(|e| e.to_string())?
-        .title(title.as_str())
-        //FIXME: 'visible(true)' is a workaround for a race condition causing the the window to
-        // freeze during loading.
-        // https://github.com/tauri-apps/tauri/issues/10256
-        .visible(false)
-        .build()
-        .map_err(|e| e.to_string())?;
+    )
+    .map_err(|e| e.to_string())?
+    .title(title.as_str())
+    //FIXME: 'visible(true)' is a workaround for a race condition causing the the window to
+    // freeze during loading.
+    // https://github.com/tauri-apps/tauri/issues/10256
+    .visible(false)
+    .build()
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -69,11 +74,13 @@ async fn webview_inject<'r>(
         Some(semaphore.acquire_many(MAX_PARALLEL_INJECTIONS).await)
     };
 
-    let target_window = app_handle.get_window(target_window_label.as_str())
+    let target_window = app_handle
+        .get_window(target_window_label.as_str())
         .ok_or(anyhow!("Window '{}' not found", target_window_label))
         .map_err(|e| e.to_string())?;
 
-    initiator_window.as_injector()
+    initiator_window
+        .as_injector()
         .with_args(request)
         .inject(target_window)
         .await
@@ -87,11 +94,18 @@ fn window_exists(window_label: String, handle: AppHandle) -> bool {
     handle.get_window(window_label.as_str()).is_some()
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
+    tauri::async_runtime::set(tokio::runtime::Handle::current());
+
     #[cfg(debug_assertions)]
-        let builder = tauri::Builder::default().plugin(devtools::init());
+    let builder = tauri::Builder::default().plugin(devtools::init());
     #[cfg(not(debug_assertions))]
-        let builder = tauri::Builder::default();
+    let builder = tauri::Builder::default();
+
+    let schema = api::init(Path::new("./data.db"))
+        .await
+        .expect("error while initializing schema");
 
     builder
         .invoke_handler(tauri::generate_handler![
@@ -100,8 +114,10 @@ fn main() {
             webview_inject,
             window_exists
         ])
-        .manage(InjectorState(Arc::new(Semaphore::new(MAX_PARALLEL_INJECTIONS as usize))))
-        .plugin(tauri_plugin_graphql::init(create_schema()))
+        .manage(InjectorState(Arc::new(Semaphore::new(
+            MAX_PARALLEL_INJECTIONS as usize,
+        ))))
+        .plugin(tauri_plugin_graphql::init(schema))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

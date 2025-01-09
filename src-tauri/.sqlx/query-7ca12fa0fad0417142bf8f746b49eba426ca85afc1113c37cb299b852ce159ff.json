@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "CREATE TABLE IF NOT EXISTS credit_blocks (\n                id TEXT PRIMARY KEY,\n                name TEXT NOT NULL,\n                required_credits INTEGER NOT NULL\n            );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "7ca12fa0fad0417142bf8f746b49eba426ca85afc1113c37cb299b852ce159ff"
+}

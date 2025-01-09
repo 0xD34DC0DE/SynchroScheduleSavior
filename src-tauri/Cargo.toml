@@ -22,9 +22,11 @@ tokio = { version = "1", features = ["time"] }
 anyhow = "1.0.77"
 thiserror = "1.0"
 devtools = "0.3.3"
-tauri-plugin-graphql = { version = "2.1.0", features = ["chrono"] }
+tauri-plugin-graphql = { version = "2.1.0", features = ["chrono", "dataloader"] }
+async-graphql = { version = "7.0.13", features = ["chrono", "dataloader"] }
 chrono = "0.4.38"
-rusqlite = { version = "0.32.0", features = ["bundled"] }
+sqlx = { version = "0.8.3", features = ["runtime-tokio", "macros", "chrono", "sqlite"] }
+itertools = "0.14.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
