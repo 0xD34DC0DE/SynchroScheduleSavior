@@ -123,8 +123,10 @@ impl SQLTable for CreditBlock {
             /*language=SQLite*/
             "CREATE TABLE IF NOT EXISTS credit_blocks (
                 id TEXT PRIMARY KEY,
+                semester_id TEXT NOT NULL,
                 name TEXT NOT NULL,
-                required_credits INTEGER NOT NULL
+                required_credits INTEGER NOT NULL,
+                FOREIGN KEY(semester_id) REFERENCES semesters(id)
             );"
         )
     }
