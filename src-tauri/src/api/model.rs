@@ -6,6 +6,15 @@ use itertools::join;
 use sqlx::{query, Pool, Sqlite};
 use std::collections::HashMap;
 
+
+pub(crate) struct SQLiteLoader(Pool<Sqlite>);
+
+impl SQLiteLoader {
+    pub fn new(pool: Pool<Sqlite>) -> Self {
+        Self(pool)
+    }
+}
+
 pub(crate) type SemesterId = String;
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
@@ -49,14 +58,6 @@ impl SQLTable for Semester {
 
 #[ComplexObject]
 impl Semester {}
-
-pub(crate) struct SQLiteLoader(Pool<Sqlite>);
-
-impl SQLiteLoader {
-    pub fn new(pool: Pool<Sqlite>) -> Self {
-        Self(pool)
-    }
-}
 
 impl Loader<SemesterId> for SQLiteLoader {
     type Value = Semester;
