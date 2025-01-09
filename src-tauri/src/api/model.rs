@@ -1,8 +1,6 @@
 use crate::api::database::{SQLTable, TableDefinitionQuery};
 use async_graphql::futures_util::TryStreamExt;
-use async_graphql::{
-    dataloader::Loader, ComplexObject, Context, Enum, Interface, SimpleObject,
-};
+use async_graphql::{dataloader::Loader, ComplexObject, Context, Enum, Interface, SimpleObject};
 use chrono::{NaiveDate, NaiveTime};
 use derive_more::Display;
 use itertools::join;
@@ -49,7 +47,7 @@ pub struct Semester {
 #[ComplexObject]
 impl Semester {
     async fn credit_blocks(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<CreditBlock>> {
-        todo!()
+        credit_blocks_by_semester_id(ctx, self.id.clone()).await
     }
 
     async fn courses(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<Course>> {
@@ -115,6 +113,21 @@ impl CreditBlock {
     async fn courses(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<Course>> {
         todo!()
     }
+}
+
+async fn credit_blocks_by_semester_id(
+    ctx: &Context<'_>,
+    semester_id: SemesterId,
+) -> anyhow::Result<Vec<CreditBlock>> {
+    let pool = ctx.data_unchecked::<SQLiteLoader>();
+    Ok(sqlx::query_as(
+        /*language=SQLite*/
+        "SELECT id, name, required_credits FROM credit_blocks WHERE semester_id = $1",
+    )
+    .bind(&semester_id.0)
+    .fetch(&pool.0)
+    .try_collect()
+    .await?)
 }
 
 impl SQLTable for CreditBlock {
@@ -317,7 +330,7 @@ impl Section {
 impl FromRow<'_, SqliteRow> for Section {
     fn from_row(row: &'_ SqliteRow) -> Result<Self, Error> {
         let section_type: SectionType = row.try_get("object_type")?;
-        
+
         match section_type {
             SectionType::MainSection => Ok(Section::MainSection(MainSection::from_row(row)?)),
             SectionType::SubSection => Ok(Section::SubSection(SubSection::from_row(row)?)),
@@ -438,7 +451,10 @@ impl Loader<SectionId> for SQLiteLoader {
     type Value = Section;
     type Error = async_graphql::Error;
 
-    async fn load(&self, keys: &[SectionId]) -> Result<HashMap<SectionId, Self::Value>, Self::Error> {
+    async fn load(
+        &self,
+        keys: &[SectionId],
+    ) -> Result<HashMap<SectionId, Self::Value>, Self::Error> {
         Ok(sqlx::query_as(
             /*language=SQLite*/
             "SELECT id, course_id, section_type, object_type, start_date, end_date, teacher, location, is_open
