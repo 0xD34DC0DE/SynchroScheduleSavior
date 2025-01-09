@@ -27,6 +27,7 @@ async-graphql = { version = "7.0.13", features = ["chrono", "dataloader"] }
 chrono = "0.4.38"
 sqlx = { version = "0.8.3", features = ["runtime-tokio", "macros", "chrono", "sqlite"] }
 itertools = "0.14.0"
+derive_more = { version = "1.0.0", features = ["display"] }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
