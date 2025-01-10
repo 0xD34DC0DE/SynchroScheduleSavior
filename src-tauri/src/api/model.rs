@@ -2,19 +2,11 @@ use crate::api::database::{SQLTable, TableDefinitionQuery};
 use async_graphql::futures_util::TryStreamExt;
 use async_graphql::{dataloader::Loader, ComplexObject, Context, Enum, Interface, SimpleObject};
 use chrono::{NaiveDate, NaiveTime};
-use derive_more::Display;
+use derive_more::{Constructor, Display};
 use itertools::join;
 use sqlx::sqlite::SqliteRow;
 use sqlx::{query, Error, FromRow, Pool, Row, Sqlite};
 use std::collections::HashMap;
-
-pub(crate) struct SQLiteLoader(Pool<Sqlite>);
-
-impl SQLiteLoader {
-    pub fn new(pool: Pool<Sqlite>) -> Self {
-        Self(pool)
-    }
-}
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
 #[sqlx(transparent)]
@@ -55,6 +47,28 @@ impl Semester {
     }
 }
 
+#[derive(Constructor)]
+pub(crate) struct SemesterLoader(Pool<Sqlite>);
+
+impl Loader<SemesterId> for SemesterLoader {
+    type Value = Semester;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[SemesterId],
+    ) -> Result<HashMap<SemesterId, Self::Value>, Self::Error> {
+        Ok(sqlx::query_as(
+            /*language=SQLite*/ "SELECT * FROM semesters WHERE id IN ($1)",
+        )
+            .bind(join(keys, ", "))
+            .fetch(&self.0)
+            .map_ok(|semester: Semester| (semester.id.clone(), semester))
+            .try_collect()
+            .await?)
+    }
+}
+
 impl SQLTable for Semester {
     fn table_definition() -> TableDefinitionQuery {
         query!(
@@ -67,25 +81,6 @@ impl SQLTable for Semester {
                 end_date TEXT NOT NULL
             );"
         )
-    }
-}
-
-impl Loader<SemesterId> for SQLiteLoader {
-    type Value = Semester;
-    type Error = async_graphql::Error;
-
-    async fn load(
-        &self,
-        keys: &[SemesterId],
-    ) -> Result<HashMap<SemesterId, Self::Value>, Self::Error> {
-        Ok(sqlx::query_as(
-            /*language=SQLite*/ "SELECT * FROM semesters WHERE id IN ($1)",
-        )
-        .bind(join(keys, ", "))
-        .fetch(&self.0)
-        .map_ok(|semester: Semester| (semester.id.clone(), semester))
-        .try_collect()
-        .await?)
     }
 }
 
@@ -115,19 +110,26 @@ impl CreditBlock {
     }
 }
 
-async fn credit_blocks_by_semester_id(
-    ctx: &Context<'_>,
-    semester_id: SemesterId,
-) -> anyhow::Result<Vec<CreditBlock>> {
-    let pool = ctx.data_unchecked::<SQLiteLoader>();
-    Ok(sqlx::query_as(
-        /*language=SQLite*/
-        "SELECT id, name, required_credits FROM credit_blocks WHERE semester_id = $1",
-    )
-    .bind(&semester_id.0)
-    .fetch(&pool.0)
-    .try_collect()
-    .await?)
+#[derive(Constructor)]
+pub(crate) struct CreditBlockLoader(Pool<Sqlite>);
+
+impl Loader<CreditBlockId> for CreditBlockLoader {
+    type Value = CreditBlock;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[CreditBlockId],
+    ) -> Result<HashMap<CreditBlockId, Self::Value>, Self::Error> {
+        Ok(sqlx::query_as(
+            /*language=SQLite*/ "SELECT id, name, required_credits FROM credit_blocks WHERE id IN ($1)",
+        )
+            .bind(join(keys, ", "))
+            .fetch(&self.0)
+            .map_ok(|credit_block: CreditBlock| (credit_block.id.clone(), credit_block))
+            .try_collect()
+            .await?)
+    }
 }
 
 impl SQLTable for CreditBlock {
@@ -142,26 +144,6 @@ impl SQLTable for CreditBlock {
                 FOREIGN KEY(semester_id) REFERENCES semesters(id)
             );"
         )
-    }
-}
-
-impl Loader<CreditBlockId> for SQLiteLoader {
-    type Value = CreditBlock;
-    type Error = async_graphql::Error;
-
-    async fn load(
-        &self,
-        keys: &[CreditBlockId],
-    ) -> Result<HashMap<CreditBlockId, Self::Value>, Self::Error> {
-        Ok(sqlx::query_as(
-            /*language=SQLite*/
-            "SELECT id, name, required_credits FROM credit_blocks WHERE id IN ($1)",
-        )
-        .bind(join(keys, ", "))
-        .fetch(&self.0)
-        .map_ok(|credit_block: CreditBlock| (credit_block.id.clone(), credit_block))
-        .try_collect()
-        .await?)
     }
 }
 
@@ -210,14 +192,16 @@ impl Course {
     }
 }
 
-impl Loader<CourseId> for SQLiteLoader {
+#[derive(Constructor)]
+pub(crate) struct CourseLoader(Pool<Sqlite>);
+
+impl Loader<CourseId> for CourseLoader {
     type Value = Course;
     type Error = async_graphql::Error;
 
     async fn load(&self, keys: &[CourseId]) -> Result<HashMap<CourseId, Self::Value>, Self::Error> {
         Ok(sqlx::query_as(
-            /*language=SQLite*/
-            "SELECT id, name, year_of_level, level, subject, description, credit_block_id
+            /*language=SQLite*/ "SELECT id, name, year_of_level, level, subject, description, credit_block_id
                  FROM courses
                  WHERE id IN ($1)",
         )
@@ -266,7 +250,10 @@ pub struct CourseRequirements {
     corequisites_expr: Option<String>,
 }
 
-impl Loader<CourseRequirementId> for SQLiteLoader {
+#[derive(Constructor)]
+pub(crate) struct CourseRequirementsLoader(Pool<Sqlite>);
+
+impl Loader<CourseRequirementId> for CourseRequirementsLoader {
     type Value = CourseRequirements;
     type Error = async_graphql::Error;
 
@@ -275,8 +262,7 @@ impl Loader<CourseRequirementId> for SQLiteLoader {
         keys: &[CourseRequirementId],
     ) -> Result<HashMap<CourseRequirementId, Self::Value>, Self::Error> {
         Ok(sqlx::query_as(
-            /*language=SQLite*/
-            "SELECT id, prerequisites_expr, corequisites_expr
+            /*language=SQLite*/ "SELECT id, prerequisites_expr, corequisites_expr
                  FROM course_requirements
                  WHERE id IN ($1)",
         )
@@ -447,7 +433,10 @@ impl SubSection {
     }
 }
 
-impl Loader<SectionId> for SQLiteLoader {
+#[derive(Constructor)]
+pub(crate) struct SectionLoader(Pool<Sqlite>);
+
+impl Loader<SectionId> for SectionLoader {
     type Value = Section;
     type Error = async_graphql::Error;
 
@@ -528,7 +517,10 @@ pub struct TimeSlot {
     location: String,
 }
 
-impl Loader<TimeSlotId> for SQLiteLoader {
+#[derive(Constructor)]
+pub(crate) struct TimeSlotLoader(Pool<Sqlite>);
+
+impl Loader<TimeSlotId> for TimeSlotLoader {
     type Value = TimeSlot;
     type Error = async_graphql::Error;
 
@@ -590,7 +582,10 @@ pub struct ScheduleGap {
     reason: String,
 }
 
-impl Loader<ScheduleGapId> for SQLiteLoader {
+#[derive(Constructor)]
+pub(crate) struct ScheduleGapLoader(Pool<Sqlite>);
+
+impl Loader<ScheduleGapId> for ScheduleGapLoader {
     type Value = ScheduleGap;
     type Error = async_graphql::Error;
 
@@ -655,6 +650,28 @@ pub struct Exam {
     /// The place where the exam is held.\
     /// _Example_: `Pavillon André-Aisenstadt`
     location: String,
+}
+
+#[derive(Constructor)]
+pub(crate) struct ExamLoader(Pool<Sqlite>);
+
+impl Loader<ExamId> for ExamLoader {
+    type Value = Exam;
+    type Error = async_graphql::Error;
+
+    async fn load(&self, keys: &[ExamId]) -> Result<HashMap<ExamId, Self::Value>, Self::Error> {
+        Ok(sqlx::query_as(
+            /*language=SQLite*/
+            "SELECT id, section_id, date, start_time, end_time, location
+                 FROM exams
+                 WHERE id IN ($1)",
+        )
+        .bind(join(keys, ", "))
+        .fetch(&self.0)
+        .map_ok(|exam: Exam| (exam.id.clone(), exam))
+        .try_collect()
+        .await?)
+    }
 }
 
 impl SQLTable for Exam {
