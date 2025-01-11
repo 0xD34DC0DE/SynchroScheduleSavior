@@ -49,7 +49,7 @@ impl SQLTable for Semester {
         query!(
             /*language=SQLite*/
             "CREATE TABLE IF NOT EXISTS semesters (
-                id TEXT PRIMARY KEY,
+                id TEXT PRIMARY KEY NOT NULL,
                 name TEXT NOT NULL,
                 year INTEGER NOT NULL,
                 start_date TEXT NOT NULL,
@@ -64,7 +64,7 @@ impl SQLTable for CreditBlock {
         query!(
             /*language=SQLite*/
             "CREATE TABLE IF NOT EXISTS credit_blocks (
-                id TEXT PRIMARY KEY,
+                id TEXT PRIMARY KEY NOT NULL,
                 semester_id TEXT NOT NULL,
                 name TEXT NOT NULL,
                 required_credits INTEGER NOT NULL,
@@ -79,7 +79,7 @@ impl SQLTable for Course {
         query!(
             /*language=SQLite*/
             "CREATE TABLE IF NOT EXISTS courses (
-                id TEXT PRIMARY KEY,
+                id TEXT PRIMARY KEY NOT NULL,
                 name TEXT NOT NULL,
                 year_of_level INTEGER NOT NULL,
                 level TEXT NOT NULL,
@@ -99,7 +99,7 @@ impl SQLTable for Section {
         query!(
             /*language=SQLite*/
             "CREATE TABLE IF NOT EXISTS sections (
-                id TEXT PRIMARY KEY,
+                id TEXT PRIMARY KEY NOT NULL,
                 course_id TEXT NOT NULL,
                 main_section_id TEXT,
                 section_type TEXT NOT NULL,
@@ -121,7 +121,7 @@ impl SQLTable for CourseRequirements {
         query!(
             /*language=SQLite*/
             "CREATE TABLE IF NOT EXISTS course_requirements (
-                id TEXT PRIMARY KEY REFERENCES courses(id),
+                id TEXT PRIMARY KEY NOT NULL REFERENCES courses(id),
                 prerequisites_expr TEXT,
                 corequisites_expr TEXT
             );"
@@ -134,7 +134,7 @@ impl SQLTable for TimeSlot {
         query!(
             /*language=SQLite*/
             "CREATE TABLE IF NOT EXISTS time_slots (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 section_id TEXT NOT NULL,
                 day_of_week TEXT NOT NULL,
                 start_time TEXT NOT NULL,
@@ -151,7 +151,7 @@ impl SQLTable for ScheduleGap {
         query!(
             /*language=SQLite*/
             "CREATE TABLE IF NOT EXISTS schedule_gaps (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 section_id TEXT NOT NULL,
                 date TEXT NOT NULL,
                 reason TEXT NOT NULL,
@@ -166,7 +166,7 @@ impl SQLTable for Exam {
         query!(
             /*language=SQLite*/
             "CREATE TABLE IF NOT EXISTS exams (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 section_id TEXT NOT NULL,
                 exam_type TEXT NOT NULL,
                 date TEXT NOT NULL,
