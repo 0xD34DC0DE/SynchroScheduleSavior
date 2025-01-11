@@ -1,4 +1,4 @@
-use crate::api::model::{
+use crate::api::{
     sql, graphql::{create_schema, Schema},
 };
 use anyhow::{anyhow, Result};
