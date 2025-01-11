@@ -17,19 +17,19 @@ pub(in crate::api) struct Semester {
 
     /// The name of the semester.\
     /// _Example_: `Automne 2021`
-    name: String,
+    pub(super) name: String,
 
     /// The year of the semester.\
     /// _Example_: `2021`
-    year: i64,
+    pub(super) year: i64,
 
     /// The start date of the semester.\
     /// _Example_: `2021-09-01`
-    start_date: NaiveDate,
+    pub(super) start_date: NaiveDate,
 
     /// The end date of the semester.\
     /// _Example_: `2021-12-31`
-    end_date: NaiveDate,
+    pub(super) end_date: NaiveDate,
 }
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
@@ -133,9 +133,7 @@ impl FromRow<'_, SqliteRow> for Section {
         let section_type: SectionType = row.try_get("object_type")?;
 
         match section_type {
-            SectionType::MainSection => {
-                Ok(Section::MainSection(MainSection::from_row(row)?))
-            }
+            SectionType::MainSection => Ok(Section::MainSection(MainSection::from_row(row)?)),
             SectionType::SubSection => Ok(Section::SubSection(SubSection::from_row(row)?)),
         }
     }
