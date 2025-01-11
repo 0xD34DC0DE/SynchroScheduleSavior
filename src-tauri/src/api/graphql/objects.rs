@@ -21,7 +21,7 @@ pub(in crate::api) struct Semester {
 
     /// The year of the semester.\
     /// _Example_: `2021`
-    year: i32,
+    year: i64,
 
     /// The start date of the semester.\
     /// _Example_: `2021-09-01`
