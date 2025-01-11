@@ -216,6 +216,17 @@ pub(super) mod sql {
         }
     }
 
+    impl FromRow<'_, SqliteRow> for Section {
+        fn from_row(row: &'_ SqliteRow) -> Result<Self, Error> {
+            let section_type: SectionType = row.try_get("object_type")?;
+
+            match section_type {
+                SectionType::MainSection => Ok(Section::MainSection(MainSection::from_row(row)?)),
+                SectionType::SubSection => Ok(Section::SubSection(SubSection::from_row(row)?)),
+            }
+        }
+    }
+
     impl SQLTable for CourseRequirements {
         fn table_definition() -> TableDefinitionQuery {
             query!(
@@ -282,11 +293,11 @@ pub(super) mod sql {
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
 #[sqlx(transparent)]
-pub(crate) struct SemesterId(String);
+struct SemesterId(String);
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
 #[graphql(complex)]
-pub struct Semester {
+struct Semester {
     /// The ID of the semester.
     /// Example: `A21`
     id: SemesterId,
@@ -347,11 +358,11 @@ impl Loader<SemesterId> for SemesterLoader {
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
 #[sqlx(transparent)]
-pub(crate) struct CreditBlockId(String);
+struct CreditBlockId(String);
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
 #[graphql(complex)]
-pub struct CreditBlock {
+struct CreditBlock {
     /// The ID of the credit block.\
     /// _Example_: `76A`
     id: CreditBlockId,
@@ -418,11 +429,11 @@ impl Loader<SemesterId> for CreditBlockLoader {
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
 #[sqlx(transparent)]
-pub(crate) struct CourseId(String);
+struct CourseId(String);
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
 #[graphql(complex)]
-pub struct Course {
+struct Course {
     /// The ID of the course\
     /// _Example_: `IFT3065`
     id: CourseId,
@@ -541,7 +552,7 @@ impl Loader<CreditBlockId> for CourseLoader {
 }
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
-pub struct CourseRequirements {
+struct CourseRequirements {
     /// The ID of the course that the requirements are for.\
     /// _Example_: `IFT3065`
     id: CourseId,
@@ -589,7 +600,7 @@ impl Loader<CourseId> for CourseRequirementsLoader {
     field(name = "time_slots", ty = "Vec<TimeSlot>"),
     field(name = "schedule_gaps", ty = "Vec<ScheduleGap>")
 )]
-pub enum Section {
+enum Section {
     MainSection(MainSection),
     SubSection(SubSection),
 }
@@ -603,24 +614,13 @@ impl Section {
     }
 }
 
-impl FromRow<'_, SqliteRow> for Section {
-    fn from_row(row: &'_ SqliteRow) -> Result<Self, Error> {
-        let section_type: SectionType = row.try_get("object_type")?;
-
-        match section_type {
-            SectionType::MainSection => Ok(Section::MainSection(MainSection::from_row(row)?)),
-            SectionType::SubSection => Ok(Section::SubSection(SubSection::from_row(row)?)),
-        }
-    }
-}
+#[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
+#[sqlx(transparent)]
+struct SectionId(String);
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
 #[sqlx(transparent)]
-pub(crate) struct SectionId(String);
-
-#[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
-#[sqlx(transparent)]
-pub(crate) struct MainSectionId(String);
+struct MainSectionId(String);
 
 impl Into<MainSectionId> for SectionId {
     fn into(self) -> MainSectionId {
@@ -629,14 +629,14 @@ impl Into<MainSectionId> for SectionId {
 }
 
 #[derive(sqlx::Type, Enum, Copy, Clone, Eq, PartialEq)]
-pub(crate) enum SectionType {
+enum SectionType {
     MainSection,
     SubSection,
 }
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
 #[graphql(complex)]
-pub struct MainSection {
+struct MainSection {
     /// The ID of the main section.\
     /// _Example_: `A-TH-13046`
     id: SectionId,
@@ -725,7 +725,7 @@ impl MainSection {
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
 #[graphql(complex)]
-pub struct SubSection {
+struct SubSection {
     /// See [MainSection]
     id: SectionId,
 
@@ -832,7 +832,7 @@ impl Loader<CourseId> for SectionLoader {
 }
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
-pub struct SectionTypeTuple {
+struct SectionTypeTuple {
     /// The type of the subsections.\
     /// _Example_: `TP`
     _type: SectionType,
@@ -841,10 +841,10 @@ pub struct SectionTypeTuple {
     sections: Vec<SubSection>,
 }
 
-pub(crate) type TimeSlotId = i32;
+type TimeSlotId = i32;
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
-pub struct TimeSlot {
+pub(crate) struct TimeSlot {
     /// The ID of the time slot.\
     /// This field is not exposed to the GraphQL schema.
     id: TimeSlotId,
@@ -919,10 +919,10 @@ impl Loader<SectionId> for TimeSlotLoader {
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
 #[sqlx(transparent)]
-pub(crate) struct ScheduleGapId(i32);
+struct ScheduleGapId(i32);
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
-pub struct ScheduleGap {
+struct ScheduleGap {
     /// The ID of the schedule gap.\
     /// This field is not exposed to the GraphQL schema.
     id: ScheduleGapId,
@@ -989,10 +989,10 @@ impl Loader<SectionId> for ScheduleGapLoader {
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
 #[sqlx(transparent)]
-pub(crate) struct ExamId(i32);
+struct ExamId(i32);
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
-pub struct Exam {
+struct Exam {
     /// The ID of the exam.\
     id: ExamId,
 
@@ -1022,7 +1022,7 @@ pub struct Exam {
 }
 
 impl Exam {
-    pub(crate) fn is_of_type(&self, exam_type: ExamType) -> bool {
+    fn is_of_type(&self, exam_type: ExamType) -> bool {
         self.exam_type == exam_type
     }
 }
@@ -1072,14 +1072,14 @@ impl Loader<SectionId> for ExamLoader {
 }
 
 #[derive(sqlx::Type, Enum, Copy, Clone, Eq, PartialEq)]
-pub enum UniversityLevel {
+enum UniversityLevel {
     Undergraduate,
     Graduate,
     Doctoral,
 }
 
 #[derive(sqlx::Type, Enum, Copy, Clone, Eq, PartialEq)]
-pub enum DayOfWeek {
+enum DayOfWeek {
     Monday,
     Tuesday,
     Wednesday,
@@ -1091,7 +1091,7 @@ pub enum DayOfWeek {
 }
 
 #[derive(sqlx::Type, Enum, Copy, Clone, Eq, PartialEq)]
-pub enum ExamType {
+enum ExamType {
     MidTerm,
     Final,
 }
