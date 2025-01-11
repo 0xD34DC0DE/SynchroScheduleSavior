@@ -1,12 +1,102 @@
 use crate::api::database::{SQLTable, TableDefinitionQuery};
 use async_graphql::futures_util::TryStreamExt;
-use async_graphql::{dataloader::Loader, ComplexObject, Context, Enum, Interface, SimpleObject};
+use async_graphql::{
+    dataloader::Loader, ComplexObject, Context, Enum, Interface, Result as GraphQLResult,
+    SimpleObject,
+};
 use chrono::{NaiveDate, NaiveTime};
 use derive_more::{Constructor, Display};
-use itertools::join;
+use itertools::{join, Itertools};
 use sqlx::sqlite::SqliteRow;
 use sqlx::{query, Error, FromRow, Pool, Row, Sqlite};
 use std::collections::HashMap;
+use anyhow::anyhow;
+
+struct IdKeyGroupedRows<K, V>(anyhow::Result<HashMap<K, Vec<V>>>)
+where
+    K: Eq + std::hash::Hash + sqlx::Type<Sqlite>;
+
+impl<K, V> Default for IdKeyGroupedRows<K, V>
+where
+    K: Eq + std::hash::Hash + sqlx::Type<Sqlite>,
+{
+    fn default() -> Self {
+        Self(Ok(HashMap::new()))
+    }
+}
+
+impl<K, V> TryFrom<IdKeyGroupedRows<K, V>> for HashMap<K, Vec<V>>
+where
+    K: Eq + std::hash::Hash + sqlx::Type<Sqlite>,
+{
+    type Error = async_graphql::Error;
+
+    fn try_from(value: IdKeyGroupedRows<K, V>) -> Result<Self, Self::Error> {
+        Ok(value.0?)
+    }
+}
+
+impl<K, V> Extend<SqliteRow> for IdKeyGroupedRows<K, V>
+where
+    K: Eq + Clone + std::hash::Hash + sqlx::Type<Sqlite> + for<'a> sqlx::Decode<'a, Sqlite>,
+    V: for<'b> FromRow<'b, SqliteRow>,
+{
+    fn extend<T: IntoIterator<Item = SqliteRow>>(&mut self, iter: T) {
+        let rows = self.0.as_mut().unwrap();
+        let result: Result<(), sqlx::Error> = iter.into_iter().try_for_each(|row| {
+            let fk: K = row.try_get::<K, usize>(0)?.clone();
+            let value = V::from_row(&row)?;
+            rows.entry(fk).or_default().push(value);
+            Ok(())
+        });
+
+        if let Err(err) = result {
+            self.0 = Err(err.into());
+        }
+    }
+}
+
+async fn load_many_by_foreign_key<K, V, L>(ctx: &Context<'_>, fk: K) -> GraphQLResult<Vec<V>>
+where
+    K: Eq
+        + std::hash::Hash
+        + Clone
+        + Send
+        + Sync
+        + sqlx::Type<Sqlite>
+        + for<'a> sqlx::Decode<'a, Sqlite>
+        + 'static,
+    V: for<'b> FromRow<'b, SqliteRow>,
+    L: Loader<K, Value = Vec<V>, Error = async_graphql::Error>,
+{
+    Ok(ctx
+        .data_unchecked::<L>()
+        .load(&[fk.clone()])
+        .await?
+        .remove(&fk)
+        .unwrap_or_default())
+}
+
+async fn load_one_by_foreign_key<K, V, L>(ctx: &Context<'_>, fk: K) -> GraphQLResult<V>
+where
+    K: Eq
+        + std::hash::Hash
+        + Clone
+        + Send
+        + Sync
+        + sqlx::Type<Sqlite>
+        + for<'a> sqlx::Decode<'a, Sqlite>
+        + 'static,
+    V: for<'b> FromRow<'b, SqliteRow>,
+    L: Loader<K, Value = V, Error = async_graphql::Error>,
+{
+    Ok(ctx
+        .data_unchecked::<L>()
+        .load(&[fk.clone()])
+        .await?
+        .remove(&fk)
+        .ok_or(async_graphql::Error::new("No value found"))?)
+}
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
 #[sqlx(transparent)]
@@ -38,12 +128,13 @@ pub struct Semester {
 
 #[ComplexObject]
 impl Semester {
-    async fn credit_blocks(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<CreditBlock>> {
-        credit_blocks_by_semester_id(ctx, self.id.clone()).await
+    async fn credit_blocks(&self, ctx: &Context<'_>) -> GraphQLResult<Vec<CreditBlock>> {
+        load_many_by_foreign_key::<SemesterId, CreditBlock, CreditBlockLoader>(ctx, self.id.clone())
+            .await
     }
 
-    async fn courses(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<Course>> {
-        todo!()
+    async fn courses(&self, ctx: &Context<'_>) -> GraphQLResult<Vec<Course>> {
+        load_many_by_foreign_key::<SemesterId, Course, CourseLoader>(ctx, self.id.clone()).await
     }
 }
 
@@ -59,13 +150,16 @@ impl Loader<SemesterId> for SemesterLoader {
         keys: &[SemesterId],
     ) -> Result<HashMap<SemesterId, Self::Value>, Self::Error> {
         Ok(sqlx::query_as(
-            /*language=SQLite*/ "SELECT * FROM semesters WHERE id IN ($1)",
+            /*language=SQLite*/
+            "SELECT id, name, year, start_date, end_date
+                 FROM semesters
+                 WHERE id IN ($1)",
         )
-            .bind(join(keys, ", "))
-            .fetch(&self.0)
-            .map_ok(|semester: Semester| (semester.id.clone(), semester))
-            .try_collect()
-            .await?)
+        .bind(join(keys, ", "))
+        .fetch(&self.0)
+        .map_ok(|semester: Semester| (semester.id.clone(), semester))
+        .try_collect()
+        .await?)
     }
 }
 
@@ -105,8 +199,8 @@ pub struct CreditBlock {
 
 #[ComplexObject]
 impl CreditBlock {
-    async fn courses(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<Course>> {
-        todo!()
+    async fn courses(&self, ctx: &Context<'_>) -> GraphQLResult<Vec<Course>> {
+        load_many_by_foreign_key::<CreditBlockId, Course, CourseLoader>(ctx, self.id.clone()).await
     }
 }
 
@@ -122,13 +216,36 @@ impl Loader<CreditBlockId> for CreditBlockLoader {
         keys: &[CreditBlockId],
     ) -> Result<HashMap<CreditBlockId, Self::Value>, Self::Error> {
         Ok(sqlx::query_as(
-            /*language=SQLite*/ "SELECT id, name, required_credits FROM credit_blocks WHERE id IN ($1)",
+            /*language=SQLite*/
+            "SELECT id, name, required_credits FROM credit_blocks WHERE id IN ($1)",
         )
-            .bind(join(keys, ", "))
-            .fetch(&self.0)
-            .map_ok(|credit_block: CreditBlock| (credit_block.id.clone(), credit_block))
-            .try_collect()
-            .await?)
+        .bind(join(keys, ", "))
+        .fetch(&self.0)
+        .map_ok(|credit_block: CreditBlock| (credit_block.id.clone(), credit_block))
+        .try_collect()
+        .await?)
+    }
+}
+
+impl Loader<SemesterId> for CreditBlockLoader {
+    type Value = Vec<CreditBlock>;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[SemesterId],
+    ) -> Result<HashMap<SemesterId, Self::Value>, Self::Error> {
+        sqlx::query(
+            /*language=SQLite*/
+            "SELECT semester_id, id, name, required_credits
+                 FROM credit_blocks
+                 WHERE semester_id IN ($1)",
+        )
+        .bind(join(keys, ", "))
+        .fetch(&self.0)
+        .try_collect::<IdKeyGroupedRows<SemesterId, CreditBlock>>()
+        .await?
+        .try_into()
     }
 }
 
@@ -182,13 +299,26 @@ pub struct Course {
 #[ComplexObject]
 impl Course {
     /// The requirements to take the course.
-    async fn requirements(&self, ctx: &Context<'_>) -> anyhow::Result<CourseRequirements> {
-        todo!()
+    async fn requirements(&self, ctx: &Context<'_>) -> GraphQLResult<CourseRequirements> {
+        load_one_by_foreign_key::<CourseId, CourseRequirements, CourseRequirementsLoader>(
+            ctx,
+            self.id.clone(),
+        )
+        .await
     }
 
     /// The list of main sections of the course.
-    async fn sections(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<MainSection>> {
-        todo!()
+    async fn sections(&self, ctx: &Context<'_>) -> GraphQLResult<Vec<MainSection>> {
+        Ok(
+            load_many_by_foreign_key::<CourseId, Section, SectionLoader>(ctx, self.id.clone())
+                .await?
+                .into_iter()
+                .map(|section| match section {
+                    Section::MainSection(main_section) => main_section,
+                    Section::SubSection(_) => panic!("Got a subsection instead of a main section"),
+                })
+                .collect(),
+        )
     }
 }
 
@@ -201,7 +331,8 @@ impl Loader<CourseId> for CourseLoader {
 
     async fn load(&self, keys: &[CourseId]) -> Result<HashMap<CourseId, Self::Value>, Self::Error> {
         Ok(sqlx::query_as(
-            /*language=SQLite*/ "SELECT id, name, year_of_level, level, subject, description, credit_block_id
+            /*language=SQLite*/
+            "SELECT id, name, year_of_level, level, subject, description
                  FROM courses
                  WHERE id IN ($1)",
         )
@@ -210,6 +341,50 @@ impl Loader<CourseId> for CourseLoader {
         .map_ok(|course: Course| (course.id.clone(), course))
         .try_collect()
         .await?)
+    }
+}
+
+impl Loader<SemesterId> for CourseLoader {
+    type Value = Vec<Course>;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[SemesterId],
+    ) -> Result<HashMap<SemesterId, Self::Value>, Self::Error> {
+        sqlx::query(
+            /*language=SQLite*/
+            "SELECT semester_id, id, name, year_of_level, level, subject, description
+                 FROM courses
+                 WHERE semester_id IN ($1)",
+        )
+        .bind(join(keys, ", "))
+        .fetch(&self.0)
+        .try_collect::<IdKeyGroupedRows<SemesterId, Course>>()
+        .await?
+        .try_into()
+    }
+}
+
+impl Loader<CreditBlockId> for CourseLoader {
+    type Value = Vec<Course>;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[CreditBlockId],
+    ) -> Result<HashMap<CreditBlockId, Self::Value>, Self::Error> {
+        sqlx::query(
+            /*language=SQLite*/
+            "SELECT credit_block_id, id, name, year_of_level, level, subject, description
+                 FROM courses
+                 WHERE credit_block_id IN ($1)",
+        )
+        .bind(join(keys, ", "))
+        .fetch(&self.0)
+        .try_collect::<IdKeyGroupedRows<CreditBlockId, Course>>()
+        .await?
+        .try_into()
     }
 }
 
@@ -225,21 +400,19 @@ impl SQLTable for Course {
                 subject TEXT NOT NULL,
                 description TEXT NOT NULL,
                 credit_block_id TEXT NOT NULL,
-                FOREIGN KEY(credit_block_id) REFERENCES credit_blocks(id)
+                semester_id TEXT NOT NULL,
+                FOREIGN KEY(credit_block_id) REFERENCES credit_blocks(id),
+                FOREIGN KEY(semester_id) REFERENCES semesters(id)
             );"
         )
     }
 }
 
-#[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
-#[sqlx(transparent)]
-pub(crate) struct CourseRequirementId(String);
-
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
 pub struct CourseRequirements {
     /// The ID of the course that the requirements are for.\
     /// _Example_: `IFT3065`
-    id: CourseRequirementId,
+    id: CourseId,
 
     /// The expression of the prerequisites to take the course.\
     /// _Example_: `IFT2065 & (IFT2265 | IFT2295)`
@@ -253,16 +426,14 @@ pub struct CourseRequirements {
 #[derive(Constructor)]
 pub(crate) struct CourseRequirementsLoader(Pool<Sqlite>);
 
-impl Loader<CourseRequirementId> for CourseRequirementsLoader {
+impl Loader<CourseId> for CourseRequirementsLoader {
     type Value = CourseRequirements;
     type Error = async_graphql::Error;
 
-    async fn load(
-        &self,
-        keys: &[CourseRequirementId],
-    ) -> Result<HashMap<CourseRequirementId, Self::Value>, Self::Error> {
+    async fn load(&self, keys: &[CourseId]) -> Result<HashMap<CourseId, Self::Value>, Self::Error> {
         Ok(sqlx::query_as(
-            /*language=SQLite*/ "SELECT id, prerequisites_expr, corequisites_expr
+            /*language=SQLite*/
+            "SELECT id, prerequisites_expr, corequisites_expr
                  FROM course_requirements
                  WHERE id IN ($1)",
         )
@@ -328,6 +499,16 @@ impl FromRow<'_, SqliteRow> for Section {
 #[sqlx(transparent)]
 pub(crate) struct SectionId(String);
 
+#[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
+#[sqlx(transparent)]
+pub(crate) struct MainSectionId(String);
+
+impl Into<MainSectionId> for SectionId {
+    fn into(self) -> MainSectionId {
+        MainSectionId(self.0)
+    }
+}
+
 #[derive(sqlx::Type, Enum, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum SectionType {
     MainSection,
@@ -368,30 +549,49 @@ pub struct MainSection {
 #[ComplexObject]
 impl MainSection {
     /// The list of time slots for the section.
-    async fn time_slots(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<TimeSlot>> {
-        todo!()
+    async fn time_slots(&self, ctx: &Context<'_>) -> Result<Vec<TimeSlot>, anyhow::Error> {
+        load_many_by_foreign_key::<SectionId, TimeSlot, TimeSlotLoader>(ctx, self.id.clone()).await
+            .map_err(|e| anyhow!(e.message))
     }
 
     /// The list of schedule gaps for the section's time slots which simplifies
     /// the schedule of the section, by indicating when the section is not
     /// held instead of splitting the time slots to introduce gaps.
-    async fn schedule_gaps(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<ScheduleGap>> {
-        todo!()
+    async fn schedule_gaps(&self, ctx: &Context<'_>) -> Result<Vec<ScheduleGap>, anyhow::Error> {
+        load_many_by_foreign_key::<SectionId, ScheduleGap, ScheduleGapLoader>(ctx, self.id.clone())
+            .await
+            .map_err(|e| anyhow!(e.message))
     }
 
     /// The midterm exam of the section.
-    async fn mid_term_exam(&self, ctx: &Context<'_>) -> anyhow::Result<Option<Exam>> {
-        todo!()
+    async fn mid_term_exam(&self, ctx: &Context<'_>) -> GraphQLResult<Option<Exam>> {
+        Ok(load_many_by_foreign_key::<SectionId, Exam, ExamLoader>(ctx, self.id.clone())
+            .await?
+            .into_iter()
+            .find(|exam: &Exam| exam.is_of_type(ExamType::MidTerm)))
     }
 
     /// The final exam of the section.
-    async fn final_exam(&self, ctx: &Context<'_>) -> anyhow::Result<Exam> {
-        todo!()
+    async fn final_exam(&self, ctx: &Context<'_>) -> GraphQLResult<Option<Exam>> {
+        Ok(load_many_by_foreign_key::<SectionId, Exam, ExamLoader>(ctx, self.id.clone())
+            .await?
+            .into_iter()
+            .find(|exam: &Exam| exam.is_of_type(ExamType::Final)))
+            
     }
 
     /// The list of subsections associated with this main section.
-    async fn sub_sections(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<SectionTypeTuple>> {
-        todo!()
+    async fn sub_sections(&self, ctx: &Context<'_>) -> GraphQLResult<Vec<SectionTypeTuple>> {
+        Ok(load_many_by_foreign_key::<MainSectionId, SubSection, SectionLoader>(ctx, self.id.clone().into())
+            .await?
+            .into_iter()
+            .chunk_by(|sub_section| sub_section.section_type.clone())
+            .into_iter()
+            .map(|(section_type, sections)| SectionTypeTuple {
+                _type: section_type,
+                sections: sections.collect(),
+            })
+            .collect())
     }
 }
 
@@ -423,13 +623,16 @@ pub struct SubSection {
 #[ComplexObject]
 impl SubSection {
     /// See [MainSection]
-    async fn time_slots(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<TimeSlot>> {
-        todo!()
+    async fn time_slots(&self, ctx: &Context<'_>) -> Result<Vec<TimeSlot>, anyhow::Error> {
+        load_many_by_foreign_key::<SectionId, TimeSlot, TimeSlotLoader>(ctx, self.id.clone()).await
+            .map_err(|e| anyhow!(e.message))
     }
 
     /// See [MainSection]
-    async fn schedule_gaps(&self, ctx: &Context<'_>) -> anyhow::Result<Vec<ScheduleGap>> {
-        todo!()
+    async fn schedule_gaps(&self, ctx: &Context<'_>) -> Result<Vec<ScheduleGap>, anyhow::Error> {
+        load_many_by_foreign_key::<SectionId, ScheduleGap, ScheduleGapLoader>(ctx, self.id.clone())
+            .await
+            .map_err(|e| anyhow!(e.message))
     }
 }
 
@@ -450,21 +653,63 @@ impl Loader<SectionId> for SectionLoader {
                  FROM sections
                  WHERE id IN ($1)",
         )
-        .bind(join(keys, ", "))
-        .fetch(&self.0)
-        .map_ok(|section: Section| (section.section_id().clone(), section))
-        .try_collect()
-        .await?)
+            .bind(join(keys, ", "))
+            .fetch(&self.0)
+            .map_ok(|section: Section| (section.section_id().clone(), section))
+            .try_collect()
+            .await?)
     }
 }
 
-impl SQLTable for Section {
+impl Loader<MainSectionId> for SectionLoader {
+    type Value = Vec<SubSection>;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[MainSectionId],
+    ) -> Result<HashMap<MainSectionId, Self::Value>, Self::Error> {
+        sqlx::query(
+            /*language=SQLite*/
+            "SELECT main_section_id, id, section_type, object_type, start_date, end_date, teacher, location, is_open
+                 FROM sections
+                 WHERE main_section_id IN ($1)",
+        )
+            .bind(join(keys, ", "))
+            .fetch(&self.0)
+            .try_collect::<IdKeyGroupedRows<MainSectionId, SubSection>>()
+            .await?
+            .try_into()
+    }
+}
+
+impl Loader<CourseId> for SectionLoader {
+    type Value = Vec<Section>;
+    type Error = async_graphql::Error;
+
+    async fn load(&self, keys: &[CourseId]) -> Result<HashMap<CourseId, Self::Value>, Self::Error> {
+        sqlx::query(
+            /*language=SQLite*/
+            "SELECT course_id, id, section_type, object_type, start_date, end_date, teacher, location, is_open
+                 FROM sections
+                 WHERE course_id IN ($1)",
+        )
+            .bind(join(keys, ", "))
+            .fetch(&self.0)
+            .try_collect::<IdKeyGroupedRows<CourseId, Section>>()
+            .await?
+            .try_into()
+    }
+}
+
+impl SQLTable for Section { 
     fn table_definition() -> TableDefinitionQuery {
         query!(
             /*language=SQLite*/
             "CREATE TABLE IF NOT EXISTS sections (
                 id TEXT PRIMARY KEY,
                 course_id TEXT NOT NULL,
+                main_section_id TEXT,
                 section_type TEXT NOT NULL,
                 object_type TEXT NOT NULL,
                 start_date TEXT NOT NULL,
@@ -472,7 +717,8 @@ impl SQLTable for Section {
                 teacher TEXT NOT NULL,
                 location TEXT NOT NULL,
                 is_open BOOLEAN NOT NULL,
-                FOREIGN KEY(course_id) REFERENCES courses(id)
+                FOREIGN KEY(course_id) REFERENCES courses(id),
+                FOREIGN KEY(main_section_id) REFERENCES sections(id)
             );"
         )
     }
@@ -542,6 +788,28 @@ impl Loader<TimeSlotId> for TimeSlotLoader {
     }
 }
 
+impl Loader<SectionId> for TimeSlotLoader {
+    type Value = Vec<TimeSlot>;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[SectionId],
+    ) -> Result<HashMap<SectionId, Self::Value>, Self::Error> {
+        sqlx::query(
+            /*language=SQLite*/
+            "SELECT section_id, id, day_of_week, start_time, end_time, location
+                 FROM time_slots
+                 WHERE section_id IN ($1)",
+        )
+        .bind(join(keys, ", "))
+        .fetch(&self.0)
+        .try_collect::<IdKeyGroupedRows<SectionId, TimeSlot>>()
+        .await?
+        .try_into()
+    }
+}
+
 impl SQLTable for TimeSlot {
     fn table_definition() -> TableDefinitionQuery {
         query!(
@@ -607,6 +875,28 @@ impl Loader<ScheduleGapId> for ScheduleGapLoader {
     }
 }
 
+impl Loader<SectionId> for ScheduleGapLoader {
+    type Value = Vec<ScheduleGap>;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[SectionId],
+    ) -> Result<HashMap<SectionId, Self::Value>, Self::Error> {
+        sqlx::query(
+            /*language=SQLite*/
+            "SELECT section_id, id, date, reason
+                 FROM schedule_gaps
+                 WHERE section_id IN ($1)",
+        )
+        .bind(join(keys, ", "))
+        .fetch(&self.0)
+        .try_collect::<IdKeyGroupedRows<SectionId, ScheduleGap>>()
+        .await?
+        .try_into()
+    }
+}
+
 impl SQLTable for ScheduleGap {
     fn table_definition() -> TableDefinitionQuery {
         query!(
@@ -635,6 +925,10 @@ pub struct Exam {
     /// _Example_: `A-TH-13046`
     section_id: SectionId,
 
+    /// The type of the exam.\
+    /// _Example_: `MidTerm`
+    exam_type: ExamType,
+
     /// The date of the exam.\
     /// _Example_: `2021-12-15`
     date: NaiveDate,
@@ -650,6 +944,12 @@ pub struct Exam {
     /// The place where the exam is held.\
     /// _Example_: `Pavillon André-Aisenstadt`
     location: String,
+}
+
+impl Exam {
+    pub(crate) fn is_of_type(&self, exam_type: ExamType) -> bool {
+        self.exam_type == exam_type
+    }
 }
 
 #[derive(Constructor)]
@@ -674,6 +974,28 @@ impl Loader<ExamId> for ExamLoader {
     }
 }
 
+impl Loader<SectionId> for ExamLoader {
+    type Value = Vec<Exam>;
+    type Error = async_graphql::Error;
+
+    async fn load(
+        &self,
+        keys: &[SectionId],
+    ) -> Result<HashMap<SectionId, Self::Value>, Self::Error> {
+        sqlx::query(
+            /*language=SQLite*/
+            "SELECT section_id, id, date, start_time, end_time, location
+                 FROM exams
+                 WHERE section_id IN ($1)",
+        )
+        .bind(join(keys, ", "))
+        .fetch(&self.0)
+        .try_collect::<IdKeyGroupedRows<SectionId, Exam>>()
+        .await?
+        .try_into()
+    }
+}
+
 impl SQLTable for Exam {
     fn table_definition() -> TableDefinitionQuery {
         query!(
@@ -681,6 +1003,7 @@ impl SQLTable for Exam {
             "CREATE TABLE IF NOT EXISTS exams (
                 id INTEGER PRIMARY KEY,
                 section_id TEXT NOT NULL,
+                exam_type TEXT NOT NULL,
                 date TEXT NOT NULL,
                 start_time TEXT NOT NULL,
                 end_time TEXT NOT NULL,
@@ -708,4 +1031,10 @@ pub enum DayOfWeek {
     Saturday,
     Sunday,
     TBD,
+}
+
+#[derive(sqlx::Type, Enum, Copy, Clone, Eq, PartialEq)]
+pub enum ExamType {
+    MidTerm,
+    Final,
 }
