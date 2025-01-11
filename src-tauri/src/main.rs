@@ -117,7 +117,7 @@ async fn main() {
         .manage(InjectorState(Arc::new(Semaphore::new(
             MAX_PARALLEL_INJECTIONS as usize,
         ))))
-        .plugin(tauri_plugin_graphql::init(schema))
+        .plugin(tauri_plugin_graphql::init_with_graphiql(schema, ([127,0,0,1], 8080)))
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
