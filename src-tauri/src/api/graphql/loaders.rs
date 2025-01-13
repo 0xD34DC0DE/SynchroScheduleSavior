@@ -1,7 +1,9 @@
 use super::objects::*;
 use super::utils::*;
-use super::{EmptyFields, EmptyMutation, EmptySubscription, GraphQLSchema, Schema};
-use async_graphql::dataloader::Loader;
+use super::{EmptySubscription, GraphQLSchema, Schema};
+use crate::api::graphql::mutations::MutationRoot;
+use crate::api::graphql::queries::QueryRoot;
+use async_graphql::dataloader::{DataLoader, Loader};
 use async_graphql::futures_util::TryStreamExt;
 use derive_more::Constructor;
 use itertools::join;
@@ -9,21 +11,23 @@ use sqlx::{Pool, Sqlite};
 use std::collections::HashMap;
 
 pub fn create_schema(x: &Pool<Sqlite>) -> Schema {
-    GraphQLSchema::build(EmptyFields, EmptyMutation, EmptySubscription)
-        .data(SemesterLoader::new(x.clone()))
-        .data(CreditBlockLoader::new(x.clone()))
-        .data(CourseLoader::new(x.clone()))
-        .data(CourseRequirementsLoader::new(x.clone()))
-        .data(SectionLoader::new(x.clone()))
-        .data(TimeSlotLoader::new(x.clone()))
-        .data(ScheduleGapLoader::new(x.clone()))
-        .data(ExamLoader::new(x.clone()))
+    GraphQLSchema::build(QueryRoot, MutationRoot, EmptySubscription)
+        .data(x.clone())
+        .data(DataLoader::new(SemesterLoader::new(x.clone()), tokio::task::spawn))
+        .data(DataLoader::new(CreditBlockLoader::new(x.clone()), tokio::task::spawn))
+        .data(DataLoader::new(CourseLoader::new(x.clone()), tokio::task::spawn))
+        .data(DataLoader::new(CourseRequirementsLoader::new(x.clone()), tokio::task::spawn))
+        .data(DataLoader::new(SectionLoader::new(x.clone()), tokio::task::spawn))
+        .data(DataLoader::new(TimeSlotLoader::new(x.clone()), tokio::task::spawn))
+        .data(DataLoader::new(ScheduleGapLoader::new(x.clone()), tokio::task::spawn))
+        .data(DataLoader::new(ExamLoader::new(x.clone()), tokio::task::spawn))
         .finish()
 }
 
 #[derive(Constructor)]
 pub(super) struct SemesterLoader(Pool<Sqlite>);
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<SemesterId> for SemesterLoader {
     type Value = Semester;
     type Error = async_graphql::Error;
@@ -49,6 +53,7 @@ impl Loader<SemesterId> for SemesterLoader {
 #[derive(Constructor)]
 pub(super) struct CreditBlockLoader(Pool<Sqlite>);
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<CreditBlockId> for CreditBlockLoader {
     type Value = CreditBlock;
     type Error = async_graphql::Error;
@@ -69,6 +74,7 @@ impl Loader<CreditBlockId> for CreditBlockLoader {
     }
 }
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<SemesterId> for CreditBlockLoader {
     type Value = Vec<CreditBlock>;
     type Error = async_graphql::Error;
@@ -94,6 +100,7 @@ impl Loader<SemesterId> for CreditBlockLoader {
 #[derive(Constructor)]
 pub(super) struct CourseLoader(Pool<Sqlite>);
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<CourseId> for CourseLoader {
     type Value = Course;
     type Error = async_graphql::Error;
@@ -116,6 +123,7 @@ impl Loader<CourseId> for CourseLoader {
     }
 }
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<SemesterId> for CourseLoader {
     type Value = Vec<Course>;
     type Error = async_graphql::Error;
@@ -138,6 +146,7 @@ impl Loader<SemesterId> for CourseLoader {
     }
 }
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<CreditBlockId> for CourseLoader {
     type Value = Vec<Course>;
     type Error = async_graphql::Error;
@@ -163,6 +172,7 @@ impl Loader<CreditBlockId> for CourseLoader {
 #[derive(Constructor)]
 pub(super) struct CourseRequirementsLoader(Pool<Sqlite>);
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<CourseId> for CourseRequirementsLoader {
     type Value = CourseRequirements;
     type Error = async_graphql::Error;
@@ -187,6 +197,8 @@ impl Loader<CourseId> for CourseRequirementsLoader {
 
 #[derive(Constructor)]
 pub(super) struct SectionLoader(Pool<Sqlite>);
+
+#[async_graphql::async_trait::async_trait]
 impl Loader<SectionId> for SectionLoader {
     type Value = Section;
     type Error = async_graphql::Error;
@@ -209,6 +221,7 @@ impl Loader<SectionId> for SectionLoader {
     }
 }
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<MainSectionId> for SectionLoader {
     type Value = Vec<SubSection>;
     type Error = async_graphql::Error;
@@ -231,6 +244,7 @@ impl Loader<MainSectionId> for SectionLoader {
     }
 }
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<CourseId> for SectionLoader {
     type Value = Vec<Section>;
     type Error = async_graphql::Error;
@@ -256,6 +270,7 @@ impl Loader<CourseId> for SectionLoader {
 #[derive(Constructor)]
 pub(super) struct TimeSlotLoader(Pool<Sqlite>);
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<TimeSlotId> for TimeSlotLoader {
     type Value = TimeSlot;
     type Error = async_graphql::Error;
@@ -278,6 +293,7 @@ impl Loader<TimeSlotId> for TimeSlotLoader {
     }
 }
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<SectionId> for TimeSlotLoader {
     type Value = Vec<TimeSlot>;
     type Error = async_graphql::Error;
@@ -303,6 +319,7 @@ impl Loader<SectionId> for TimeSlotLoader {
 #[derive(Constructor)]
 pub(super) struct ScheduleGapLoader(Pool<Sqlite>);
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<ScheduleGapId> for ScheduleGapLoader {
     type Value = ScheduleGap;
     type Error = async_graphql::Error;
@@ -325,6 +342,7 @@ impl Loader<ScheduleGapId> for ScheduleGapLoader {
     }
 }
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<SectionId> for ScheduleGapLoader {
     type Value = Vec<ScheduleGap>;
     type Error = async_graphql::Error;
@@ -350,6 +368,7 @@ impl Loader<SectionId> for ScheduleGapLoader {
 #[derive(Constructor)]
 pub(super) struct ExamLoader(Pool<Sqlite>);
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<ExamId> for ExamLoader {
     type Value = Exam;
     type Error = async_graphql::Error;
@@ -372,6 +391,7 @@ impl Loader<ExamId> for ExamLoader {
     }
 }
 
+#[async_graphql::async_trait::async_trait]
 impl Loader<SectionId> for ExamLoader {
     type Value = Vec<Exam>;
     type Error = async_graphql::Error;

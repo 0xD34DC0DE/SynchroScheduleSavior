@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "CREATE TABLE IF NOT EXISTS sections (\n                id TEXT PRIMARY KEY NOT NULL,\n                course_id TEXT NOT NULL,\n                main_section_id TEXT,\n                section_type TEXT NOT NULL,\n                object_type TEXT NOT NULL,\n                start_date TEXT NOT NULL,\n                end_date TEXT NOT NULL,\n                teacher TEXT NOT NULL,\n                location TEXT NOT NULL,\n                is_open BOOLEAN NOT NULL,\n                FOREIGN KEY(course_id) REFERENCES courses(id),\n                FOREIGN KEY(main_section_id) REFERENCES sections(id)\n            );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "937fbff617b0709238e96057f25bff9702a4ac22879a2c5a7f4b4e0103782393"
+}

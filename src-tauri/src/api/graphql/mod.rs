@@ -3,8 +3,10 @@ use tauri_plugin_graphql::async_graphql::connection::EmptyFields;
 pub(self) use tauri_plugin_graphql::async_graphql::{
     EmptyMutation, EmptySubscription, Schema as GraphQLSchema,
 };
+use crate::api::graphql::mutations::MutationRoot;
+use crate::api::graphql::queries::QueryRoot;
 
-pub type Schema = GraphQLSchema<EmptyFields, EmptyMutation, EmptySubscription>;
+pub type Schema = GraphQLSchema<QueryRoot, MutationRoot, EmptySubscription>;
 
 pub(super) mod objects;
 

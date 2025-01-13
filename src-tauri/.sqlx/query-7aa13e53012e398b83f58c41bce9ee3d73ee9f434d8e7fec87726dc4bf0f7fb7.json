@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "CREATE TABLE IF NOT EXISTS credit_blocks (\n                id TEXT PRIMARY KEY NOT NULL,\n                semester_id TEXT NOT NULL,\n                name TEXT NOT NULL,\n                required_credits INTEGER NOT NULL,\n                FOREIGN KEY(semester_id) REFERENCES semesters(id)\n             );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "7aa13e53012e398b83f58c41bce9ee3d73ee9f434d8e7fec87726dc4bf0f7fb7"
+}

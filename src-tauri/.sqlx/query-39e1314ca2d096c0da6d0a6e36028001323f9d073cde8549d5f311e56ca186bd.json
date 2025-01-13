@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "CREATE TABLE IF NOT EXISTS course_requirements (\n                id TEXT PRIMARY KEY NOT NULL REFERENCES courses(id),\n                prerequisites_expr TEXT,\n                corequisites_expr TEXT\n            );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "39e1314ca2d096c0da6d0a6e36028001323f9d073cde8549d5f311e56ca186bd"
+}

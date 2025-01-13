@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "CREATE TABLE IF NOT EXISTS exams (\n                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\n                section_id TEXT NOT NULL,\n                exam_type TEXT NOT NULL,\n                date TEXT NOT NULL,\n                start_time TEXT NOT NULL,\n                end_time TEXT NOT NULL,\n                location TEXT NOT NULL,\n                FOREIGN KEY(section_id) REFERENCES sections(id)\n            );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "3bb62bf53b9234d0aed6a653a45f24862a18135036c9d4adbd967b7f017e3bfc"
+}

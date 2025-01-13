@@ -45,10 +45,10 @@ pub(in crate::api) struct CreditBlock {
 
     /// The name of the credit block.\
     /// _Example_: `Interfaces et bases de données`
-    name: String,
+    pub(crate) name: String,
 
     /// The number of credits required to complete the credit block.
-    required_credits: i32,
+    pub(crate) required_credits: i64,
 }
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
@@ -64,23 +64,23 @@ pub(in crate::api) struct Course {
 
     /// The name of the course.\
     /// _Example_: `Langages program., compilation`
-    name: String,
+    pub(crate) name: String,
 
     /// The year of the course level.\
     /// _Example_: `3`
-    year_of_level: i32,
+    pub(crate) year_of_level: i64,
 
     /// The level of the course.\
     /// _Example_: `Undergraduate`
-    level: UniversityLevel,
+    pub(crate) level: UniversityLevel,
 
     /// The subject of the course.\
     /// _Example_: `IFT`
-    subject: String,
+    pub(crate) subject: String,
 
     /// The description of the course.\
     /// _Example_: `Méthodes de compilation et interprétation des langages de programmation`
-    description: String,
+    pub(crate) description: String,
 }
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
@@ -91,11 +91,11 @@ pub(in crate::api) struct CourseRequirements {
 
     /// The expression of the prerequisites to take the course.\
     /// _Example_: `IFT2065 & (IFT2265 | IFT2295)`
-    prerequisites_expr: Option<String>,
+    pub(crate) prerequisites_expr: Option<String>,
 
     /// The expression of the corequisites to take the course.\
     /// _Example_: `IFT2065 & (IFT2265 | IFT2295)`
-    corequisites_expr: Option<String>,
+    pub(crate) corequisites_expr: Option<String>,
 }
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
@@ -104,15 +104,15 @@ pub(super) struct SectionId(String);
 
 #[derive(Interface, Clone)]
 #[graphql(
-    field(name = "id", ty = "&SectionId"),
-    field(name = "section_type", ty = "&SectionType"),
-    field(name = "start_date", ty = "&NaiveDate"),
-    field(name = "end_date", ty = "&NaiveDate"),
-    field(name = "teacher", ty = "String"),
-    field(name = "location", ty = "String"),
-    field(name = "is_open", ty = "&bool"),
-    field(name = "time_slots", ty = "Vec<TimeSlot>"),
-    field(name = "schedule_gaps", ty = "Vec<ScheduleGap>")
+    field(name = "id", type = "&SectionId"),
+    field(name = "section_type", type = "String"),
+    field(name = "start_date", type = "&NaiveDate"),
+    field(name = "end_date", type = "&NaiveDate"),
+    field(name = "teacher", type = "String"),
+    field(name = "location", type = "String"),
+    field(name = "is_open", type = "&bool"),
+    field(name = "time_slots", type = "Vec<TimeSlot>"),
+    field(name = "schedule_gaps", type = "Vec<ScheduleGap>")
 )]
 pub(in crate::api) enum Section {
     MainSection(MainSection),
@@ -130,17 +130,17 @@ impl Section {
 
 impl FromRow<'_, SqliteRow> for Section {
     fn from_row(row: &'_ SqliteRow) -> Result<Self, sqlx::Error> {
-        let section_type: SectionType = row.try_get("object_type")?;
+        let object_type: SectionObjectType = row.try_get("object_type")?;
 
-        match section_type {
-            SectionType::MainSection => Ok(Section::MainSection(MainSection::from_row(row)?)),
-            SectionType::SubSection => Ok(Section::SubSection(SubSection::from_row(row)?)),
+        match object_type {
+            SectionObjectType::MainSection => Ok(Section::MainSection(MainSection::from_row(row)?)),
+            SectionObjectType::SubSection => Ok(Section::SubSection(SubSection::from_row(row)?)),
         }
     }
 }
 
 #[derive(sqlx::Type, Enum, Copy, Clone, Eq, PartialEq)]
-pub(in crate::api) enum SectionType {
+pub(in crate::api) enum SectionObjectType {
     MainSection,
     SubSection,
 }
@@ -150,30 +150,30 @@ pub(in crate::api) enum SectionType {
 pub(in crate::api) struct MainSection {
     /// The ID of the main section.\
     /// _Example_: `A-TH-13046`
-    pub(super) id: SectionId,
+    pub(crate) id: SectionId,
 
     /// The type of the section.\
     /// _Example_: `TH`
-    section_type: SectionType,
+    pub(crate) section_type: String,
 
     /// The start of the section's schedule.\
     /// _Example_: `2021-09-01`
-    start_date: NaiveDate,
+    pub(crate) start_date: NaiveDate,
 
     /// The end of the section's schedule.\
     /// _Example_: `2021-12-31`
-    end_date: NaiveDate,
+    pub(crate) end_date: NaiveDate,
 
     /// The teacher of the section.\
     /// _Example_: `John Doe`
-    teacher: String,
+    pub(crate) teacher: String,
 
     /// The place where the section is held.\
     /// _Example_: `Pavillon André-Aisenstadt`
-    location: String,
+    pub(crate) location: String,
 
     /// Whether the section is open or not for registration.
-    is_open: bool,
+    pub(crate) is_open: bool,
 }
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
@@ -193,66 +193,62 @@ pub(in crate::api) struct SubSection {
     pub(super) id: SectionId,
 
     /// See [MainSection]
-    pub(in crate::api) section_type: SectionType,
+    pub(in crate::api) section_type: String,
 
     /// See [MainSection]
-    start_date: NaiveDate,
+    pub(crate) start_date: NaiveDate,
 
     /// See [MainSection]
-    end_date: NaiveDate,
+    pub(crate) end_date: NaiveDate,
 
     /// See [MainSection]
-    teacher: String,
+    pub(crate) teacher: String,
 
     /// See [MainSection]
-    location: String,
+    pub(crate) location: String,
 
     /// See [MainSection]
-    is_open: bool,
+    pub(crate) is_open: bool,
 }
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
 pub(super) struct SectionTypeTuple {
     /// The type of the subsections.\
     /// _Example_: `TP`
-    pub(crate) _type: SectionType,
+    pub(crate) section_type: String,
 
     /// Subsections of `_type` associated with the main section.
     pub(crate) sections: Vec<SubSection>,
 }
 
-pub(super) type TimeSlotId = i32;
+pub(super) type TimeSlotId = i64;
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
 pub(in crate::api) struct TimeSlot {
     /// The ID of the time slot.\
     /// This field is not exposed to the GraphQL schema.
-    pub(super) id: TimeSlotId,
-
-    /// The ID of the section that the time slot is associated with.\
-    /// _Example_: `A-TH-13046`
-    section_id: SectionId,
+    pub(crate) id: TimeSlotId,
 
     /// The day of the week of the time slot.\
     /// _Example_: `Monday`
-    day_of_week: DayOfWeek,
+    pub(crate) day_of_week: DayOfWeek,
 
     /// The start time of the time slot.\
     /// _Example_: `08:30`
-    start_time: NaiveTime,
+    pub(crate) start_time: NaiveTime,
 
     /// The end time of the time slot.\
     /// _Example_: `10:00`
-    end_time: NaiveTime,
+    pub(crate) end_time: NaiveTime,
 
     /// The place where the section is held.\
     /// _Example_: `Pavillon André-Aisenstadt`
-    location: String,
+    pub(crate) location: String,
 }
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
 #[sqlx(transparent)]
-pub(super) struct ScheduleGapId(i32);
+pub(super) struct ScheduleGapId(i64);
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
 pub(in crate::api) struct ScheduleGap {
@@ -260,51 +256,43 @@ pub(in crate::api) struct ScheduleGap {
     /// This field is not exposed to the GraphQL schema.
     pub(super) id: ScheduleGapId,
 
-    /// The ID of the section that the schedule gap is associated with.\
-    /// _Example_: `A-TH-13046`
-    section_id: SectionId,
-
     /// The date of the schedule gap.\
     /// _Example_: `2021-09-06`
-    date: NaiveDate,
+    pub(crate) date: NaiveDate,
 
     /// The reason for the schedule gap.\
     /// _Example_: `Labor Day`
-    reason: String,
+    pub(crate) reason: String,
 }
 
 #[derive(sqlx::Type, async_graphql::NewType, Clone, Eq, PartialEq, Hash, Display)]
 #[sqlx(transparent)]
-pub(super) struct ExamId(i32);
+pub(super) struct ExamId(i64);
 
 #[derive(sqlx::FromRow, SimpleObject, Clone)]
 pub(in crate::api) struct Exam {
     /// The ID of the exam.\
     pub(super) id: ExamId,
 
-    /// The ID of the section that the exam is associated with.\
-    /// _Example_: `A-TH-13046`
-    section_id: SectionId,
-
     /// The type of the exam.\
     /// _Example_: `MidTerm`
-    exam_type: ExamType,
+    pub(crate) exam_type: ExamType,
 
     /// The date of the exam.\
     /// _Example_: `2021-12-15`
-    date: NaiveDate,
+    pub(crate) date: NaiveDate,
 
     /// The start time of the exam.\
     /// _Example_: `08:30`
-    start_time: NaiveTime,
+    pub(crate) start_time: NaiveTime,
 
     /// The end time of the exam.\
     /// _Example_: `10:00`
-    end_time: NaiveTime,
+    pub(crate) end_time: NaiveTime,
 
     /// The place where the exam is held.\
     /// _Example_: `Pavillon André-Aisenstadt`
-    location: String,
+    pub(crate) location: String,
 }
 
 impl Exam {

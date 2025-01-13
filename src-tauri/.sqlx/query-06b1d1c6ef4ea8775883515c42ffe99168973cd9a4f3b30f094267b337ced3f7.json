@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "CREATE TABLE IF NOT EXISTS schedule_gaps (\n                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\n                section_id TEXT NOT NULL,\n                date TEXT NOT NULL,\n                reason TEXT NOT NULL,\n                FOREIGN KEY(section_id) REFERENCES sections(id)\n            );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "06b1d1c6ef4ea8775883515c42ffe99168973cd9a4f3b30f094267b337ced3f7"
+}

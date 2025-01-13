@@ -128,7 +128,7 @@ impl MainSection {
             .chunk_by(|sub_section| sub_section.section_type.clone())
             .into_iter()
             .map(|(section_type, sections)| SectionTypeTuple {
-                _type: section_type,
+                section_type: section_type,
                 sections: sections.collect(),
             })
             .collect(),

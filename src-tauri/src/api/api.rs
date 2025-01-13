@@ -9,5 +9,5 @@ pub async fn init(db_path: &Path) -> Result<Schema> {
     let pool = sql::init(db_path).await?;
 
     
-    Ok(create_schema( &pool))
+    Ok(create_schema(&pool))
 }

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "CREATE TABLE IF NOT EXISTS time_slots (\n                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\n                section_id TEXT NOT NULL,\n                day_of_week TEXT NOT NULL,\n                start_time TEXT NOT NULL,\n                end_time TEXT NOT NULL,\n                location TEXT NOT NULL,\n                FOREIGN KEY(section_id) REFERENCES sections(id)\n            );",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "0292a7c9053e27d8aff33613a408e272052ec9fee4d8b98192eeb39ad095f232"
+}

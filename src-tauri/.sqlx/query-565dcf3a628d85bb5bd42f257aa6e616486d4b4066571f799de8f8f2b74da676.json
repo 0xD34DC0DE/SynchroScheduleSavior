@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO semesters (id, name, year, start_date, end_date)\n            VALUES (?, ?, ?, ?, ?)\n            RETURNING id, name, year, start_date as \"start_date: NaiveDate\", end_date as \"end_date: NaiveDate\"\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "year",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "start_date: NaiveDate",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "end_date: NaiveDate",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "565dcf3a628d85bb5bd42f257aa6e616486d4b4066571f799de8f8f2b74da676"
+}
