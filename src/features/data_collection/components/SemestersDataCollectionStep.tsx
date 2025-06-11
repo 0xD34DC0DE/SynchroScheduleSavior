@@ -5,12 +5,10 @@ import {useSetStepState, useStepData} from "./stepper/RouteStepper.tsx";
 import {AvailableSemesters} from "./SemesterSelectionStep.tsx";
 import {SemesterDataCollector} from "./data_collector";
 import {useRef, useState} from "react";
-import {CourseBlock, SemestersData} from "./data_collector/types.ts";
+import {SemestersData} from "./data_collector/types.ts";
 
 interface SemestersDataCollectionStepProps {
 }
-
-
 
 const SemestersDataCollectionStep = ({}: SemestersDataCollectionStepProps) => {
     const setStepCompleted = useSetStepState();

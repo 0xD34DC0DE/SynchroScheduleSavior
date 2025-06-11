@@ -28,6 +28,7 @@
     "react-spring": "^9.7.3",
     "tauri-plugin-graphql-urql": "^2.0.3",
     "url-pattern": "^1.0.3",
+    "urql": "^4.2.2",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

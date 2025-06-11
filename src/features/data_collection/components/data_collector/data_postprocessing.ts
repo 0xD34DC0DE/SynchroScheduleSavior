@@ -6,6 +6,19 @@ const getAttendedCourseStatus = (followedCourse: FollowedCourse): model.Attended
     if (followedCourse.status === "Inscrit") return "in progress";
     if (followedCourse.status !== "Prise") throw new Error(`Unknown status ${followedCourse.status}`);
 
+    const specialGrades = ["EXE", "ABA", "ATT"];
+    const specialGradeIndex = specialGrades.indexOf(followedCourse.grade);
+    if (specialGradeIndex !== -1) {
+        switch (specialGradeIndex) {
+            case 0:
+                return "failed";
+            case 1:
+                return "passed";
+            case 2:
+                return "in progress";
+        }
+    }
+
     const numericGrades = ["A+", "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "E", "F"];
     const firstCyclePassThreshold = numericGrades.indexOf("D");
     const superiorCyclesPassThreshold = numericGrades.indexOf("C");

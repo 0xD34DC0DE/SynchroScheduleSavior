@@ -5,7 +5,6 @@ import Step from "./stepper/Step.tsx";
 import {InjectionResult, PipelineState, usePipelineState, useScraper} from "../../../lib/webview_scraper";
 import {useEffect} from "react";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import {db} from "../../../utils";
 import {postProcessCourseBlocks, postProcessCourses, postProcessFollowedCourses} from "./data_collector";
 
 interface DataFinalizationStepProps {
