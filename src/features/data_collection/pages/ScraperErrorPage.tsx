@@ -3,6 +3,7 @@ import {useRouteError} from "react-router-dom";
 import Box from "@mui/material/Box";
 import GridLayout from "../../../components/layouts/GridLayout.tsx";
 import {Warning} from "@mui/icons-material";
+import { Fragment } from "react/jsx-runtime";
 
 interface ScraperErrorPageProps {
 
@@ -42,7 +43,7 @@ const ScraperErrorPage = ({}: ScraperErrorPageProps) => {
                                 sx={{color: theme => theme.palette.getContrastText(theme.palette.error.light)}}
                             >
                                 {error?.stack?.split("\n").map((line, index)  =>
-                                    <>{index !== 0 && <><br/>&emsp;</>}{line}</>
+                                    <Fragment key={index}>{index !== 0 && <><br/>&emsp;</>}{line}</Fragment>
                                 ) ?? "Unknown error"}
                             </Typography>
                         </Box>

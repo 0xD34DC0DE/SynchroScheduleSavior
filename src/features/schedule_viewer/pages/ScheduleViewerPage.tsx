@@ -2,7 +2,6 @@ import GridLayout from "../../../components/layouts/GridLayout.tsx";
 import {Grid2, Tab, Tabs} from "@mui/material";
 import {defer, useMatch} from "react-router-dom";
 import {ButtonLink} from "../../../components/navigation";
-import {db} from "../../../utils";
 import {SemesterEntity} from "../../../models";
 import ScheduleViewerOutlet from "../components/ScheduleViewerOutlet.tsx";
 

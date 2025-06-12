@@ -65,19 +65,20 @@ const getTimeOfDay = (time: string): model.TimeOfDay => {
     return {hour, minute, toBeDetermined: false} satisfies model.TimeOfDay;
 }
 
+const dayOfWeekLUT: Record<string, model.DayOfWeekType> = {
+    "Lun": DayOfWeek.Monday,
+    "Ma": DayOfWeek.Tuesday,
+    "Mer": DayOfWeek.Wednesday,
+    "J": DayOfWeek.Thursday,
+    "V": DayOfWeek.Friday,
+    "S": DayOfWeek.Saturday,
+    "D": DayOfWeek.Sunday
+};
+
 const getDayOfWeek = (day: string): model.DayOfWeekType => {
     if (day === "À communiquer") return "ToBeDetermined";
 
-    const lut: Record<string, model.DayOfWeekType> = {
-        "Lun": DayOfWeek.Monday,
-        "Ma": DayOfWeek.Tuesday,
-        "Mer": DayOfWeek.Wednesday,
-        "J": DayOfWeek.Thursday,
-        "V": DayOfWeek.Friday,
-        "S": DayOfWeek.Saturday,
-        "D": DayOfWeek.Sunday
-    };
-    const dayOfWeek = lut[day];
+    const dayOfWeek = dayOfWeekLUT[day];
     if (dayOfWeek === undefined) throw new Error(`Unknown day ${day}`);
     return dayOfWeek;
 }

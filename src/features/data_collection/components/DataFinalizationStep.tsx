@@ -5,7 +5,7 @@ import Step from "./stepper/Step.tsx";
 import {InjectionResult, PipelineState, usePipelineState, useScraper} from "../../../lib/webview_scraper";
 import {useEffect} from "react";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import {postProcessCourseBlocks, postProcessCourses, postProcessFollowedCourses} from "./data_collector";
+//import {postProcessCourseBlocks, postProcessCourses, postProcessFollowedCourses} from "./data_collector";
 
 interface DataFinalizationStepProps {
 
@@ -29,26 +29,26 @@ const DataFinalizationStep = ({}: DataFinalizationStepProps) => {
             .navigate_to(courseHistoryUrl, "*/SA_LEARNER_SERVICES_2.SSS_MY_CRSEHIST.GBL*")
             .task(getFollowedCourses, [], (followed_courses: InjectionResult<FollowedCourse[]>) => {
                 if ("error" in followed_courses) throw new Error(followed_courses.error);
+                setPipelineState(PipelineState.DONE);
+                //const processedFollowedCourses = postProcessFollowedCourses(followed_courses.value);
 
-                const processedFollowedCourses = postProcessFollowedCourses(followed_courses.value);
-
-                db.attendedCourses.bulkPut(processedFollowedCourses).then(async () => {
-                    for (const [semester, courseBlocks] of Object.entries(previousStepData)) {
-                        try {
-                            const processedCourseBlocks = postProcessCourseBlocks(courseBlocks);
-                            const semesterEntity = postProcessCourses(semester, courseBlocks);
-
-                            await db.courseBlocks.bulkPut(processedCourseBlocks);
-                            await db.semesters.put(semesterEntity);
-                        } catch (e) {
-                            console.error("Error processing semester", e);
-                            throw e;
-                        }
-
-                    }
-
-                    setPipelineState(PipelineState.DONE);
-                });
+                // db.attendedCourses.bulkPut(processedFollowedCourses).then(async () => {
+                //     for (const [semester, courseBlocks] of Object.entries(previousStepData)) {
+                //         try {
+                //             const processedCourseBlocks = postProcessCourseBlocks(courseBlocks);
+                //             const semesterEntity = postProcessCourses(semester, courseBlocks);
+                //
+                //             await db.courseBlocks.bulkPut(processedCourseBlocks);
+                //             await db.semesters.put(semesterEntity);
+                //         } catch (e) {
+                //             console.error("Error processing semester", e);
+                //             throw e;
+                //         }
+                //
+                //     }
+                //
+                //     setPipelineState(PipelineState.DONE);
+                // });
             })
             .execute();
     }, [undefined, scraper, setPipelineState, setPipelineError]);
